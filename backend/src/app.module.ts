@@ -11,6 +11,7 @@ import { UsersModule } from './modules/users/users.module';
 import { MembersModule } from './modules/members/members.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { DocumentsModule } from './modules/documents/documents.module';
+import { RecordsModule } from './modules/records/records.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 
 @Module({
@@ -33,6 +34,7 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
     MembersModule,
     StorageModule,
     DocumentsModule,
+    RecordsModule,
   ],
   controllers: [AppController],
   providers: [
