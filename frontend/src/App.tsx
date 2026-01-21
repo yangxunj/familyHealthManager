@@ -3,20 +3,25 @@ import MainLayout from './components/Layout/MainLayout';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
 import Dashboard from './pages/Dashboard';
+import { useAuthStore } from './store';
 
-// 简单的路由守卫组件
+// 路由守卫组件 - 需要登录
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const token = localStorage.getItem('accessToken');
-  if (!token) {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const accessToken = useAuthStore((state) => state.accessToken);
+
+  if (!isAuthenticated || !accessToken) {
     return <Navigate to="/login" replace />;
   }
   return <>{children}</>;
 };
 
-// 公共路由组件（已登录则跳转到首页）
+// 公共路由组件 - 已登录则跳转到首页
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const token = localStorage.getItem('accessToken');
-  if (token) {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const accessToken = useAuthStore((state) => state.accessToken);
+
+  if (isAuthenticated && accessToken) {
     return <Navigate to="/dashboard" replace />;
   }
   return <>{children}</>;

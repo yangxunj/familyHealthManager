@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Menu, Avatar, Dropdown, theme } from 'antd';
+import { Layout, Menu, Avatar, Dropdown, theme, message } from 'antd';
 import type { MenuProps } from 'antd';
 import {
   HomeOutlined,
@@ -15,6 +15,7 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
 } from '@ant-design/icons';
+import { useAuthStore } from '../../store';
 
 const { Header, Sider, Content } = Layout;
 
@@ -22,6 +23,7 @@ const MainLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, logout } = useAuthStore();
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
@@ -95,8 +97,8 @@ const MainLayout: React.FC = () => {
 
   const handleUserMenuClick: MenuProps['onClick'] = (e) => {
     if (e.key === 'logout') {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
+      logout();
+      message.success('已退出登录');
       navigate('/login');
     } else if (e.key === 'profile') {
       navigate('/settings');
@@ -179,7 +181,7 @@ const MainLayout: React.FC = () => {
           >
             <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
               <Avatar icon={<UserOutlined />} />
-              <span>用户</span>
+              <span>{user?.name || '用户'}</span>
             </div>
           </Dropdown>
         </Header>

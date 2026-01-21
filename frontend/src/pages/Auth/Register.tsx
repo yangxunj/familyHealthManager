@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Form, Input, Button, Card, message } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
 import { useNavigate, Link } from 'react-router-dom';
+import { authApi } from '../../api';
 
 interface RegisterForm {
   name: string;
@@ -22,12 +23,16 @@ const Register: React.FC = () => {
 
     setLoading(true);
     try {
-      // TODO: 调用注册 API
-      console.log('Register:', values);
+      await authApi.register({
+        name: values.name,
+        email: values.email,
+        password: values.password,
+      });
       message.success('注册成功，请登录');
       navigate('/login');
-    } catch {
-      message.error('注册失败，请稍后重试');
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: { message?: string } } } };
+      message.error(err.response?.data?.error?.message || '注册失败，请稍后重试');
     } finally {
       setLoading(false);
     }

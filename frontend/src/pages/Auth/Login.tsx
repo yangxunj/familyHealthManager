@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Form, Input, Button, Card, message } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useNavigate, Link } from 'react-router-dom';
+import { authApi } from '../../api';
+import { useAuthStore } from '../../store';
 
 interface LoginForm {
   email: string;
@@ -11,16 +13,18 @@ interface LoginForm {
 const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const setAuth = useAuthStore((state) => state.setAuth);
 
   const onFinish = async (values: LoginForm) => {
     setLoading(true);
     try {
-      // TODO: 调用登录 API
-      console.log('Login:', values);
+      const response = await authApi.login(values);
+      setAuth(response.user, response.accessToken, response.refreshToken);
       message.success('登录成功');
       navigate('/dashboard');
-    } catch {
-      message.error('登录失败，请检查邮箱和密码');
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: { message?: string } } } };
+      message.error(err.response?.data?.error?.message || '登录失败，请检查邮箱和密码');
     } finally {
       setLoading(false);
     }
