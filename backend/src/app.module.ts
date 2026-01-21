@@ -12,6 +12,8 @@ import { MembersModule } from './modules/members/members.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { RecordsModule } from './modules/records/records.module';
+import { AiModule } from './modules/ai/ai.module';
+import { AdviceModule } from './modules/advice/advice.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 
 @Module({
@@ -35,6 +37,8 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
     StorageModule,
     DocumentsModule,
     RecordsModule,
+    AiModule,
+    AdviceModule,
   ],
   controllers: [AppController],
   providers: [

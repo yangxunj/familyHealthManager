@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import Members from './pages/Members';
 import { DocumentList, DocumentUpload, DocumentDetail } from './pages/Documents';
 import { RecordList, RecordAdd, RecordTrend } from './pages/Records';
+import { AdvicePage } from './pages/Advice';
 import { useAuthStore } from './store';
 
 // 路由守卫组件 - 需要登录
@@ -74,7 +75,7 @@ function App() {
             <Route path="add" element={<RecordAdd />} />
             <Route path="trend" element={<RecordTrend />} />
           </Route>
-          <Route path="advice" element={<div>AI健康建议（待开发）</div>} />
+          <Route path="advice" element={<AdvicePage />} />
           <Route path="chat" element={<div>AI健康咨询（待开发）</div>} />
           <Route path="settings" element={<div>设置（待开发）</div>} />
         </Route>
