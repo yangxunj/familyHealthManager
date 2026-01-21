@@ -35,6 +35,14 @@ export interface AiCompletionResult {
   model: string;
 }
 
+export interface AiStreamChunk {
+  content: string;
+  done: boolean;
+  tokensUsed?: number;
+}
+
+export type AiStreamCallback = (chunk: AiStreamChunk) => void;
+
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
@@ -102,6 +110,96 @@ export class AiService {
       };
     } catch (error) {
       this.logger.error('Failed to call DashScope API', error);
+      throw error;
+    }
+  }
+
+  // 流式调用通义千问 API
+  async chatStream(
+    messages: DashScopeMessage[],
+    onChunk: AiStreamCallback,
+    options?: {
+      model?: string;
+      temperature?: number;
+      maxTokens?: number;
+    },
+  ): Promise<void> {
+    if (!this.apiKey) {
+      throw new Error('DASHSCOPE_API_KEY is not configured');
+    }
+
+    const model = options?.model || this.defaultModel;
+
+    try {
+      const response = await fetch(`${this.baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages,
+          temperature: options?.temperature ?? 0.7,
+          max_tokens: options?.maxTokens ?? 2000,
+          stream: true,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        this.logger.error(`DashScope API error: ${response.status} - ${errorText}`);
+        throw new Error(`AI service error: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('Failed to get response reader');
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let totalTokens = 0;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+          if (!trimmedLine || trimmedLine === 'data: [DONE]') continue;
+
+          if (trimmedLine.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(trimmedLine.slice(6));
+              const content = data.choices?.[0]?.delta?.content || '';
+
+              if (data.usage) {
+                totalTokens = data.usage.total_tokens || 0;
+              }
+
+              if (content) {
+                onChunk({ content, done: false });
+              }
+
+              if (data.choices?.[0]?.finish_reason === 'stop') {
+                onChunk({ content: '', done: true, tokensUsed: totalTokens });
+              }
+            } catch {
+              // 忽略解析错误的行
+            }
+          }
+        }
+      }
+
+      // 确保发送结束信号
+      onChunk({ content: '', done: true, tokensUsed: totalTokens });
+    } catch (error) {
+      this.logger.error('Failed to call DashScope streaming API', error);
       throw error;
     }
   }

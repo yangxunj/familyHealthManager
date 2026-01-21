@@ -14,6 +14,7 @@ import { DocumentsModule } from './modules/documents/documents.module';
 import { RecordsModule } from './modules/records/records.module';
 import { AiModule } from './modules/ai/ai.module';
 import { AdviceModule } from './modules/advice/advice.module';
+import { ChatModule } from './modules/chat/chat.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 
 @Module({
@@ -39,6 +40,7 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
     RecordsModule,
     AiModule,
     AdviceModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [
