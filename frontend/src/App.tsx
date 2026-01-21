@@ -4,6 +4,7 @@ import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
 import Dashboard from './pages/Dashboard';
 import Members from './pages/Members';
+import { DocumentList, DocumentUpload, DocumentDetail } from './pages/Documents';
 import { useAuthStore } from './store';
 
 // 路由守卫组件 - 需要登录
@@ -62,8 +63,11 @@ function App() {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="members/*" element={<Members />} />
-          {/* TODO: 添加更多路由 */}
-          <Route path="documents/*" element={<div>健康文档管理（待开发）</div>} />
+          <Route path="documents">
+            <Route index element={<DocumentList />} />
+            <Route path="upload" element={<DocumentUpload />} />
+            <Route path=":id" element={<DocumentDetail />} />
+          </Route>
           <Route path="records/*" element={<div>健康记录管理（待开发）</div>} />
           <Route path="advice" element={<div>AI健康建议（待开发）</div>} />
           <Route path="chat" element={<div>AI健康咨询（待开发）</div>} />
