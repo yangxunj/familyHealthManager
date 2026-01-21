@@ -7,6 +7,7 @@ import {
   Query,
   ParseUUIDPipe,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AdviceService } from './advice.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { CurrentUserData } from '../auth/decorators/current-user.decorator';
@@ -18,6 +19,7 @@ export class AdviceController {
 
   // 生成健康建议
   @Post('generate')
+  @Throttle({ short: { limit: 10, ttl: 60000 } }) // AI 生成限流：10次/分钟
   generate(
     @CurrentUser() user: CurrentUserData,
     @Body() dto: GenerateAdviceDto,

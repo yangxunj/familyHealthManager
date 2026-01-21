@@ -9,6 +9,7 @@ import {
   Res,
   ParseUUIDPipe,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { ChatService } from './chat.service';
 import { CreateSessionDto, SendMessageDto, QuerySessionDto } from './dto';
@@ -57,6 +58,7 @@ export class ChatController {
 
   // 发送消息（SSE 流式响应）
   @Post('sessions/:id/messages')
+  @Throttle({ short: { limit: 20, ttl: 60000 } }) // AI 对话限流：20次/分钟
   async sendMessage(
     @CurrentUser() user: CurrentUserData,
     @Param('id', ParseUUIDPipe) sessionId: string,

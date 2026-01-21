@@ -1,11 +1,14 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { CacheModule } from '@nestjs/cache-manager';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { join } from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './common/prisma/prisma.module';
+import { AuditModule } from './common/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { MembersModule } from './modules/members/members.module';
@@ -29,8 +32,29 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
       rootPath: join(process.cwd(), 'uploads'),
       serveRoot: '/uploads',
     }),
+    // 全局缓存模块
+    CacheModule.register({
+      isGlobal: true,
+      ttl: 300000, // 默认 5 分钟 (毫秒)
+      max: 100, // 最大缓存条目数
+    }),
+    // 全局限流模块
+    ThrottlerModule.forRoot([
+      {
+        name: 'short',
+        ttl: 60000, // 1 分钟
+        limit: 100, // 100 次请求
+      },
+      {
+        name: 'long',
+        ttl: 3600000, // 1 小时
+        limit: 1000, // 1000 次请求
+      },
+    ]),
     // Prisma 数据库模块
     PrismaModule,
+    // 审计日志模块
+    AuditModule,
     // 功能模块
     AuthModule,
     UsersModule,
@@ -49,6 +73,11 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    // 全局限流守卫
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
     },
   ],
 })

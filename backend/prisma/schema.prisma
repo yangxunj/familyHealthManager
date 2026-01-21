@@ -299,3 +299,32 @@ model ChatMessage {
   @@index([sessionId, createdAt])
   @@map("chat_messages")
 }
+
+/// 审计日志表
+model AuditLog {
+  id            String    @id @default(uuid())
+  userId        String?   @map("user_id")
+
+  // 操作信息
+  action        String    @db.VarChar(50)   // 操作类型: LOGIN, LOGOUT, CREATE, UPDATE, DELETE
+  resource      String    @db.VarChar(50)   // 资源类型: USER, MEMBER, DOCUMENT, RECORD, ADVICE, CHAT
+  resourceId    String?   @map("resource_id")
+
+  // 请求信息
+  method        String    @db.VarChar(10)   // HTTP 方法
+  path          String    @db.VarChar(500)  // 请求路径
+  ip            String?   @db.VarChar(50)   // 客户端 IP
+  userAgent     String?   @map("user_agent") @db.VarChar(500)
+
+  // 详情
+  details       Json?                        // 操作详情
+
+  // 时间戳
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([action])
+  @@index([resource])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
