@@ -3,6 +3,7 @@ import MainLayout from './components/Layout/MainLayout';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
 import Dashboard from './pages/Dashboard';
+import Members from './pages/Members';
 import { useAuthStore } from './store';
 
 // 路由守卫组件 - 需要登录
@@ -60,8 +61,8 @@ function App() {
         >
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
+          <Route path="members/*" element={<Members />} />
           {/* TODO: 添加更多路由 */}
-          <Route path="members/*" element={<div>家庭成员管理（待开发）</div>} />
           <Route path="documents/*" element={<div>健康文档管理（待开发）</div>} />
           <Route path="records/*" element={<div>健康记录管理（待开发）</div>} />
           <Route path="advice" element={<div>AI健康建议（待开发）</div>} />
