@@ -1,0 +1,74 @@
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import MainLayout from './components/Layout/MainLayout';
+import Login from './pages/Auth/Login';
+import Register from './pages/Auth/Register';
+import Dashboard from './pages/Dashboard';
+
+// 简单的路由守卫组件
+const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const token = localStorage.getItem('accessToken');
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+  return <>{children}</>;
+};
+
+// 公共路由组件（已登录则跳转到首页）
+const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const token = localStorage.getItem('accessToken');
+  if (token) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <>{children}</>;
+};
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* 公共路由 */}
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <PublicRoute>
+              <Register />
+            </PublicRoute>
+          }
+        />
+
+        {/* 受保护的路由 */}
+        <Route
+          path="/"
+          element={
+            <PrivateRoute>
+              <MainLayout />
+            </PrivateRoute>
+          }
+        >
+          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          {/* TODO: 添加更多路由 */}
+          <Route path="members/*" element={<div>家庭成员管理（待开发）</div>} />
+          <Route path="documents/*" element={<div>健康文档管理（待开发）</div>} />
+          <Route path="records/*" element={<div>健康记录管理（待开发）</div>} />
+          <Route path="advice" element={<div>AI健康建议（待开发）</div>} />
+          <Route path="chat" element={<div>AI健康咨询（待开发）</div>} />
+          <Route path="settings" element={<div>设置（待开发）</div>} />
+        </Route>
+
+        {/* 404 重定向 */}
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;

@@ -1,0 +1,301 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================================
+// 枚举定义
+// ============================================================================
+
+/// 家庭成员关系
+enum Relationship {
+  SELF        // 本人
+  SPOUSE      // 配偶
+  FATHER      // 父亲
+  MOTHER      // 母亲
+  SON         // 儿子
+  DAUGHTER    // 女儿
+  GRANDFATHER // 祖父/外祖父
+  GRANDMOTHER // 祖母/外祖母
+  OTHER       // 其他
+}
+
+/// 性别
+enum Gender {
+  MALE
+  FEMALE
+}
+
+/// 血型
+enum BloodType {
+  A
+  B
+  AB
+  O
+  UNKNOWN
+}
+
+/// 健康文档类型
+enum DocumentType {
+  PHYSICAL_EXAM     // 体检报告
+  LAB_REPORT        // 检验报告
+  IMAGING_REPORT    // 影像报告
+  MEDICAL_RECORD    // 病历记录
+  PRESCRIPTION      // 处方单
+  OTHER             // 其他
+}
+
+/// 健康指标类型
+enum RecordType {
+  // 基础指标
+  HEIGHT            // 身高
+  WEIGHT            // 体重
+  WAIST             // 腰围
+  // 心血管
+  SYSTOLIC_BP       // 收缩压
+  DIASTOLIC_BP      // 舒张压
+  HEART_RATE        // 心率
+  // 血糖
+  FASTING_GLUCOSE   // 空腹血糖
+  POSTPRANDIAL_GLUCOSE // 餐后血糖
+  HBA1C             // 糖化血红蛋白
+  // 血脂
+  TOTAL_CHOLESTEROL // 总胆固醇
+  TRIGLYCERIDES     // 甘油三酯
+  HDL               // 高密度脂蛋白
+  LDL               // 低密度脂蛋白
+  // 其他
+  TEMPERATURE       // 体温
+  BLOOD_OXYGEN      // 血氧饱和度
+}
+
+/// 测量场景
+enum MeasurementContext {
+  MORNING           // 晨起
+  BEFORE_MEAL       // 餐前
+  AFTER_MEAL        // 餐后
+  AFTER_EXERCISE    // 运动后
+  BEFORE_SLEEP      // 睡前
+  OTHER             // 其他
+}
+
+/// 对话角色
+enum ChatRole {
+  USER
+  ASSISTANT
+}
+
+// ============================================================================
+// 数据模型
+// ============================================================================
+
+/// 用户表
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique @db.VarChar(255)
+  passwordHash  String    @map("password_hash") @db.VarChar(255)
+  name          String    @db.VarChar(100)
+  avatar        String?   @db.VarChar(500)
+  phone         String?   @db.VarChar(20)
+
+  // 时间戳
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  lastLoginAt   DateTime? @map("last_login_at")
+
+  // 关系
+  members       FamilyMember[]
+  chatSessions  ChatSession[]
+
+  @@map("users")
+}
+
+/// 家庭成员表
+model FamilyMember {
+  id            String       @id @default(uuid())
+  userId        String       @map("user_id")
+
+  // 基本信息
+  name          String       @db.VarChar(100)
+  relationship  Relationship
+  gender        Gender
+  birthDate     DateTime     @map("birth_date") @db.Date
+  avatar        String?      @db.VarChar(500)
+  bloodType     BloodType    @default(UNKNOWN) @map("blood_type")
+
+  // 身体基础数据（最新值，便于快速查询）
+  height        Decimal?     @db.Decimal(5, 2)  // cm
+  weight        Decimal?     @db.Decimal(5, 2)  // kg
+
+  // 病史
+  chronicDiseases String[]   @default([]) @map("chronic_diseases")  // 慢性病
+  allergies     String?      @db.Text                               // 过敏史
+
+  // 备注
+  notes         String?      @db.Text
+
+  // 时间戳
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+  deletedAt     DateTime?    @map("deleted_at")
+
+  // 关系
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents     Document[]
+  records       HealthRecord[]
+  advices       HealthAdvice[]
+  chatSessions  ChatSession[]
+
+  @@index([userId])
+  @@index([userId, deletedAt])
+  @@map("family_members")
+}
+
+/// 健康文档表
+model Document {
+  id            String       @id @default(uuid())
+  memberId      String       @map("member_id")
+
+  // 文档信息
+  type          DocumentType
+  name          String       @db.VarChar(200)
+  checkDate     DateTime     @map("check_date") @db.Date
+  institution   String?      @db.VarChar(200)  // 检查机构
+
+  // 文件
+  files         Json         @default("[]")     // 文件URL数组 [{url, name, size, type}]
+
+  // 备注
+  notes         String?      @db.Text
+
+  // AI解析结果（可选）
+  parsedData    Json?        @map("parsed_data")  // AI解析提取的指标数据
+
+  // 时间戳
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+  deletedAt     DateTime?    @map("deleted_at")
+
+  // 关系
+  member        FamilyMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@index([memberId, type])
+  @@index([memberId, checkDate])
+  @@map("documents")
+}
+
+/// 健康记录表
+model HealthRecord {
+  id            String             @id @default(uuid())
+  memberId      String             @map("member_id")
+
+  // 记录信息
+  recordDate    DateTime           @map("record_date")
+  recordType    RecordType         @map("record_type")
+  value         Decimal            @db.Decimal(10, 2)
+  unit          String             @db.VarChar(20)
+
+  // 测量上下文
+  context       MeasurementContext @default(OTHER)
+
+  // 异常标记
+  isAbnormal    Boolean            @default(false) @map("is_abnormal")
+
+  // 备注
+  notes         String?            @db.Text
+
+  // 来源（手动/文档解析）
+  source        String             @default("MANUAL") @db.VarChar(20)
+  documentId    String?            @map("document_id")  // 如果来自文档解析
+
+  // 时间戳
+  createdAt     DateTime           @default(now()) @map("created_at")
+
+  // 关系
+  member        FamilyMember       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@index([memberId, recordType])
+  @@index([memberId, recordDate])
+  @@map("health_records")
+}
+
+/// AI健康建议表
+model HealthAdvice {
+  id            String       @id @default(uuid())
+  memberId      String       @map("member_id")
+
+  // 建议内容
+  content       Json                          // 完整的建议内容（JSON结构）
+  healthScore   Int?         @map("health_score")  // 健康评分 0-100
+
+  // 生成时的数据快照（用于追溯）
+  dataSnapshot  Json         @map("data_snapshot")
+
+  // AI相关
+  modelUsed     String?      @map("model_used") @db.VarChar(50)
+  tokensUsed    Int?         @map("tokens_used")
+
+  // 时间戳
+  generatedAt   DateTime     @default(now()) @map("generated_at")
+
+  // 关系
+  member        FamilyMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@index([memberId, generatedAt])
+  @@map("health_advices")
+}
+
+/// AI咨询会话表
+model ChatSession {
+  id            String       @id @default(uuid())
+  userId        String       @map("user_id")
+  memberId      String       @map("member_id")
+
+  // 会话信息
+  title         String       @db.VarChar(200)  // 会话标题（可自动生成）
+
+  // 时间戳
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  // 关系
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  member        FamilyMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  messages      ChatMessage[]
+
+  @@index([userId])
+  @@index([memberId])
+  @@map("chat_sessions")
+}
+
+/// AI咨询消息表
+model ChatMessage {
+  id            String      @id @default(uuid())
+  sessionId     String      @map("session_id")
+
+  // 消息内容
+  role          ChatRole
+  content       String      @db.Text
+
+  // AI相关（仅assistant消息）
+  tokensUsed    Int?        @map("tokens_used")
+
+  // 时间戳
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  // 关系
+  session       ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([sessionId, createdAt])
+  @@map("chat_messages")
+}
