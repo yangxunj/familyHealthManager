@@ -5,3 +5,4 @@ export * from './documents';
 export * from './records';
 export * from './advice';
 export * from './chat';
+export * from './family';

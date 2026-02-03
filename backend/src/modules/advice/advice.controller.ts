@@ -6,6 +6,7 @@ import {
   Param,
   Query,
   ParseUUIDPipe,
+  ForbiddenException,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AdviceService } from './advice.service';
@@ -17,6 +18,13 @@ import { GenerateAdviceDto, QueryAdviceDto } from './dto';
 export class AdviceController {
   constructor(private readonly adviceService: AdviceService) {}
 
+  private requireFamily(user: CurrentUserData): string {
+    if (!user.familyId) {
+      throw new ForbiddenException('请先创建或加入一个家庭');
+    }
+    return user.familyId;
+  }
+
   // 生成健康建议
   @Post('generate')
   @Throttle({ short: { limit: 10, ttl: 60000 } }) // AI 生成限流：10次/分钟
@@ -24,7 +32,8 @@ export class AdviceController {
     @CurrentUser() user: CurrentUserData,
     @Body() dto: GenerateAdviceDto,
   ) {
-    return this.adviceService.generate(user.id, dto);
+    const familyId = this.requireFamily(user);
+    return this.adviceService.generate(familyId, dto);
   }
 
   // 获取建议列表
@@ -33,7 +42,8 @@ export class AdviceController {
     @CurrentUser() user: CurrentUserData,
     @Query() query: QueryAdviceDto,
   ) {
-    return this.adviceService.findAll(user.id, query);
+    const familyId = this.requireFamily(user);
+    return this.adviceService.findAll(familyId, query);
   }
 
   // 获取单条建议详情
@@ -42,6 +52,7 @@ export class AdviceController {
     @CurrentUser() user: CurrentUserData,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.adviceService.findOne(user.id, id);
+    const familyId = this.requireFamily(user);
+    return this.adviceService.findOne(familyId, id);
   }
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import {
   Card,
   Descriptions,
@@ -9,6 +9,9 @@ import {
   Modal,
   message,
   Spin,
+  Space,
+  Progress,
+  Input,
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -17,13 +20,25 @@ import {
   FileTextOutlined,
   FilePdfOutlined,
   FileImageOutlined,
+  ScanOutlined,
+  EditOutlined,
+  SaveOutlined,
+  RobotOutlined,
+  CloseOutlined,
+  LeftOutlined,
+  RightOutlined,
+  EyeOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { documentsApi } from '../../api';
-import type { FileInfo } from '../../types';
+import type { FileInfo, OcrSseEvent } from '../../types';
 import { DocumentTypeLabels, DocumentTypeColors } from '../../types';
 import dayjs from 'dayjs';
+
+const { TextArea } = Input;
 
 const DocumentDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -32,6 +47,22 @@ const DocumentDetail: React.FC = () => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewFile, setPreviewFile] = useState<FileInfo | null>(null);
+
+  // 对比检查模态框状态: 'ocr' | 'parsed' | null
+  const [compareMode, setCompareMode] = useState<'ocr' | 'parsed' | null>(null);
+  const [compareFileIndex, setCompareFileIndex] = useState(0);
+
+  // OCR 相关状态
+  const [isOcrRunning, setIsOcrRunning] = useState(false);
+  const [ocrProgress, setOcrProgress] = useState(0);
+  const [ocrMessage, setOcrMessage] = useState('');
+  const [ocrCurrent, setOcrCurrent] = useState(0);
+  const [ocrTotal, setOcrTotal] = useState(0);
+  const cancelOcrRef = useRef<(() => void) | null>(null);
+
+  // OCR 文本编辑状态
+  const [isEditingOcr, setIsEditingOcr] = useState(false);
+  const [editedOcrText, setEditedOcrText] = useState('');
 
   const { data: document, isLoading } = useQuery({
     queryKey: ['document', id],
@@ -51,6 +82,103 @@ const DocumentDetail: React.FC = () => {
       message.error('删除失败');
     },
   });
+
+  // 保存 OCR 文本
+  const saveOcrMutation = useMutation({
+    mutationFn: ({ documentId, ocrText }: { documentId: string; ocrText: string }) =>
+      documentsApi.updateOcrText(documentId, ocrText),
+    onSuccess: () => {
+      message.success('OCR 文本已保存');
+      setIsEditingOcr(false);
+      queryClient.invalidateQueries({ queryKey: ['document', id] });
+    },
+    onError: (error: Error) => {
+      message.error(error.message || '保存失败');
+    },
+  });
+
+  // AI 分析
+  const analyzeMutation = useMutation({
+    mutationFn: () => documentsApi.analyzeDocument(id!),
+    onSuccess: () => {
+      message.success('AI 分析完成');
+      queryClient.invalidateQueries({ queryKey: ['document', id] });
+    },
+    onError: (error: Error) => {
+      message.error(error.message || 'AI 分析失败');
+    },
+  });
+
+  // 开始 OCR 识别
+  const handleStartOcr = useCallback(() => {
+    if (!id) return;
+
+    setIsOcrRunning(true);
+    setOcrProgress(0);
+    setOcrMessage('开始 OCR 识别...');
+    setOcrCurrent(0);
+    setOcrTotal(0);
+
+    const cancel = documentsApi.startOcr(
+      id,
+      (event: OcrSseEvent) => {
+        if (event.type === 'progress') {
+          setOcrProgress(event.progress);
+          setOcrMessage(event.message || `识别中... ${event.progress}%`);
+          if (event.current !== undefined) setOcrCurrent(event.current);
+          if (event.total !== undefined) setOcrTotal(event.total);
+        } else if (event.type === 'complete') {
+          setOcrProgress(100);
+          setOcrMessage('OCR 识别完成');
+          message.success('OCR 识别完成');
+          queryClient.invalidateQueries({ queryKey: ['document', id] });
+          setIsOcrRunning(false);
+        } else if (event.type === 'error') {
+          message.error(event.error || 'OCR 识别失败');
+          setIsOcrRunning(false);
+        }
+      },
+      (error: Error) => {
+        message.error(error.message || 'OCR 识别失败');
+        setIsOcrRunning(false);
+      },
+      () => {
+        setIsOcrRunning(false);
+      },
+    );
+
+    cancelOcrRef.current = cancel;
+  }, [id, queryClient]);
+
+  // 取消 OCR
+  const handleCancelOcr = useCallback(() => {
+    if (cancelOcrRef.current) {
+      cancelOcrRef.current();
+      cancelOcrRef.current = null;
+      setIsOcrRunning(false);
+      setOcrProgress(0);
+      setOcrMessage('');
+      message.info('已取消 OCR 识别');
+    }
+  }, []);
+
+  // 开始编辑 OCR 文本
+  const handleStartEditOcr = useCallback(() => {
+    setEditedOcrText(document?.ocrText || '');
+    setIsEditingOcr(true);
+  }, [document?.ocrText]);
+
+  // 保存 OCR 文本
+  const handleSaveOcrText = useCallback(() => {
+    if (!id) return;
+    saveOcrMutation.mutate({ documentId: id, ocrText: editedOcrText });
+  }, [id, editedOcrText, saveOcrMutation]);
+
+  // 取消编辑
+  const handleCancelEditOcr = useCallback(() => {
+    setIsEditingOcr(false);
+    setEditedOcrText('');
+  }, []);
 
   const handleDelete = () => {
     if (id) {
@@ -106,20 +234,79 @@ const DocumentDetail: React.FC = () => {
     );
   }
 
+  const hasOcrText = !!document.ocrText;
+  const parsedData = document.parsedData as { type?: string; content?: string } | null;
+  const hasParsedData = !!parsedData;
+  const parsedMarkdown = parsedData?.type === 'markdown' ? parsedData.content || '' : '';
+
   return (
     <div>
       <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between' }}>
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/documents')}>
           返回列表
         </Button>
-        <Button
-          danger
-          icon={<DeleteOutlined />}
-          onClick={() => setDeleteModalOpen(true)}
-        >
-          删除文档
-        </Button>
+        <Space>
+          {/* OCR 识别按钮 */}
+          {isOcrRunning ? (
+            <Button
+              danger
+              icon={<CloseOutlined />}
+              onClick={handleCancelOcr}
+            >
+              取消识别
+            </Button>
+          ) : (
+            <Button
+              type="primary"
+              icon={<ScanOutlined />}
+              onClick={handleStartOcr}
+              disabled={!document.files || document.files.length === 0}
+            >
+              OCR 识别
+            </Button>
+          )}
+
+          {/* AI 规整按钮 */}
+          <Button
+            type="default"
+            icon={<RobotOutlined />}
+            onClick={() => analyzeMutation.mutate()}
+            loading={analyzeMutation.isPending}
+            disabled={!hasOcrText || isOcrRunning}
+            title={!hasOcrText ? '请先进行 OCR 识别' : ''}
+          >
+            AI 规整
+          </Button>
+
+          <Button
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => setDeleteModalOpen(true)}
+          >
+            删除文档
+          </Button>
+        </Space>
       </div>
+
+      {/* OCR 进度显示 */}
+      {isOcrRunning && (
+        <Card style={{ marginBottom: 24 }}>
+          <div style={{ textAlign: 'center' }}>
+            <Progress
+              percent={ocrProgress}
+              status="active"
+              strokeColor={{
+                '0%': '#108ee9',
+                '100%': '#87d068',
+              }}
+            />
+            <p style={{ marginTop: 8, marginBottom: 0, color: '#666' }}>
+              {ocrMessage}
+              {ocrTotal > 0 && ` (${ocrCurrent}/${ocrTotal})`}
+            </p>
+          </div>
+        </Card>
+      )}
 
       <Card title="文档信息" style={{ marginBottom: 24 }}>
         <Descriptions column={{ xs: 1, sm: 2 }}>
@@ -139,6 +326,17 @@ const DocumentDetail: React.FC = () => {
           <Descriptions.Item label="上传时间">
             {dayjs(document.createdAt).format('YYYY-MM-DD HH:mm')}
           </Descriptions.Item>
+          <Descriptions.Item label="OCR 状态">
+            {document.ocrStatus === 'completed' ? (
+              <Tag color="success">已完成</Tag>
+            ) : document.ocrStatus === 'processing' ? (
+              <Tag color="processing">处理中</Tag>
+            ) : document.ocrStatus === 'failed' ? (
+              <Tag color="error">失败</Tag>
+            ) : (
+              <Tag>未识别</Tag>
+            )}
+          </Descriptions.Item>
           {document.notes && (
             <Descriptions.Item label="备注" span={2}>
               {document.notes}
@@ -147,7 +345,7 @@ const DocumentDetail: React.FC = () => {
         </Descriptions>
       </Card>
 
-      <Card title={`文件列表 (${document.files?.length || 0} 个)`}>
+      <Card title={`文件列表 (${document.files?.length || 0} 个)`} style={{ marginBottom: 24 }}>
         <List
           grid={{ gutter: 16, xs: 1, sm: 2, md: 3, lg: 4 }}
           dataSource={document.files || []}
@@ -233,6 +431,108 @@ const DocumentDetail: React.FC = () => {
         />
       </Card>
 
+      {/* OCR 识别结果展示 */}
+      {hasOcrText && (
+        <Card
+          title="OCR 识别结果"
+          style={{ marginBottom: 24 }}
+          extra={
+            !isEditingOcr ? (
+              <Space>
+                {document.files && document.files.length > 0 && (
+                  <Button
+                    type="link"
+                    icon={<EyeOutlined />}
+                    onClick={() => {
+                      setCompareFileIndex(0);
+                      setCompareMode('ocr');
+                    }}
+                  >
+                    对比检查
+                  </Button>
+                )}
+                <Button
+                  type="link"
+                  icon={<EditOutlined />}
+                  onClick={handleStartEditOcr}
+                >
+                  编辑
+                </Button>
+              </Space>
+            ) : (
+              <Space>
+                <Button
+                  type="primary"
+                  icon={<SaveOutlined />}
+                  onClick={handleSaveOcrText}
+                  loading={saveOcrMutation.isPending}
+                  size="small"
+                >
+                  保存
+                </Button>
+                <Button
+                  icon={<CloseOutlined />}
+                  onClick={handleCancelEditOcr}
+                  size="small"
+                >
+                  取消
+                </Button>
+              </Space>
+            )
+          }
+        >
+          {isEditingOcr ? (
+            <TextArea
+              value={editedOcrText}
+              onChange={(e) => setEditedOcrText(e.target.value)}
+              rows={15}
+              style={{ fontFamily: 'monospace', fontSize: 12 }}
+            />
+          ) : (
+            <div
+              style={{
+                maxHeight: 400,
+                overflow: 'auto',
+                whiteSpace: 'pre-wrap',
+                fontFamily: 'monospace',
+                fontSize: 12,
+                background: '#f5f5f5',
+                padding: 16,
+                borderRadius: 4,
+              }}
+            >
+              {document.ocrText}
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* AI 规整结果展示 */}
+      {hasParsedData && (
+        <Card
+          title="AI 规整结果"
+          style={{ marginBottom: 24 }}
+          extra={
+            document.files && document.files.length > 0 && (
+              <Button
+                type="link"
+                icon={<EyeOutlined />}
+                onClick={() => {
+                  setCompareFileIndex(0);
+                  setCompareMode('parsed');
+                }}
+              >
+                对比检查
+              </Button>
+            )
+          }
+        >
+          <div className="markdown-body" style={{ lineHeight: 1.8 }}>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{parsedMarkdown}</ReactMarkdown>
+          </div>
+        </Card>
+      )}
+
       <Image
         style={{ display: 'none' }}
         preview={{
@@ -258,6 +558,151 @@ const DocumentDetail: React.FC = () => {
         okButtonProps={{ danger: true }}
       >
         <p>确定要删除该文档吗？删除后相关文件也将被删除，此操作不可恢复。</p>
+      </Modal>
+
+      {/* 对比检查模态框 */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>对比检查 - {compareMode === 'ocr' ? 'OCR 识别结果' : 'AI 规整结果'}</span>
+            {document.files && document.files.length > 1 && (
+              <Space size={4}>
+                <Button
+                  size="small"
+                  icon={<LeftOutlined />}
+                  disabled={compareFileIndex === 0}
+                  onClick={() => setCompareFileIndex((i) => i - 1)}
+                />
+                <span style={{ fontSize: 13, color: '#666' }}>
+                  {compareFileIndex + 1} / {document.files.length}
+                </span>
+                <Button
+                  size="small"
+                  icon={<RightOutlined />}
+                  disabled={compareFileIndex === document.files.length - 1}
+                  onClick={() => setCompareFileIndex((i) => i + 1)}
+                />
+              </Space>
+            )}
+          </div>
+        }
+        open={compareMode !== null}
+        onCancel={() => setCompareMode(null)}
+        footer={null}
+        width="95vw"
+        style={{ top: 20 }}
+        styles={{ body: { height: '80vh', padding: 0, overflow: 'hidden' } }}
+      >
+        <div style={{ display: 'flex', height: '100%' }}>
+          {/* 左侧：文件预览 */}
+          <div
+            style={{
+              flex: 1,
+              overflow: 'auto',
+              borderRight: '1px solid #f0f0f0',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <div
+              style={{
+                padding: '8px 16px',
+                borderBottom: '1px solid #f0f0f0',
+                fontSize: 13,
+                color: '#666',
+                flexShrink: 0,
+              }}
+            >
+              {document.files?.[compareFileIndex]?.originalName || '文件预览'}
+            </div>
+            <div style={{ flex: 1, overflow: 'auto' }}>
+              {document.files?.[compareFileIndex] &&
+              isPdf(document.files[compareFileIndex].mimeType) ? (
+                <iframe
+                  src={document.files[compareFileIndex].url}
+                  style={{ width: '100%', height: '100%', border: 'none' }}
+                  title="PDF 预览"
+                />
+              ) : document.files?.[compareFileIndex] &&
+                isImage(document.files[compareFileIndex].mimeType) ? (
+                <div
+                  style={{
+                    padding: 16,
+                    display: 'flex',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <img
+                    src={document.files[compareFileIndex].url}
+                    alt={document.files[compareFileIndex].originalName}
+                    style={{ maxWidth: '100%' }}
+                  />
+                </div>
+              ) : (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: '100%',
+                    color: '#999',
+                  }}
+                >
+                  该文件类型不支持预览
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 右侧：对比内容 */}
+          <div
+            style={{
+              flex: 1,
+              overflow: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <div
+              style={{
+                padding: '8px 16px',
+                borderBottom: '1px solid #f0f0f0',
+                fontSize: 13,
+                color: '#666',
+                flexShrink: 0,
+              }}
+            >
+              {compareMode === 'ocr' ? 'OCR 识别结果' : 'AI 规整结果'}
+            </div>
+            {compareMode === 'ocr' ? (
+              <div
+                style={{
+                  flex: 1,
+                  overflow: 'auto',
+                  padding: 16,
+                  whiteSpace: 'pre-wrap',
+                  fontFamily: 'monospace',
+                  fontSize: 13,
+                  lineHeight: 1.6,
+                }}
+              >
+                {document.ocrText}
+              </div>
+            ) : (
+              <div
+                className="markdown-body"
+                style={{
+                  flex: 1,
+                  overflow: 'auto',
+                  padding: 16,
+                  lineHeight: 1.8,
+                }}
+              >
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{parsedMarkdown}</ReactMarkdown>
+              </div>
+            )}
+          </div>
+        </div>
       </Modal>
     </div>
   );

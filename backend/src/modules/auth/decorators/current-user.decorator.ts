@@ -5,6 +5,8 @@ export interface CurrentUserData {
   email: string;
   name: string;
   createdAt: Date;
+  familyId: string | null;
+  isOwner: boolean;
 }
 
 export const CurrentUser = createParamDecorator(

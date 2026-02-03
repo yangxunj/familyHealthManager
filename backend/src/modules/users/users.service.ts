@@ -18,12 +18,21 @@ export class UsersService {
         id: true,
         email: true,
         name: true,
+        familyId: true,
+        isOwner: true,
         createdAt: true,
         updatedAt: true,
-        _count: {
+        family: {
           select: {
-            members: {
-              where: { deletedAt: null },
+            id: true,
+            name: true,
+            inviteCode: true,
+            _count: {
+              select: {
+                members: {
+                  where: { deletedAt: null },
+                },
+              },
             },
           },
         },
@@ -38,9 +47,18 @@ export class UsersService {
       id: user.id,
       email: user.email,
       name: user.name,
+      familyId: user.familyId,
+      isOwner: user.isOwner,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
-      familyMemberCount: user._count.members,
+      family: user.family
+        ? {
+            id: user.family.id,
+            name: user.family.name,
+            inviteCode: user.family.inviteCode,
+            memberCount: user.family._count.members,
+          }
+        : null,
     };
   }
 

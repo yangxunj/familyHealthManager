@@ -1,4 +1,5 @@
 import apiClient from './client';
+import { supabase } from '../lib/supabase';
 import type {
   ChatSession,
   ChatSessionWithMessages,
@@ -39,7 +40,9 @@ export const chatApi = {
     onMessage: SSECallback,
     onError?: (error: string) => void,
   ): Promise<void> => {
-    const token = localStorage.getItem('accessToken');
+    // 从 Supabase session 获取 token
+    const session = await supabase?.auth.getSession();
+    const token = session?.data?.session?.access_token;
     const baseUrl = apiClient.defaults.baseURL || '';
 
     const response = await fetch(`${baseUrl}/chat/sessions/${sessionId}/messages`, {

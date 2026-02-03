@@ -3,9 +3,10 @@ import { DocumentsController } from './documents.controller';
 import { DocumentsService } from './documents.service';
 import { MembersModule } from '../members/members.module';
 import { StorageModule } from '../storage/storage.module';
+import { AiModule } from '../ai/ai.module';
 
 @Module({
-  imports: [MembersModule, StorageModule],
+  imports: [MembersModule, StorageModule, AiModule],
   controllers: [DocumentsController],
   providers: [DocumentsService],
   exports: [DocumentsService],

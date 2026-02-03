@@ -18,7 +18,9 @@ import { RecordsModule } from './modules/records/records.module';
 import { AiModule } from './modules/ai/ai.module';
 import { AdviceModule } from './modules/advice/advice.module';
 import { ChatModule } from './modules/chat/chat.module';
-import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
+import { WhitelistModule } from './modules/whitelist/whitelist.module';
+import { FamilyModule } from './modules/family/family.module';
+import { SupabaseAuthGuard } from './modules/auth/guards/supabase-auth.guard';
 
 @Module({
   imports: [
@@ -65,14 +67,16 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
     AiModule,
     AdviceModule,
     ChatModule,
+    WhitelistModule,
+    FamilyModule,
   ],
   controllers: [AppController],
   providers: [
     AppService,
-    // 全局 JWT 认证守卫
+    // 全局 Supabase 认证守卫
     {
       provide: APP_GUARD,
-      useClass: JwtAuthGuard,
+      useClass: SupabaseAuthGuard,
     },
     // 全局限流守卫
     {

@@ -1,34 +1,50 @@
-import { useState } from 'react';
-import { Form, Input, Button, Card, message } from 'antd';
-import { UserOutlined, LockOutlined } from '@ant-design/icons';
-import { useNavigate, Link } from 'react-router-dom';
-import { authApi } from '../../api';
+import { useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Button, Card, Spin } from 'antd';
+import { GoogleOutlined } from '@ant-design/icons';
 import { useAuthStore } from '../../store';
-
-interface LoginForm {
-  email: string;
-  password: string;
-}
+import { isAuthEnabled } from '../../lib/supabase';
 
 const Login: React.FC = () => {
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const setAuth = useAuthStore((state) => state.setAuth);
+  const location = useLocation();
+  const { signInWithGoogle, isLoading, isAuthenticated, isInitialized } = useAuthStore();
 
-  const onFinish = async (values: LoginForm) => {
-    setLoading(true);
-    try {
-      const response = await authApi.login(values);
-      setAuth(response.user, response.accessToken, response.refreshToken);
-      message.success('登录成功');
-      navigate('/dashboard');
-    } catch (error: unknown) {
-      const err = error as { response?: { data?: { error?: { message?: string } } } };
-      message.error(err.response?.data?.error?.message || '登录失败，请检查邮箱和密码');
-    } finally {
-      setLoading(false);
+  // Redirect to home if already authenticated
+  useEffect(() => {
+    if (isInitialized && isAuthenticated) {
+      const from = (location.state as { from?: Location })?.from?.pathname || '/dashboard';
+      navigate(from, { replace: true });
     }
+  }, [isAuthenticated, isInitialized, navigate, location]);
+
+  // If auth is not enabled, redirect to home
+  useEffect(() => {
+    if (!isAuthEnabled) {
+      navigate('/', { replace: true });
+    }
+  }, [navigate]);
+
+  const handleGoogleLogin = async () => {
+    await signInWithGoogle();
   };
+
+  // Show loading while initializing
+  if (!isInitialized) {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        }}
+      >
+        <Spin size="large" />
+      </div>
+    );
+  }
 
   return (
     <div
@@ -53,39 +69,35 @@ const Login: React.FC = () => {
           </p>
         </div>
 
-        <Form
-          name="login"
-          onFinish={onFinish}
-          autoComplete="off"
+        <Button
+          type="primary"
+          icon={<GoogleOutlined />}
           size="large"
+          block
+          loading={isLoading}
+          onClick={handleGoogleLogin}
+          style={{
+            height: 48,
+            fontSize: 16,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+          }}
         >
-          <Form.Item
-            name="email"
-            rules={[
-              { required: true, message: '请输入邮箱' },
-              { type: 'email', message: '请输入有效的邮箱地址' },
-            ]}
-          >
-            <Input prefix={<UserOutlined />} placeholder="邮箱" />
-          </Form.Item>
+          使用 Google 账号登录
+        </Button>
 
-          <Form.Item
-            name="password"
-            rules={[{ required: true, message: '请输入密码' }]}
-          >
-            <Input.Password prefix={<LockOutlined />} placeholder="密码" />
-          </Form.Item>
-
-          <Form.Item>
-            <Button type="primary" htmlType="submit" loading={loading} block>
-              登录
-            </Button>
-          </Form.Item>
-
-          <div style={{ textAlign: 'center' }}>
-            还没有账号？ <Link to="/register">立即注册</Link>
-          </div>
-        </Form>
+        <p
+          style={{
+            textAlign: 'center',
+            color: '#999',
+            marginTop: 24,
+            fontSize: 12,
+          }}
+        >
+          点击登录即表示您同意我们的服务条款
+        </p>
       </Card>
     </div>
   );

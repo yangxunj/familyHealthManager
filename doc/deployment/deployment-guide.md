@@ -21,8 +21,8 @@ JWT_REFRESH_SECRET="your-super-secret-refresh-key-at-least-32-chars"
 JWT_REFRESH_EXPIRES_IN="7d"
 
 # 服务配置
-PORT=5001
-CORS_ORIGIN="http://localhost:5173"
+PORT=5002
+CORS_ORIGIN="http://localhost:5174"
 
 # 阿里云 DashScope (通义千问 AI)
 DASHSCOPE_API_KEY="your-dashscope-api-key"
@@ -35,7 +35,7 @@ MAX_FILE_SIZE=10485760  # 10MB
 ### 前端 (frontend/.env)
 
 ```env
-VITE_API_BASE_URL=http://localhost:5001/api/v1
+VITE_API_BASE_URL=http://localhost:5002/api/v1
 ```
 
 ## 部署步骤
@@ -125,16 +125,16 @@ pnpm start:prod
 
 ## 访问地址
 
-- 前端应用：http://localhost:5173
-- 后端 API：http://localhost:5001/api/v1
-- API 文档：http://localhost:5001/api/docs
+- 前端应用：http://localhost:5174
+- 后端 API：http://localhost:5002/api/v1
+- API 文档：http://localhost:5002/api/docs
 
 ## 健康检查
 
 后端健康检查接口：
 
 ```bash
-curl http://localhost:5001/api/v1/health
+curl http://localhost:5002/api/v1/health
 ```
 
 ## 常见问题

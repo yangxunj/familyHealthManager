@@ -35,11 +35,11 @@ export class AdviceService {
   ) {}
 
   // 验证成员归属
-  private async validateMemberOwnership(memberId: string, userId: string) {
+  private async validateMemberOwnership(memberId: string, familyId: string) {
     const member = await this.prisma.familyMember.findFirst({
       where: {
         id: memberId,
-        userId,
+        familyId,
         deletedAt: null,
       },
     });
@@ -94,7 +94,7 @@ export class AdviceService {
       take: 50,
     });
 
-    // 获取最近的文档信息（仅标题和日期）
+    // 获取最近的文档信息（包含 AI 规整结果）
     const documents = await this.prisma.document.findMany({
       where: {
         memberId,
@@ -106,15 +106,30 @@ export class AdviceService {
         name: true,
         type: true,
         checkDate: true,
+        parsedData: true,
       },
     });
 
-    // 构建文档摘要
+    // 构建文档摘要（标题列表）
     const documentSummary =
       documents.length > 0
         ? documents
             .map((d) => `${d.checkDate.toISOString().split('T')[0]} - ${d.name}`)
             .join('\n')
+        : undefined;
+
+    // 构建文档详细内容（来自 AI 规整的 markdown）
+    const docsWithContent = documents.filter(
+      (d) => d.parsedData && (d.parsedData as { content?: string }).content,
+    );
+    const documentContent =
+      docsWithContent.length > 0
+        ? docsWithContent
+            .map((d) => {
+              const parsed = d.parsedData as { content?: string };
+              return `### ${d.checkDate.toISOString().split('T')[0]} - ${d.name}\n${parsed.content}`;
+            })
+            .join('\n\n')
         : undefined;
 
     return {
@@ -134,26 +149,27 @@ export class AdviceService {
         isAbnormal: r.isAbnormal,
       })),
       documentSummary,
+      documentContent,
     };
   }
 
   // 生成健康建议
-  async generate(userId: string, dto: GenerateAdviceDto) {
+  async generate(familyId: string, dto: GenerateAdviceDto) {
     // 检查 AI 服务是否配置
     if (!this.aiService.isConfigured()) {
       throw new BadRequestException('AI 服务未配置，请联系管理员');
     }
 
     // 验证成员归属
-    await this.validateMemberOwnership(dto.memberId, userId);
+    await this.validateMemberOwnership(dto.memberId, familyId);
 
     // 收集健康数据
     const healthData = await this.collectHealthData(dto.memberId);
 
-    // 检查数据是否足够
-    if (healthData.recentRecords.length === 0) {
+    // 检查数据是否足够（健康记录或文档内容至少有其一）
+    if (healthData.recentRecords.length === 0 && !healthData.documentContent) {
       throw new BadRequestException(
-        '健康数据不足，请先添加一些健康记录后再生成建议',
+        '健康数据不足，请先添加健康记录或上传健康文档并完成 AI 规整后再生成建议',
       );
     }
 
@@ -191,10 +207,10 @@ export class AdviceService {
   }
 
   // 获取建议列表
-  async findAll(userId: string, query: QueryAdviceDto) {
-    // 获取用户的所有成员 ID
+  async findAll(familyId: string, query: QueryAdviceDto) {
+    // 获取家庭的所有成员 ID
     const members = await this.prisma.familyMember.findMany({
-      where: { userId, deletedAt: null },
+      where: { familyId, deletedAt: null },
       select: { id: true },
     });
     const memberIds = members.map((m: { id: string }) => m.id);
@@ -223,7 +239,7 @@ export class AdviceService {
   }
 
   // 获取单条建议详情
-  async findOne(userId: string, id: string) {
+  async findOne(familyId: string, id: string) {
     const advice = await this.prisma.healthAdvice.findUnique({
       where: { id },
       include: {
@@ -231,7 +247,7 @@ export class AdviceService {
           select: {
             id: true,
             name: true,
-            userId: true,
+            familyId: true,
           },
         },
       },
@@ -241,7 +257,7 @@ export class AdviceService {
       throw new NotFoundException('建议不存在');
     }
 
-    if (advice.member.userId !== userId) {
+    if (advice.member.familyId !== familyId) {
       throw new ForbiddenException('无权查看此建议');
     }
 

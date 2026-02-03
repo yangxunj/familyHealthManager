@@ -1,100 +1,156 @@
+/**
+ * Authentication state management using Supabase
+ * Reference: banana-slides/frontend/src/store/useAuthStore.ts
+ */
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import type { User } from '../types';
-import { authApi } from '../api';
+import { supabase, isAuthEnabled } from '../lib/supabase';
+import type { User, Session } from '@supabase/supabase-js';
+import { familyApi, type Family } from '../api/family';
 
 interface AuthState {
   user: User | null;
-  accessToken: string | null;
-  refreshToken: string | null;
+  session: Session | null;
+  family: Family | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isInitialized: boolean;
+  hasFamily: boolean;
 
-  // Actions
-  setAuth: (user: User, accessToken: string, refreshToken: string) => void;
-  setUser: (user: User) => void;
-  logout: () => void;
-  refreshAccessToken: () => Promise<boolean>;
-  fetchUser: () => Promise<void>;
+  initialize: () => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
+  signOut: () => Promise<void>;
+  getAccessToken: () => string | null;
+  loadFamily: () => Promise<void>;
+  setFamily: (family: Family | null) => void;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set, get) => ({
-      user: null,
-      accessToken: null,
-      refreshToken: null,
-      isAuthenticated: false,
-      isLoading: false,
+export const useAuthStore = create<AuthState>((set, get) => ({
+  user: null,
+  session: null,
+  family: null,
+  isAuthenticated: false,
+  isLoading: false,
+  isInitialized: false,
+  hasFamily: false,
 
-      setAuth: (user, accessToken, refreshToken) => {
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
-        set({
-          user,
-          accessToken,
-          refreshToken,
-          isAuthenticated: true,
-        });
-      },
-
-      setUser: (user) => {
-        set({ user });
-      },
-
-      logout: () => {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        set({
-          user: null,
-          accessToken: null,
-          refreshToken: null,
-          isAuthenticated: false,
-        });
-      },
-
-      refreshAccessToken: async () => {
-        const { refreshToken } = get();
-        if (!refreshToken) {
-          get().logout();
-          return false;
-        }
-
-        try {
-          const response = await authApi.refreshToken({ refreshToken });
-          localStorage.setItem('accessToken', response.accessToken);
-          localStorage.setItem('refreshToken', response.refreshToken);
-          set({
-            user: response.user,
-            accessToken: response.accessToken,
-            refreshToken: response.refreshToken,
-            isAuthenticated: true,
-          });
-          return true;
-        } catch {
-          get().logout();
-          return false;
-        }
-      },
-
-      fetchUser: async () => {
-        set({ isLoading: true });
-        try {
-          const user = await authApi.getMe();
-          set({ user, isLoading: false });
-        } catch {
-          set({ isLoading: false });
-        }
-      },
-    }),
-    {
-      name: 'auth-storage',
-      partialize: (state) => ({
-        user: state.user,
-        accessToken: state.accessToken,
-        refreshToken: state.refreshToken,
-        isAuthenticated: state.isAuthenticated,
-      }),
+  initialize: async () => {
+    // If auth is not enabled, mark as not authenticated
+    if (!isAuthEnabled || !supabase) {
+      set({
+        isLoading: false,
+        isAuthenticated: false,
+        isInitialized: true,
+      });
+      return;
     }
-  )
-);
+
+    set({ isLoading: true });
+
+    try {
+      // Get current session
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      set({
+        session,
+        user: session?.user ?? null,
+        isAuthenticated: !!session,
+        isInitialized: true,
+        isLoading: false,
+      });
+
+      // Load family info if authenticated
+      if (session) {
+        get().loadFamily();
+      }
+
+      // Listen for auth state changes
+      supabase.auth.onAuthStateChange((_event, session) => {
+        set({
+          session,
+          user: session?.user ?? null,
+          isAuthenticated: !!session,
+        });
+
+        // Load family info on sign in
+        if (session) {
+          get().loadFamily();
+        } else {
+          set({ family: null, hasFamily: false });
+        }
+      });
+    } catch (error) {
+      console.error('Auth initialization error:', error);
+      set({
+        isInitialized: true,
+        isLoading: false,
+      });
+    }
+  },
+
+  signInWithGoogle: async () => {
+    if (!supabase) return;
+
+    set({ isLoading: true });
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (error) {
+        console.error('Sign in error:', error);
+        set({ isLoading: false });
+      }
+    } catch (error) {
+      console.error('Sign in error:', error);
+      set({ isLoading: false });
+    }
+  },
+
+  signOut: async () => {
+    // Clear state immediately
+    set({
+      user: null,
+      session: null,
+      family: null,
+      isAuthenticated: false,
+      isInitialized: true,
+      hasFamily: false,
+    });
+
+    // Call Supabase signOut asynchronously
+    if (supabase) {
+      supabase.auth.signOut().catch(console.error);
+    }
+  },
+
+  getAccessToken: () => {
+    const { session } = get();
+    return session?.access_token ?? null;
+  },
+
+  loadFamily: async () => {
+    try {
+      const family = await familyApi.get();
+      set({
+        family,
+        hasFamily: !!family,
+      });
+    } catch (error) {
+      console.error('Failed to load family:', error);
+      set({ family: null, hasFamily: false });
+    }
+  },
+
+  setFamily: (family: Family | null) => {
+    set({
+      family,
+      hasFamily: !!family,
+    });
+  },
+}));

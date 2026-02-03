@@ -95,6 +95,24 @@ enum ChatRole {
 // 数据模型
 // ============================================================================
 
+/// 家庭表 - 多个用户可以属于同一个家庭，共享数据
+model Family {
+  id          String   @id @default(uuid())
+  name        String   @db.VarChar(100)  // 家庭名称
+  inviteCode  String   @unique @map("invite_code") @db.VarChar(20)  // 邀请码
+
+  // 时间戳
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // 关系
+  users       User[]
+  members     FamilyMember[]
+  chatSessions ChatSession[]
+
+  @@map("families")
+}
+
 /// 用户表
 model User {
   id            String    @id @default(uuid())
@@ -104,22 +122,26 @@ model User {
   avatar        String?   @db.VarChar(500)
   phone         String?   @db.VarChar(20)
 
+  // 家庭关联
+  familyId      String?   @map("family_id")
+  isOwner       Boolean   @default(false) @map("is_owner")  // 是否是家庭创建者
+
   // 时间戳
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
   lastLoginAt   DateTime? @map("last_login_at")
 
   // 关系
-  members       FamilyMember[]
-  chatSessions  ChatSession[]
+  family        Family?   @relation(fields: [familyId], references: [id])
 
+  @@index([familyId])
   @@map("users")
 }
 
-/// 家庭成员表
+/// 家庭成员表（健康档案）
 model FamilyMember {
   id            String       @id @default(uuid())
-  userId        String       @map("user_id")
+  familyId      String       @map("family_id")
 
   // 基本信息
   name          String       @db.VarChar(100)
@@ -146,14 +168,14 @@ model FamilyMember {
   deletedAt     DateTime?    @map("deleted_at")
 
   // 关系
-  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  family        Family       @relation(fields: [familyId], references: [id], onDelete: Cascade)
   documents     Document[]
   records       HealthRecord[]
   advices       HealthAdvice[]
   chatSessions  ChatSession[]
 
-  @@index([userId])
-  @@index([userId, deletedAt])
+  @@index([familyId])
+  @@index([familyId, deletedAt])
   @@map("family_members")
 }
 
@@ -173,6 +195,12 @@ model Document {
 
   // 备注
   notes         String?      @db.Text
+
+  // OCR 识别结果（原始文本）
+  ocrText       String?      @map("ocr_text") @db.Text
+  ocrStatus     String?      @map("ocr_status") @db.VarChar(20)  // pending, processing, completed, failed
+  ocrProgress   Int?         @map("ocr_progress")  // OCR 进度百分比 0-100
+  ocrError      String?      @map("ocr_error") @db.Text  // OCR 错误信息
 
   // AI解析结果（可选）
   parsedData    Json?        @map("parsed_data")  // AI解析提取的指标数据
@@ -257,8 +285,9 @@ model HealthAdvice {
 /// AI咨询会话表
 model ChatSession {
   id            String       @id @default(uuid())
-  userId        String       @map("user_id")
+  familyId      String       @map("family_id")
   memberId      String       @map("member_id")
+  createdBy     String       @map("created_by")  // 创建此会话的用户ID
 
   // 会话信息
   title         String       @db.VarChar(200)  // 会话标题（可自动生成）
@@ -268,11 +297,11 @@ model ChatSession {
   updatedAt     DateTime     @updatedAt @map("updated_at")
 
   // 关系
-  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  family        Family       @relation(fields: [familyId], references: [id], onDelete: Cascade)
   member        FamilyMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
   messages      ChatMessage[]
 
-  @@index([userId])
+  @@index([familyId])
   @@index([memberId])
   @@map("chat_sessions")
 }
@@ -327,4 +356,15 @@ model AuditLog {
   @@index([resource])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+/// 白名单邮箱表 - 只有在白名单中的邮箱才能登录系统
+model AllowedEmail {
+  id            Int       @id @default(autoincrement())
+  email         String    @unique @db.VarChar(255)
+  addedBy       String?   @map("added_by") @db.VarChar(255)  // 添加此邮箱的管理员
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@index([email])
+  @@map("allowed_emails")
 }

@@ -56,11 +56,22 @@ export class StorageService {
     }
   }
 
+  // 修复 Multer 中文文件名乱码问题
+  private decodeFileName(filename: string): string {
+    try {
+      // Multer 默认使用 latin1 编码，需要转换为 utf8
+      return Buffer.from(filename, 'latin1').toString('utf8');
+    } catch {
+      return filename;
+    }
+  }
+
   async saveFile(file: Express.Multer.File, userId: string): Promise<UploadedFile> {
     this.validateFile(file);
 
     const userDir = this.ensureUserDir(userId);
-    const ext = path.extname(file.originalname);
+    const originalName = this.decodeFileName(file.originalname);
+    const ext = path.extname(originalName);
     const fileName = `${uuidv4()}${ext}`;
     const filePath = path.join(userDir, fileName);
 
@@ -70,7 +81,7 @@ export class StorageService {
     return {
       url: `/uploads/documents/${userId}/${fileName}`,
       name: fileName,
-      originalName: file.originalname,
+      originalName: originalName,
       size: file.size,
       mimeType: file.mimetype,
     };

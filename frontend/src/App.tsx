@@ -1,66 +1,42 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from './components/Layout/MainLayout';
 import Login from './pages/Auth/Login';
-import Register from './pages/Auth/Register';
+import { AuthCallback } from './components/auth/AuthCallback';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import Dashboard from './pages/Dashboard';
 import Members from './pages/Members';
 import { DocumentList, DocumentUpload, DocumentDetail } from './pages/Documents';
 import { RecordList, RecordAdd, RecordTrend } from './pages/Records';
 import { AdvicePage } from './pages/Advice';
 import { ChatPage } from './pages/Chat';
+import FamilyPage from './pages/Family';
 import { useAuthStore } from './store';
 
-// 路由守卫组件 - 需要登录
-const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const accessToken = useAuthStore((state) => state.accessToken);
-
-  if (!isAuthenticated || !accessToken) {
-    return <Navigate to="/login" replace />;
-  }
-  return <>{children}</>;
-};
-
-// 公共路由组件 - 已登录则跳转到首页
-const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const accessToken = useAuthStore((state) => state.accessToken);
-
-  if (isAuthenticated && accessToken) {
-    return <Navigate to="/dashboard" replace />;
-  }
-  return <>{children}</>;
-};
-
 function App() {
+  const { initialize, isInitialized } = useAuthStore();
+
+  // Initialize authentication
+  useEffect(() => {
+    if (!isInitialized) {
+      initialize();
+    }
+  }, [initialize, isInitialized]);
+
   return (
     <BrowserRouter>
       <Routes>
-        {/* 公共路由 */}
-        <Route
-          path="/login"
-          element={
-            <PublicRoute>
-              <Login />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/register"
-          element={
-            <PublicRoute>
-              <Register />
-            </PublicRoute>
-          }
-        />
+        {/* Public routes */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
 
-        {/* 受保护的路由 */}
+        {/* Protected routes with layout */}
         <Route
           path="/"
           element={
-            <PrivateRoute>
+            <ProtectedRoute>
               <MainLayout />
-            </PrivateRoute>
+            </ProtectedRoute>
           }
         >
           <Route index element={<Navigate to="/dashboard" replace />} />
@@ -78,11 +54,12 @@ function App() {
           </Route>
           <Route path="advice" element={<AdvicePage />} />
           <Route path="chat" element={<ChatPage />} />
+          <Route path="family" element={<FamilyPage />} />
           <Route path="settings" element={<div>设置（待开发）</div>} />
         </Route>
 
-        {/* 404 重定向 */}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        {/* Catch all - redirect to home */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );

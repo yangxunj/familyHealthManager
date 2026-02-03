@@ -8,6 +8,7 @@ import {
   Query,
   Res,
   ParseUUIDPipe,
+  ForbiddenException,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
@@ -20,13 +21,21 @@ import type { CurrentUserData } from '../auth/decorators/current-user.decorator'
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
+  private requireFamily(user: CurrentUserData): string {
+    if (!user.familyId) {
+      throw new ForbiddenException('请先创建或加入一个家庭');
+    }
+    return user.familyId;
+  }
+
   // 创建会话
   @Post('sessions')
   createSession(
     @CurrentUser() user: CurrentUserData,
     @Body() dto: CreateSessionDto,
   ) {
-    return this.chatService.createSession(user.id, dto);
+    const familyId = this.requireFamily(user);
+    return this.chatService.createSession(familyId, user.id, dto);
   }
 
   // 获取会话列表
@@ -35,7 +44,8 @@ export class ChatController {
     @CurrentUser() user: CurrentUserData,
     @Query() query: QuerySessionDto,
   ) {
-    return this.chatService.findAllSessions(user.id, query);
+    const familyId = this.requireFamily(user);
+    return this.chatService.findAllSessions(familyId, query);
   }
 
   // 获取会话详情及消息
@@ -44,7 +54,8 @@ export class ChatController {
     @CurrentUser() user: CurrentUserData,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.chatService.findSessionWithMessages(user.id, id);
+    const familyId = this.requireFamily(user);
+    return this.chatService.findSessionWithMessages(familyId, id);
   }
 
   // 删除会话
@@ -53,7 +64,8 @@ export class ChatController {
     @CurrentUser() user: CurrentUserData,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.chatService.deleteSession(user.id, id);
+    const familyId = this.requireFamily(user);
+    return this.chatService.deleteSession(familyId, id);
   }
 
   // 发送消息（SSE 流式响应）
@@ -65,6 +77,8 @@ export class ChatController {
     @Body() dto: SendMessageDto,
     @Res() res: Response,
   ) {
+    const familyId = this.requireFamily(user);
+
     // 设置 SSE 响应头
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
@@ -73,7 +87,7 @@ export class ChatController {
 
     try {
       await this.chatService.sendMessageStream(
-        user.id,
+        familyId,
         sessionId,
         dto,
         (chunk) => {

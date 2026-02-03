@@ -8,9 +8,13 @@ import {
   Param,
   Query,
   ParseUUIDPipe,
+  ForbiddenException,
+  Sse,
+  MessageEvent,
 } from '@nestjs/common';
+import { Observable } from 'rxjs';
 import { DocumentsService } from './documents.service';
-import { CreateDocumentDto, UpdateDocumentDto, QueryDocumentDto } from './dto';
+import { CreateDocumentDto, UpdateDocumentDto, QueryDocumentDto, UpdateOcrTextDto } from './dto';
 import { CurrentUser } from '../auth/decorators';
 import type { CurrentUserData } from '../auth/decorators';
 
@@ -18,12 +22,20 @@ import type { CurrentUserData } from '../auth/decorators';
 export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
 
+  private requireFamily(user: CurrentUserData): string {
+    if (!user.familyId) {
+      throw new ForbiddenException('请先创建或加入一个家庭');
+    }
+    return user.familyId;
+  }
+
   @Get()
   async findAll(
     @CurrentUser() user: CurrentUserData,
     @Query() query: QueryDocumentDto,
   ) {
-    return this.documentsService.findAll(user.id, query);
+    const familyId = this.requireFamily(user);
+    return this.documentsService.findAll(familyId, query);
   }
 
   @Get(':id')
@@ -31,7 +43,8 @@ export class DocumentsController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: CurrentUserData,
   ) {
-    return this.documentsService.findOne(id, user.id);
+    const familyId = this.requireFamily(user);
+    return this.documentsService.findOne(id, familyId);
   }
 
   @Post()
@@ -39,7 +52,8 @@ export class DocumentsController {
     @CurrentUser() user: CurrentUserData,
     @Body() dto: CreateDocumentDto,
   ) {
-    return this.documentsService.create(user.id, dto);
+    const familyId = this.requireFamily(user);
+    return this.documentsService.create(familyId, dto);
   }
 
   @Patch(':id')
@@ -48,7 +62,8 @@ export class DocumentsController {
     @CurrentUser() user: CurrentUserData,
     @Body() dto: UpdateDocumentDto,
   ) {
-    return this.documentsService.update(id, user.id, dto);
+    const familyId = this.requireFamily(user);
+    return this.documentsService.update(id, familyId, dto);
   }
 
   @Delete(':id')
@@ -56,6 +71,38 @@ export class DocumentsController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: CurrentUserData,
   ) {
-    return this.documentsService.remove(id, user.id);
+    const familyId = this.requireFamily(user);
+    return this.documentsService.remove(id, familyId);
+  }
+
+  // OCR 识别（SSE 返回进度）
+  @Sse(':id/ocr')
+  ocrDocument(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: CurrentUserData,
+  ): Observable<MessageEvent> {
+    const familyId = this.requireFamily(user);
+    return this.documentsService.ocrDocument(id, familyId);
+  }
+
+  // 更新 OCR 文本（用户编辑后保存）
+  @Patch(':id/ocr')
+  async updateOcrText(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: CurrentUserData,
+    @Body() dto: UpdateOcrTextDto,
+  ) {
+    const familyId = this.requireFamily(user);
+    return this.documentsService.updateOcrText(id, familyId, dto.ocrText);
+  }
+
+  // AI 分析 OCR 文本
+  @Post(':id/analyze')
+  async analyzeDocument(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: CurrentUserData,
+  ) {
+    const familyId = this.requireFamily(user);
+    return this.documentsService.analyzeDocument(id, familyId);
   }
 }

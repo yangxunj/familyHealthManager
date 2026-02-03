@@ -53,11 +53,11 @@ export class ChatService {
   ) {}
 
   // 验证成员归属
-  private async validateMemberOwnership(memberId: string, userId: string) {
+  private async validateMemberOwnership(memberId: string, familyId: string) {
     const member = await this.prisma.familyMember.findFirst({
       where: {
         id: memberId,
-        userId,
+        familyId,
         deletedAt: null,
       },
     });
@@ -70,11 +70,11 @@ export class ChatService {
   }
 
   // 验证会话归属
-  private async validateSessionOwnership(sessionId: string, userId: string) {
+  private async validateSessionOwnership(sessionId: string, familyId: string) {
     const session = await this.prisma.chatSession.findFirst({
       where: {
         id: sessionId,
-        userId,
+        familyId,
       },
       include: {
         member: {
@@ -224,12 +224,13 @@ ${context.documentSummary ? `**近期健康文档**\n${context.documentSummary}`
   }
 
   // 创建会话
-  async createSession(userId: string, dto: CreateSessionDto) {
-    await this.validateMemberOwnership(dto.memberId, userId);
+  async createSession(familyId: string, userId: string, dto: CreateSessionDto) {
+    await this.validateMemberOwnership(dto.memberId, familyId);
 
     const session = await this.prisma.chatSession.create({
       data: {
-        userId,
+        familyId,
+        createdBy: userId,
         memberId: dto.memberId,
         title: dto.title || '新对话',
       },
@@ -247,8 +248,8 @@ ${context.documentSummary ? `**近期健康文档**\n${context.documentSummary}`
   }
 
   // 获取会话列表
-  async findAllSessions(userId: string, query: QuerySessionDto) {
-    const where: { userId: string; memberId?: string } = { userId };
+  async findAllSessions(familyId: string, query: QuerySessionDto) {
+    const where: { familyId: string; memberId?: string } = { familyId };
     if (query.memberId) {
       where.memberId = query.memberId;
     }
@@ -276,11 +277,11 @@ ${context.documentSummary ? `**近期健康文档**\n${context.documentSummary}`
   }
 
   // 获取会话详情及消息
-  async findSessionWithMessages(userId: string, sessionId: string) {
+  async findSessionWithMessages(familyId: string, sessionId: string) {
     const session = await this.prisma.chatSession.findFirst({
       where: {
         id: sessionId,
-        userId,
+        familyId,
       },
       include: {
         member: {
@@ -311,8 +312,8 @@ ${context.documentSummary ? `**近期健康文档**\n${context.documentSummary}`
   }
 
   // 删除会话
-  async deleteSession(userId: string, sessionId: string) {
-    await this.validateSessionOwnership(sessionId, userId);
+  async deleteSession(familyId: string, sessionId: string) {
+    await this.validateSessionOwnership(sessionId, familyId);
 
     await this.prisma.chatSession.delete({
       where: { id: sessionId },
@@ -323,7 +324,7 @@ ${context.documentSummary ? `**近期健康文档**\n${context.documentSummary}`
 
   // 发送消息并流式返回
   async sendMessageStream(
-    userId: string,
+    familyId: string,
     sessionId: string,
     dto: SendMessageDto,
     onChunk: AiStreamCallback,
@@ -334,7 +335,7 @@ ${context.documentSummary ? `**近期健康文档**\n${context.documentSummary}`
     }
 
     // 验证会话
-    const session = await this.validateSessionOwnership(sessionId, userId);
+    const session = await this.validateSessionOwnership(sessionId, familyId);
 
     // 保存用户消息
     await this.prisma.chatMessage.create({
@@ -412,7 +413,7 @@ ${context.documentSummary ? `**近期健康文档**\n${context.documentSummary}`
   private formatSession(
     session: {
       id: string;
-      userId: string;
+      familyId: string;
       memberId: string;
       title: string;
       createdAt: Date;

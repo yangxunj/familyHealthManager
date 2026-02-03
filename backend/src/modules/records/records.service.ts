@@ -82,11 +82,11 @@ export class RecordsService {
   }
 
   // 验证成员归属
-  private async validateMemberOwnership(memberId: string, userId: string) {
+  private async validateMemberOwnership(memberId: string, familyId: string) {
     const member = await this.prisma.familyMember.findFirst({
       where: {
         id: memberId,
-        userId,
+        familyId,
         deletedAt: null,
       },
     });
@@ -99,8 +99,8 @@ export class RecordsService {
   }
 
   // 添加单条记录
-  async create(userId: string, dto: CreateRecordDto) {
-    await this.validateMemberOwnership(dto.memberId, userId);
+  async create(familyId: string, dto: CreateRecordDto) {
+    await this.validateMemberOwnership(dto.memberId, familyId);
 
     const isAbnormal = this.isValueAbnormal(dto.recordType, dto.value);
 
@@ -140,8 +140,8 @@ export class RecordsService {
   }
 
   // 批量添加记录（同一次测量的多个指标）
-  async createBatch(userId: string, dto: CreateBatchRecordDto) {
-    await this.validateMemberOwnership(dto.memberId, userId);
+  async createBatch(familyId: string, dto: CreateBatchRecordDto) {
+    await this.validateMemberOwnership(dto.memberId, familyId);
 
     const records = await this.prisma.$transaction(
       dto.records.map((item) =>
@@ -185,10 +185,10 @@ export class RecordsService {
   }
 
   // 获取记录列表
-  async findAll(userId: string, query: QueryRecordDto) {
-    // 获取用户的所有成员ID
+  async findAll(familyId: string, query: QueryRecordDto) {
+    // 获取家庭的所有成员ID
     const members = await this.prisma.familyMember.findMany({
-      where: { userId, deletedAt: null },
+      where: { familyId, deletedAt: null },
       select: { id: true },
     });
     const memberIds = members.map((m: { id: string }) => m.id);
@@ -230,7 +230,7 @@ export class RecordsService {
   }
 
   // 获取单条记录
-  async findOne(userId: string, id: string) {
+  async findOne(familyId: string, id: string) {
     const record = await this.prisma.healthRecord.findUnique({
       where: { id },
       include: {
@@ -238,7 +238,7 @@ export class RecordsService {
           select: {
             id: true,
             name: true,
-            userId: true,
+            familyId: true,
           },
         },
       },
@@ -248,7 +248,7 @@ export class RecordsService {
       throw new NotFoundException('记录不存在');
     }
 
-    if (record.member.userId !== userId) {
+    if (record.member.familyId !== familyId) {
       throw new ForbiddenException('无权查看此记录');
     }
 
@@ -256,8 +256,8 @@ export class RecordsService {
   }
 
   // 获取趋势数据
-  async getTrend(userId: string, query: QueryTrendDto) {
-    await this.validateMemberOwnership(query.memberId, userId);
+  async getTrend(familyId: string, query: QueryTrendDto) {
+    await this.validateMemberOwnership(query.memberId, familyId);
 
     // 计算时间范围
     let startDate: Date | undefined;
@@ -328,12 +328,12 @@ export class RecordsService {
   }
 
   // 删除记录
-  async delete(userId: string, id: string) {
+  async delete(familyId: string, id: string) {
     const record = await this.prisma.healthRecord.findUnique({
       where: { id },
       include: {
         member: {
-          select: { userId: true },
+          select: { familyId: true },
         },
       },
     });
@@ -342,7 +342,7 @@ export class RecordsService {
       throw new NotFoundException('记录不存在');
     }
 
-    if (record.member.userId !== userId) {
+    if (record.member.familyId !== familyId) {
       throw new ForbiddenException('无权删除此记录');
     }
 

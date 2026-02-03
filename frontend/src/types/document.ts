@@ -14,6 +14,8 @@ export interface FileInfo {
   mimeType?: string;
 }
 
+export type OcrStatus = 'pending' | 'processing' | 'completed' | 'failed';
+
 export interface HealthDocument {
   id: string;
   type: DocumentType;
@@ -22,6 +24,10 @@ export interface HealthDocument {
   institution?: string | null;
   files: FileInfo[];
   notes?: string | null;
+  ocrText?: string | null;
+  ocrStatus?: OcrStatus | null;
+  ocrProgress?: number | null;
+  ocrError?: string | null;
   parsedData?: unknown;
   createdAt: string;
   updatedAt?: string;
@@ -75,3 +81,64 @@ export const DocumentTypeColors: Record<DocumentType, string> = {
   PRESCRIPTION: 'cyan',
   OTHER: 'default',
 };
+
+// OCR 解析相关类型
+export interface HealthIndicator {
+  name: string;
+  value: string | number;
+  unit?: string;
+  referenceRange?: string;
+  isAbnormal?: boolean;
+  category?: string;
+}
+
+export interface ParsedHealthData {
+  reportDate?: string;
+  institution?: string;
+  patientInfo?: {
+    name?: string;
+    gender?: string;
+    age?: number;
+  };
+  indicators: HealthIndicator[];
+  summary?: string;
+  rawText: string;
+}
+
+export interface DocumentParseResult {
+  document: HealthDocument;
+  parseResult: ParsedHealthData;
+  tokensUsed?: number;
+}
+
+// OCR SSE 进度事件
+export interface OcrProgressEvent {
+  type: 'progress';
+  status: OcrStatus;
+  progress: number;
+  current?: number;
+  total?: number;
+  message?: string;
+}
+
+export interface OcrCompleteEvent {
+  type: 'complete';
+  status: 'completed';
+  progress: 100;
+  ocrText: string;
+  tokensUsed?: number;
+}
+
+export interface OcrErrorEvent {
+  type: 'error';
+  error: string;
+}
+
+export type OcrSseEvent = OcrProgressEvent | OcrCompleteEvent | OcrErrorEvent;
+
+// AI 分析结果
+export interface AnalyzeDocumentResult {
+  document: HealthDocument;
+  parseResult: ParsedHealthData;
+  tokensUsed?: number;
+}

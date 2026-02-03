@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Layout, Menu, Avatar, Dropdown, theme, message } from 'antd';
 import type { MenuProps } from 'antd';
@@ -14,19 +14,39 @@ import {
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
+  SafetyOutlined,
+  UsergroupAddOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '../../store';
+import { whitelistApi } from '../../api/whitelist';
+import { WhitelistManager } from '../WhitelistManager';
 
 const { Header, Sider, Content } = Layout;
 
 const MainLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [whitelistModalOpen, setWhitelistModalOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuthStore();
+  const { user, signOut } = useAuthStore();
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
+
+  // 检查是否是管理员
+  useEffect(() => {
+    const checkAdmin = async () => {
+      try {
+        const response = await whitelistApi.checkAdmin();
+        setIsAdmin(response.isAdmin);
+      } catch (error) {
+        console.error('Failed to check admin status:', error);
+        setIsAdmin(false);
+      }
+    };
+    checkAdmin();
+  }, []);
 
   // 侧边栏菜单
   const menuItems: MenuProps['items'] = [
@@ -67,6 +87,11 @@ const MainLayout: React.FC = () => {
       ],
     },
     {
+      key: '/family',
+      icon: <UsergroupAddOutlined />,
+      label: '家庭设置',
+    },
+    {
       key: '/settings',
       icon: <SettingOutlined />,
       label: '设置',
@@ -80,6 +105,15 @@ const MainLayout: React.FC = () => {
       icon: <UserOutlined />,
       label: '个人信息',
     },
+    ...(isAdmin
+      ? [
+          {
+            key: 'whitelist',
+            icon: <SafetyOutlined />,
+            label: '白名单管理',
+          },
+        ]
+      : []),
     {
       type: 'divider',
     },
@@ -97,11 +131,13 @@ const MainLayout: React.FC = () => {
 
   const handleUserMenuClick: MenuProps['onClick'] = (e) => {
     if (e.key === 'logout') {
-      logout();
+      signOut();
       message.success('已退出登录');
       navigate('/login');
     } else if (e.key === 'profile') {
       navigate('/settings');
+    } else if (e.key === 'whitelist') {
+      setWhitelistModalOpen(true);
     }
   };
 
@@ -113,6 +149,7 @@ const MainLayout: React.FC = () => {
     if (path.startsWith('/records')) return ['/records'];
     if (path.startsWith('/advice')) return ['/advice'];
     if (path.startsWith('/chat')) return ['/chat'];
+    if (path.startsWith('/family')) return ['/family'];
     if (path.startsWith('/settings')) return ['/settings'];
     return ['/dashboard'];
   };
@@ -198,6 +235,12 @@ const MainLayout: React.FC = () => {
           <Outlet />
         </Content>
       </Layout>
+
+      {/* 白名单管理弹窗 */}
+      <WhitelistManager
+        open={whitelistModalOpen}
+        onClose={() => setWhitelistModalOpen(false)}
+      />
     </Layout>
   );
 };

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Card,
   Select,
@@ -38,6 +38,7 @@ const AdvicePage: React.FC = () => {
   const queryClient = useQueryClient();
   const [selectedMemberId, setSelectedMemberId] = useState<string | undefined>();
   const [showHistory, setShowHistory] = useState(false);
+  const [selectedAdvice, setSelectedAdvice] = useState<HealthAdvice | null>(null);
 
   const { data: members } = useQuery({
     queryKey: ['members'],
@@ -47,13 +48,21 @@ const AdvicePage: React.FC = () => {
   const { data: adviceList, isLoading: isLoadingHistory } = useQuery({
     queryKey: ['advice', selectedMemberId],
     queryFn: () => adviceApi.getAll({ memberId: selectedMemberId }),
-    enabled: showHistory,
+    enabled: showHistory || !!selectedMemberId,
   });
+
+  // 当建议列表加载完成且当前没有选中建议时，自动展示最新的一条
+  useEffect(() => {
+    if (adviceList && adviceList.length > 0 && !selectedAdvice) {
+      setSelectedAdvice(adviceList[0]);
+    }
+  }, [adviceList, selectedAdvice]);
 
   const generateMutation = useMutation({
     mutationFn: adviceApi.generate,
-    onSuccess: () => {
+    onSuccess: (data) => {
       message.success('健康建议生成成功');
+      setSelectedAdvice(data);
       queryClient.invalidateQueries({ queryKey: ['advice'] });
     },
     onError: (error: unknown) => {
@@ -294,7 +303,10 @@ const AdvicePage: React.FC = () => {
             placeholder="请选择"
             style={{ width: 200 }}
             value={selectedMemberId}
-            onChange={setSelectedMemberId}
+            onChange={(value) => {
+              setSelectedMemberId(value);
+              setSelectedAdvice(null);
+            }}
           >
             {members?.map((member) => (
               <Select.Option key={member.id} value={member.id}>
@@ -325,12 +337,12 @@ const AdvicePage: React.FC = () => {
         </Card>
       )}
 
-      {!generateMutation.isPending && generateMutation.data && (
-        renderAdviceReport(generateMutation.data)
+      {!generateMutation.isPending && selectedAdvice && (
+        renderAdviceReport(selectedAdvice)
       )}
 
-      {!generateMutation.isPending && !generateMutation.data && showHistory && (
-        <Card title="历史建议">
+      {!generateMutation.isPending && showHistory && (
+        <Card title="历史建议" style={{ marginTop: selectedAdvice ? 16 : 0 }}>
           {isLoadingHistory ? (
             <div style={{ textAlign: 'center', padding: 50 }}>
               <Spin />
@@ -345,7 +357,10 @@ const AdvicePage: React.FC = () => {
                     <Button
                       key="view"
                       type="link"
-                      onClick={() => generateMutation.reset()}
+                      onClick={() => {
+                        setSelectedAdvice(item);
+                        setShowHistory(false);
+                      }}
                     >
                       查看详情
                     </Button>,
@@ -384,9 +399,8 @@ const AdvicePage: React.FC = () => {
       )}
 
       {!generateMutation.isPending &&
-        !generateMutation.data &&
-        !showHistory &&
-        !selectedMemberId && (
+        !selectedAdvice &&
+        !showHistory && (
           <Card>
             <Empty
               description="请选择家庭成员并点击生成按钮获取 AI 健康建议"

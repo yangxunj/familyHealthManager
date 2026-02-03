@@ -12,10 +12,10 @@ import { CreateMemberDto, UpdateMemberDto } from './dto';
 export class MembersService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(userId: string) {
+  async findAll(familyId: string) {
     const members = await this.prisma.familyMember.findMany({
       where: {
-        userId,
+        familyId,
         deletedAt: null,
       },
       orderBy: [
@@ -52,11 +52,11 @@ export class MembersService {
     }));
   }
 
-  async findOne(id: string, userId: string) {
+  async findOne(id: string, familyId: string) {
     const member = await this.prisma.familyMember.findFirst({
       where: {
         id,
-        userId,
+        familyId,
         deletedAt: null,
       },
       select: {
@@ -99,12 +99,12 @@ export class MembersService {
     };
   }
 
-  async create(userId: string, dto: CreateMemberDto) {
+  async create(familyId: string, dto: CreateMemberDto) {
     // 如果关系是"本人"，检查是否已存在
     if (dto.relationship === 'SELF') {
       const existingSelf = await this.prisma.familyMember.findFirst({
         where: {
-          userId,
+          familyId,
           relationship: 'SELF',
           deletedAt: null,
         },
@@ -116,7 +116,7 @@ export class MembersService {
     }
 
     const data: Prisma.FamilyMemberCreateInput = {
-      user: { connect: { id: userId } },
+      family: { connect: { id: familyId } },
       name: dto.name,
       relationship: dto.relationship,
       gender: dto.gender,
@@ -156,12 +156,12 @@ export class MembersService {
     };
   }
 
-  async update(id: string, userId: string, dto: UpdateMemberDto) {
-    // 验证成员存在且属于当前用户
+  async update(id: string, familyId: string, dto: UpdateMemberDto) {
+    // 验证成员存在且属于当前家庭
     const existingMember = await this.prisma.familyMember.findFirst({
       where: {
         id,
-        userId,
+        familyId,
         deletedAt: null,
       },
     });
@@ -174,7 +174,7 @@ export class MembersService {
     if (dto.relationship === 'SELF' && existingMember.relationship !== 'SELF') {
       const existingSelf = await this.prisma.familyMember.findFirst({
         where: {
-          userId,
+          familyId,
           relationship: 'SELF',
           deletedAt: null,
           id: { not: id },
@@ -228,12 +228,12 @@ export class MembersService {
     };
   }
 
-  async remove(id: string, userId: string) {
-    // 验证成员存在且属于当前用户
+  async remove(id: string, familyId: string) {
+    // 验证成员存在且属于当前家庭
     const existingMember = await this.prisma.familyMember.findFirst({
       where: {
         id,
-        userId,
+        familyId,
         deletedAt: null,
       },
     });
@@ -251,11 +251,11 @@ export class MembersService {
     return { message: '删除成功' };
   }
 
-  async validateOwnership(memberId: string, userId: string): Promise<boolean> {
+  async validateOwnership(memberId: string, familyId: string): Promise<boolean> {
     const member = await this.prisma.familyMember.findFirst({
       where: {
         id: memberId,
-        userId,
+        familyId,
         deletedAt: null,
       },
     });
@@ -267,25 +267,25 @@ export class MembersService {
     return true;
   }
 
-  async getStats(userId: string) {
+  async getStats(familyId: string) {
     const [memberCount, documentCount, recordCount, adviceCount] = await Promise.all([
       this.prisma.familyMember.count({
-        where: { userId, deletedAt: null },
+        where: { familyId, deletedAt: null },
       }),
       this.prisma.document.count({
         where: {
-          member: { userId, deletedAt: null },
+          member: { familyId, deletedAt: null },
           deletedAt: null,
         },
       }),
       this.prisma.healthRecord.count({
         where: {
-          member: { userId, deletedAt: null },
+          member: { familyId, deletedAt: null },
         },
       }),
       this.prisma.healthAdvice.count({
         where: {
-          member: { userId, deletedAt: null },
+          member: { familyId, deletedAt: null },
         },
       }),
     ]);

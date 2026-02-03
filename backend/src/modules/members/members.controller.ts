@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   ParseUUIDPipe,
+  ForbiddenException,
 } from '@nestjs/common';
 import { MembersService } from './members.service';
 import { CreateMemberDto, UpdateMemberDto } from './dto';
@@ -17,14 +18,23 @@ import type { CurrentUserData } from '../auth/decorators';
 export class MembersController {
   constructor(private readonly membersService: MembersService) {}
 
+  private requireFamily(user: CurrentUserData): string {
+    if (!user.familyId) {
+      throw new ForbiddenException('请先创建或加入一个家庭');
+    }
+    return user.familyId;
+  }
+
   @Get()
   async findAll(@CurrentUser() user: CurrentUserData) {
-    return this.membersService.findAll(user.id);
+    const familyId = this.requireFamily(user);
+    return this.membersService.findAll(familyId);
   }
 
   @Get('stats')
   async getStats(@CurrentUser() user: CurrentUserData) {
-    return this.membersService.getStats(user.id);
+    const familyId = this.requireFamily(user);
+    return this.membersService.getStats(familyId);
   }
 
   @Get(':id')
@@ -32,7 +42,8 @@ export class MembersController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: CurrentUserData,
   ) {
-    return this.membersService.findOne(id, user.id);
+    const familyId = this.requireFamily(user);
+    return this.membersService.findOne(id, familyId);
   }
 
   @Post()
@@ -40,7 +51,8 @@ export class MembersController {
     @CurrentUser() user: CurrentUserData,
     @Body() dto: CreateMemberDto,
   ) {
-    return this.membersService.create(user.id, dto);
+    const familyId = this.requireFamily(user);
+    return this.membersService.create(familyId, dto);
   }
 
   @Patch(':id')
@@ -49,7 +61,8 @@ export class MembersController {
     @CurrentUser() user: CurrentUserData,
     @Body() dto: UpdateMemberDto,
   ) {
-    return this.membersService.update(id, user.id, dto);
+    const familyId = this.requireFamily(user);
+    return this.membersService.update(id, familyId, dto);
   }
 
   @Delete(':id')
@@ -57,6 +70,7 @@ export class MembersController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: CurrentUserData,
   ) {
-    return this.membersService.remove(id, user.id);
+    const familyId = this.requireFamily(user);
+    return this.membersService.remove(id, familyId);
   }
 }
