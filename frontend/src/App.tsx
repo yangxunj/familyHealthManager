@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Spin } from 'antd';
 import MainLayout from './components/Layout/MainLayout';
 import Login from './pages/Auth/Login';
 import { AuthCallback } from './components/auth/AuthCallback';
@@ -14,10 +15,22 @@ import FamilyPage from './pages/Family';
 import { useAuthStore } from './store';
 
 function RequireFamily({ children }: { children: React.ReactNode }) {
-  const { hasFamily, isInitialized } = useAuthStore();
+  const { hasFamily, isInitialized, isFamilyLoaded } = useAuthStore();
   const location = useLocation();
 
-  if (isInitialized && !hasFamily && location.pathname !== '/family') {
+  console.log('[RequireFamily] render - isInitialized:', isInitialized, 'isFamilyLoaded:', isFamilyLoaded, 'hasFamily:', hasFamily, 'path:', location.pathname);
+
+  // 家庭数据尚未加载完成，显示加载状态，阻止子组件渲染和 API 调用
+  if (isInitialized && !isFamilyLoaded) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  if (isInitialized && isFamilyLoaded && !hasFamily && location.pathname !== '/family') {
+    console.log('[RequireFamily] >>> REDIRECTING to /family');
     return <Navigate to="/family" replace />;
   }
   return <>{children}</>;

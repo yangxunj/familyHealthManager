@@ -35,7 +35,7 @@ const MainLayout: React.FC = () => {
   const [whitelistModalOpen, setWhitelistModalOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, signOut, hasFamily } = useAuthStore();
+  const { user, signOut, hasFamily, isFamilyLoaded } = useAuthStore();
   const { isDark, toggleTheme } = useThemeStore();
   const screens = useBreakpoint();
   const isMobile = !screens.md; // < 768px
@@ -169,7 +169,7 @@ const MainLayout: React.FC = () => {
   };
 
   // 根据是否有家庭过滤菜单项
-  const visibleMenuItems = hasFamily
+  const visibleMenuItems = (hasFamily || !isFamilyLoaded)
     ? menuItems
     : menuItems.filter(item => item?.key === '/family');
 
@@ -205,7 +205,7 @@ const MainLayout: React.FC = () => {
       <Menu
         mode="inline"
         selectedKeys={getSelectedKeys()}
-        defaultOpenKeys={hasFamily ? ['ai'] : []}
+        defaultOpenKeys={(hasFamily || !isFamilyLoaded) ? ['ai'] : []}
         items={visibleMenuItems}
         onClick={handleMenuClick}
         style={{ borderRight: 0 }}
