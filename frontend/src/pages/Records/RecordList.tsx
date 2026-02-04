@@ -11,6 +11,8 @@ import {
   DatePicker,
   Row,
   Col,
+  Grid,
+  List,
 } from 'antd';
 import {
   PlusOutlined,
@@ -26,10 +28,13 @@ import { RecordTypeLabels, MeasurementContextLabels } from '../../types';
 import dayjs from 'dayjs';
 
 const { RangePicker } = DatePicker;
+const { useBreakpoint } = Grid;
 
 const RecordList: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
   const queryClient = useQueryClient();
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -161,7 +166,7 @@ const RecordList: React.FC = () => {
       </div>
 
       <Card style={{ marginBottom: 16 }}>
-        <Row gutter={16}>
+        <Row gutter={[16, 12]}>
           <Col xs={24} sm={8}>
             <Select
               placeholder="选择家庭成员"
@@ -215,18 +220,96 @@ const RecordList: React.FC = () => {
         </Row>
       </Card>
 
-      <Card>
-        <Table
-          columns={columns}
-          dataSource={records}
-          rowKey="id"
-          loading={isLoading}
-          pagination={{
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total) => `共 ${total} 条`,
-          }}
-        />
+      <Card bodyStyle={isMobile ? { padding: 0 } : undefined}>
+        {isMobile ? (
+          <List
+            dataSource={records}
+            loading={isLoading}
+            pagination={{
+              pageSize: 10,
+              showTotal: (total) => `共 ${total} 条`,
+            }}
+            renderItem={(record: HealthRecord) => (
+              <List.Item style={{ padding: '12px 16px', borderBottom: '1px solid #f0f0f0' }}>
+                <div style={{ width: '100%' }}>
+                  <div style={{ marginBottom: 6 }}>
+                    <Space wrap>
+                      <span style={{ fontWeight: 500 }}>{record.recordTypeLabel}</span>
+                      {record.isAbnormal && (
+                        <Tag color="red" icon={<WarningOutlined />}>
+                          异常
+                        </Tag>
+                      )}
+                    </Space>
+                  </div>
+                  <div style={{ marginBottom: 4 }}>
+                    <span
+                      style={{
+                        fontSize: 18,
+                        fontWeight: 600,
+                        color: record.isAbnormal ? '#ff4d4f' : '#1890ff',
+                      }}
+                    >
+                      {record.value} {record.unit}
+                    </span>
+                    {record.referenceRange && (
+                      <span style={{ fontSize: 12, color: '#999', marginLeft: 8 }}>
+                        参考: {record.referenceRange.min} - {record.referenceRange.max}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 13, color: '#666', marginBottom: 8 }}>
+                    <Space split={<span style={{ color: '#d9d9d9' }}>|</span>} wrap>
+                      <span>{record.member?.name}</span>
+                      <span>{dayjs(record.recordDate).format('YYYY-MM-DD HH:mm')}</span>
+                      <span>
+                        {MeasurementContextLabels[
+                          record.context as keyof typeof MeasurementContextLabels
+                        ] || record.context}
+                      </span>
+                    </Space>
+                  </div>
+                  <Space>
+                    <Button
+                      type="link"
+                      size="small"
+                      icon={<LineChartOutlined />}
+                      onClick={() =>
+                        navigate(
+                          `/records/trend?memberId=${record.memberId}&recordType=${record.recordType}`,
+                        )
+                      }
+                      style={{ paddingLeft: 0 }}
+                    >
+                      趋势
+                    </Button>
+                    <Button
+                      type="link"
+                      size="small"
+                      danger
+                      icon={<DeleteOutlined />}
+                      onClick={() => setDeleteId(record.id)}
+                    >
+                      删除
+                    </Button>
+                  </Space>
+                </div>
+              </List.Item>
+            )}
+          />
+        ) : (
+          <Table
+            columns={columns}
+            dataSource={records}
+            rowKey="id"
+            loading={isLoading}
+            pagination={{
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total) => `共 ${total} 条`,
+            }}
+          />
+        )}
       </Card>
 
       <Modal

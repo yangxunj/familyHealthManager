@@ -190,6 +190,8 @@ familyHealthManager/
 
 ## Git提交规则
 
+**提交时机**: 每次完成代码改动后，必须立即进行 git commit，不要积累多次改动再提交。
+
 **Commit格式**:
 
 ```bash

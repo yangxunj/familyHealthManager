@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Menu, Avatar, Dropdown, theme, message } from 'antd';
+import { Layout, Menu, Avatar, Dropdown, Drawer, Grid, theme, message } from 'antd';
 import type { MenuProps } from 'antd';
 import {
   HomeOutlined,
@@ -16,20 +16,25 @@ import {
   MenuUnfoldOutlined,
   SafetyOutlined,
   UsergroupAddOutlined,
+  MenuOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '../../store';
 import { whitelistApi } from '../../api/whitelist';
 import { WhitelistManager } from '../WhitelistManager';
 
 const { Header, Sider, Content } = Layout;
+const { useBreakpoint } = Grid;
 
 const MainLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [whitelistModalOpen, setWhitelistModalOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, signOut } = useAuthStore();
+  const screens = useBreakpoint();
+  const isMobile = !screens.md; // < 768px
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
@@ -47,6 +52,11 @@ const MainLayout: React.FC = () => {
     };
     checkAdmin();
   }, []);
+
+  // 路由变化时关闭移动端抽屉
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [location.pathname]);
 
   // 侧边栏菜单
   const menuItems: MenuProps['items'] = [
@@ -154,51 +164,76 @@ const MainLayout: React.FC = () => {
     return ['/dashboard'];
   };
 
-  return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Sider
-        trigger={null}
-        collapsible
-        collapsed={collapsed}
-        theme="light"
+  // 菜单内容（桌面端和移动端共用）
+  const siderContent = (
+    <>
+      <div
         style={{
-          borderRight: '1px solid #f0f0f0',
+          height: 64,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderBottom: '1px solid #f0f0f0',
         }}
       >
-        <div
+        <h1
           style={{
-            height: 64,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderBottom: '1px solid #f0f0f0',
+            margin: 0,
+            fontSize: !isMobile && collapsed ? 16 : 18,
+            fontWeight: 600,
+            color: '#1890ff',
+            whiteSpace: 'nowrap',
           }}
         >
-          <h1
-            style={{
-              margin: 0,
-              fontSize: collapsed ? 16 : 18,
-              fontWeight: 600,
-              color: '#1890ff',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {collapsed ? '健康' : '家庭健康管理'}
-          </h1>
-        </div>
-        <Menu
-          mode="inline"
-          selectedKeys={getSelectedKeys()}
-          defaultOpenKeys={['ai']}
-          items={menuItems}
-          onClick={handleMenuClick}
-          style={{ borderRight: 0 }}
-        />
-      </Sider>
+          {!isMobile && collapsed ? '健康' : '家庭健康管理'}
+        </h1>
+      </div>
+      <Menu
+        mode="inline"
+        selectedKeys={getSelectedKeys()}
+        defaultOpenKeys={['ai']}
+        items={menuItems}
+        onClick={handleMenuClick}
+        style={{ borderRight: 0 }}
+      />
+    </>
+  );
+
+  return (
+    <Layout style={{ minHeight: '100vh' }}>
+      {/* 桌面端侧边栏 */}
+      {!isMobile && (
+        <Sider
+          trigger={null}
+          collapsible
+          collapsed={collapsed}
+          theme="light"
+          style={{
+            borderRight: '1px solid #f0f0f0',
+          }}
+        >
+          {siderContent}
+        </Sider>
+      )}
+
+      {/* 移动端抽屉菜单 */}
+      {isMobile && (
+        <Drawer
+          placement="left"
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          width={250}
+          styles={{ body: { padding: 0 } }}
+          closable={false}
+        >
+          {siderContent}
+        </Drawer>
+      )}
+
       <Layout>
         <Header
           style={{
-            padding: '0 24px',
+            padding: isMobile ? '0 12px' : '0 24px',
             background: colorBgContainer,
             display: 'flex',
             alignItems: 'center',
@@ -207,25 +242,31 @@ const MainLayout: React.FC = () => {
           }}
         >
           <div
-            onClick={() => setCollapsed(!collapsed)}
+            onClick={() => (isMobile ? setDrawerOpen(true) : setCollapsed(!collapsed))}
             style={{ cursor: 'pointer', fontSize: 18 }}
           >
-            {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+            {isMobile ? (
+              <MenuOutlined />
+            ) : collapsed ? (
+              <MenuUnfoldOutlined />
+            ) : (
+              <MenuFoldOutlined />
+            )}
           </div>
           <Dropdown
             menu={{ items: userMenuItems, onClick: handleUserMenuClick }}
             placement="bottomRight"
           >
             <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Avatar icon={<UserOutlined />} />
-              <span>{user?.name || '用户'}</span>
+              <Avatar icon={<UserOutlined />} size={isMobile ? 'small' : 'default'} />
+              {!isMobile && <span>{user?.name || '用户'}</span>}
             </div>
           </Dropdown>
         </Header>
         <Content
           style={{
-            margin: 24,
-            padding: 24,
+            margin: isMobile ? 12 : 24,
+            padding: isMobile ? 12 : 24,
             background: colorBgContainer,
             borderRadius: borderRadiusLG,
             minHeight: 280,

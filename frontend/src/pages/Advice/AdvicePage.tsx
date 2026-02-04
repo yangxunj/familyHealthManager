@@ -12,6 +12,7 @@ import {
   Collapse,
   Alert,
   Divider,
+  Modal,
   Row,
   Col,
   message,
@@ -23,6 +24,9 @@ import {
   InfoCircleOutlined,
   HistoryOutlined,
   ReloadOutlined,
+  CheckCircleOutlined,
+  FileTextOutlined,
+  DatabaseOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adviceApi, membersApi } from '../../api';
@@ -51,6 +55,13 @@ const AdvicePage: React.FC = () => {
     enabled: showHistory || !!selectedMemberId,
   });
 
+  // 检查是否有新的健康数据
+  const { data: newDataCheck } = useQuery({
+    queryKey: ['advice-check', selectedMemberId],
+    queryFn: () => adviceApi.checkNewData(selectedMemberId!),
+    enabled: !!selectedMemberId,
+  });
+
   // 当建议列表加载完成且当前没有选中建议时，自动展示最新的一条
   useEffect(() => {
     if (adviceList && adviceList.length > 0 && !selectedAdvice) {
@@ -64,6 +75,7 @@ const AdvicePage: React.FC = () => {
       message.success('健康建议生成成功');
       setSelectedAdvice(data);
       queryClient.invalidateQueries({ queryKey: ['advice'] });
+      queryClient.invalidateQueries({ queryKey: ['advice-check', selectedMemberId] });
     },
     onError: (error: unknown) => {
       const err = error as { response?: { data?: { message?: string } } };
@@ -273,20 +285,10 @@ const AdvicePage: React.FC = () => {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
-        <h2 style={{ margin: 0 }}>
-          <RobotOutlined style={{ marginRight: 8 }} />
-          AI 健康建议
-        </h2>
-        <Space>
-          <Button
-            icon={<HistoryOutlined />}
-            onClick={() => setShowHistory(!showHistory)}
-          >
-            {showHistory ? '隐藏历史' : '查看历史'}
-          </Button>
-        </Space>
-      </div>
+      <h2 style={{ marginBottom: 24 }}>
+        <RobotOutlined style={{ marginRight: 8 }} />
+        AI 健康建议
+      </h2>
 
       <Alert
         message="免责声明"
@@ -314,16 +316,55 @@ const AdvicePage: React.FC = () => {
               </Select.Option>
             ))}
           </Select>
-          <Button
-            type="primary"
-            icon={<ReloadOutlined />}
-            onClick={handleGenerate}
-            loading={generateMutation.isPending}
-            disabled={!selectedMemberId}
-          >
-            生成健康建议
-          </Button>
+          {selectedMemberId && newDataCheck?.hasNewData && (
+            <Button
+              type="primary"
+              icon={<ReloadOutlined />}
+              onClick={handleGenerate}
+              loading={generateMutation.isPending}
+            >
+              {newDataCheck.lastAdviceDate ? '重新生成建议' : '生成健康建议'}
+            </Button>
+          )}
+          {selectedMemberId && (
+            <Button
+              icon={<HistoryOutlined />}
+              onClick={() => setShowHistory(true)}
+            >
+              历史建议
+            </Button>
+          )}
         </Space>
+
+        {selectedMemberId && newDataCheck && (
+          <div style={{ marginTop: 12 }}>
+            {newDataCheck.hasNewData ? (
+              <Alert
+                type="info"
+                showIcon
+                message={
+                  newDataCheck.lastAdviceDate
+                    ? `自上次建议（${dayjs(newDataCheck.lastAdviceDate).format('YYYY-MM-DD')}）以来，有新的健康数据：${[
+                        newDataCheck.newDocuments > 0 ? `${newDataCheck.newDocuments} 份文档` : '',
+                        newDataCheck.newRecords > 0 ? `${newDataCheck.newRecords} 条记录` : '',
+                      ].filter(Boolean).join('、')}，建议重新生成健康建议。`
+                    : `检测到 ${[
+                        newDataCheck.newDocuments > 0 ? `${newDataCheck.newDocuments} 份文档` : '',
+                        newDataCheck.newRecords > 0 ? `${newDataCheck.newRecords} 条记录` : '',
+                      ].filter(Boolean).join('、')}，可以生成健康建议。`
+                }
+                icon={newDataCheck.lastAdviceDate ? <DatabaseOutlined /> : <FileTextOutlined />}
+              />
+            ) : newDataCheck.lastAdviceDate ? (
+              <Alert
+                type="success"
+                showIcon
+                icon={<CheckCircleOutlined />}
+                message={`当前建议基于最新数据（生成于 ${dayjs(newDataCheck.lastAdviceDate).format('YYYY-MM-DD')}），暂无新的健康数据需要更新。`}
+              />
+            ) : null}
+          </div>
+        )}
       </Card>
 
       {generateMutation.isPending && (
@@ -341,73 +382,75 @@ const AdvicePage: React.FC = () => {
         renderAdviceReport(selectedAdvice)
       )}
 
-      {!generateMutation.isPending && showHistory && (
-        <Card title="历史建议" style={{ marginTop: selectedAdvice ? 16 : 0 }}>
-          {isLoadingHistory ? (
-            <div style={{ textAlign: 'center', padding: 50 }}>
-              <Spin />
-            </div>
-          ) : adviceList && adviceList.length > 0 ? (
-            <List
-              itemLayout="horizontal"
-              dataSource={adviceList}
-              renderItem={(item) => (
-                <List.Item
-                  actions={[
-                    <Button
-                      key="view"
-                      type="link"
-                      onClick={() => {
-                        setSelectedAdvice(item);
-                        setShowHistory(false);
-                      }}
-                    >
-                      查看详情
-                    </Button>,
-                  ]}
-                >
-                  <List.Item.Meta
-                    avatar={
-                      <Progress
-                        type="circle"
-                        percent={item.healthScore || 0}
-                        size={50}
-                        strokeColor={
-                          (item.healthScore || 0) >= 80
-                            ? '#52c41a'
-                            : (item.healthScore || 0) >= 60
-                              ? '#faad14'
-                              : '#ff4d4f'
-                        }
-                      />
-                    }
-                    title={
-                      <Space>
-                        <span>{item.member.name}</span>
-                        <Tag>{dayjs(item.generatedAt).format('YYYY-MM-DD')}</Tag>
-                      </Space>
-                    }
-                    description={item.summary?.substring(0, 100) + '...'}
-                  />
-                </List.Item>
-              )}
-            />
-          ) : (
-            <Empty description="暂无历史建议" />
-          )}
+      {!generateMutation.isPending && !selectedAdvice && (
+        <Card>
+          <Empty
+            description="请选择家庭成员并点击生成按钮获取 AI 健康建议"
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+          />
         </Card>
       )}
 
-      {!generateMutation.isPending &&
-        !selectedAdvice &&
-        !showHistory && (
-          <Card>
-            <Empty
-              description="请选择家庭成员并点击生成按钮获取 AI 健康建议"
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-            />
-          </Card>
+      <Modal
+        title={`${members?.find((m) => m.id === selectedMemberId)?.name || ''}的历史健康建议`}
+        open={showHistory}
+        onCancel={() => setShowHistory(false)}
+        footer={null}
+        width={700}
+      >
+        {isLoadingHistory ? (
+          <div style={{ textAlign: 'center', padding: 50 }}>
+            <Spin />
+          </div>
+        ) : adviceList && adviceList.length > 0 ? (
+          <List
+            itemLayout="horizontal"
+            dataSource={adviceList}
+            renderItem={(item) => (
+              <List.Item
+                actions={[
+                  <Button
+                    key="view"
+                    type="link"
+                    onClick={() => {
+                      setSelectedAdvice(item);
+                      setShowHistory(false);
+                    }}
+                  >
+                    查看详情
+                  </Button>,
+                ]}
+              >
+                <List.Item.Meta
+                  avatar={
+                    <Progress
+                      type="circle"
+                      percent={item.healthScore || 0}
+                      size={50}
+                      strokeColor={
+                        (item.healthScore || 0) >= 80
+                          ? '#52c41a'
+                          : (item.healthScore || 0) >= 60
+                            ? '#faad14'
+                            : '#ff4d4f'
+                      }
+                    />
+                  }
+                  title={
+                    <Space>
+                      <Tag>{dayjs(item.generatedAt).format('YYYY-MM-DD HH:mm')}</Tag>
+                      <span>健康评分 {item.healthScore}</span>
+                    </Space>
+                  }
+                  description={item.summary?.substring(0, 100) + '...'}
+                />
+              </List.Item>
+            )}
+          />
+        ) : (
+          <Empty description="暂无历史建议" />
         )}
+      </Modal>
     </div>
   );
 };

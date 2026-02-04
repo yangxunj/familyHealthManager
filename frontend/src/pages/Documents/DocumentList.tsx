@@ -11,6 +11,8 @@ import {
   DatePicker,
   Row,
   Col,
+  Grid,
+  List,
 } from 'antd';
 import {
   PlusOutlined,
@@ -26,10 +28,13 @@ import { DocumentTypeLabels, DocumentTypeColors } from '../../types';
 import dayjs from 'dayjs';
 
 const { RangePicker } = DatePicker;
+const { useBreakpoint } = Grid;
 
 const DocumentList: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
   const queryClient = useQueryClient();
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -151,7 +156,7 @@ const DocumentList: React.FC = () => {
       </div>
 
       <Card style={{ marginBottom: 16 }}>
-        <Row gutter={16}>
+        <Row gutter={[16, 12]}>
           <Col xs={24} sm={8}>
             <Select
               placeholder="选择家庭成员"
@@ -205,18 +210,76 @@ const DocumentList: React.FC = () => {
         </Row>
       </Card>
 
-      <Card>
-        <Table
-          columns={columns}
-          dataSource={documents}
-          rowKey="id"
-          loading={isLoading}
-          pagination={{
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total) => `共 ${total} 条`,
-          }}
-        />
+      <Card bodyStyle={isMobile ? { padding: 0 } : undefined}>
+        {isMobile ? (
+          <List
+            dataSource={documents}
+            loading={isLoading}
+            pagination={{
+              pageSize: 10,
+              showTotal: (total) => `共 ${total} 条`,
+            }}
+            renderItem={(doc: HealthDocument) => (
+              <List.Item style={{ padding: '12px 16px', borderBottom: '1px solid #f0f0f0' }}>
+                <div style={{ width: '100%' }}>
+                  <div style={{ marginBottom: 8 }}>
+                    <Space wrap>
+                      <FileTextOutlined />
+                      <span style={{ fontWeight: 500 }}>{doc.name}</span>
+                      <Tag color={DocumentTypeColors[doc.type]}>
+                        {DocumentTypeLabels[doc.type]}
+                      </Tag>
+                    </Space>
+                  </div>
+                  <div style={{ fontSize: 13, color: '#666', marginBottom: 4 }}>
+                    <Space split={<span style={{ color: '#d9d9d9' }}>|</span>}>
+                      <span>{doc.member?.name}</span>
+                      <span>{dayjs(doc.checkDate).format('YYYY-MM-DD')}</span>
+                    </Space>
+                  </div>
+                  <div style={{ fontSize: 13, color: '#666', marginBottom: 8 }}>
+                    <Space split={<span style={{ color: '#d9d9d9' }}>|</span>}>
+                      <span>{doc.institution || '-'}</span>
+                      <span>{doc.files?.length || 0} 个文件</span>
+                    </Space>
+                  </div>
+                  <Space>
+                    <Button
+                      type="link"
+                      size="small"
+                      icon={<EyeOutlined />}
+                      onClick={() => navigate(`/documents/${doc.id}`)}
+                      style={{ paddingLeft: 0 }}
+                    >
+                      查看
+                    </Button>
+                    <Button
+                      type="link"
+                      size="small"
+                      danger
+                      icon={<DeleteOutlined />}
+                      onClick={() => setDeleteId(doc.id)}
+                    >
+                      删除
+                    </Button>
+                  </Space>
+                </div>
+              </List.Item>
+            )}
+          />
+        ) : (
+          <Table
+            columns={columns}
+            dataSource={documents}
+            rowKey="id"
+            loading={isLoading}
+            pagination={{
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total) => `共 ${total} 条`,
+            }}
+          />
+        )}
       </Card>
 
       <Modal

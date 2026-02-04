@@ -44,6 +44,13 @@ export interface QueryAdviceParams {
   memberId?: string;
 }
 
+export interface NewDataCheckResult {
+  hasNewData: boolean;
+  newDocuments: number;
+  newRecords: number;
+  lastAdviceDate: string | null;
+}
+
 // 关注级别标签和颜色
 export const ConcernLevelConfig: Record<
   ConcernLevel,

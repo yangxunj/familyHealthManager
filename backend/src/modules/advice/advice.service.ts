@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
 import { GenerateAdviceDto, QueryAdviceDto } from './dto';
@@ -150,6 +151,63 @@ export class AdviceService {
       })),
       documentSummary,
       documentContent,
+    };
+  }
+
+  // 检查是否有新的健康数据
+  async checkNewData(familyId: string, memberId: string) {
+    await this.validateMemberOwnership(memberId, familyId);
+
+    // 获取最近一条建议的生成时间
+    const latestAdvice = await this.prisma.healthAdvice.findFirst({
+      where: { memberId },
+      orderBy: { generatedAt: 'desc' },
+      select: { generatedAt: true },
+    });
+
+    const lastAdviceDate = latestAdvice?.generatedAt || null;
+
+    if (!lastAdviceDate) {
+      // 从未生成过建议，检查是否有任何数据可用
+      const [docCount, recordCount] = await Promise.all([
+        this.prisma.document.count({
+          where: { memberId, deletedAt: null, parsedData: { not: Prisma.JsonNull } },
+        }),
+        this.prisma.healthRecord.count({
+          where: { memberId },
+        }),
+      ]);
+      return {
+        hasNewData: docCount > 0 || recordCount > 0,
+        newDocuments: docCount,
+        newRecords: recordCount,
+        lastAdviceDate: null,
+      };
+    }
+
+    // 检查在最近建议之后是否有新数据
+    const [newDocCount, newRecordCount] = await Promise.all([
+      this.prisma.document.count({
+        where: {
+          memberId,
+          deletedAt: null,
+          updatedAt: { gt: lastAdviceDate },
+          parsedData: { not: Prisma.JsonNull },
+        },
+      }),
+      this.prisma.healthRecord.count({
+        where: {
+          memberId,
+          createdAt: { gt: lastAdviceDate },
+        },
+      }),
+    ]);
+
+    return {
+      hasNewData: newDocCount > 0 || newRecordCount > 0,
+      newDocuments: newDocCount,
+      newRecords: newRecordCount,
+      lastAdviceDate: lastAdviceDate.toISOString(),
     };
   }
 

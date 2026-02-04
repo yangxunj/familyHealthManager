@@ -78,3 +78,38 @@ body {
   padding-left: 20px;
   margin: 6px 0;
 }
+
+/* 移动端响应式 */
+@media (max-width: 767px) {
+  /* Ant Design 表格在移动端可滚动 */
+  .ant-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 移动端按钮间距调整 */
+  .ant-space-item .ant-btn {
+    min-height: 36px;
+  }
+
+  /* 移动端模态框全宽 */
+  .ant-modal {
+    max-width: calc(100vw - 32px) !important;
+    margin: 16px auto !important;
+  }
+
+  /* 移动端 Card 内边距 */
+  .ant-card-body {
+    padding: 12px !important;
+  }
+
+  /* 移动端 Descriptions 标签 */
+  .ant-descriptions-item-label {
+    white-space: nowrap;
+  }
+
+  /* 移动端页面标题 */
+  h2 {
+    font-size: 18px !important;
+  }
+}

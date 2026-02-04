@@ -3,9 +3,15 @@ import type {
   HealthAdvice,
   GenerateAdviceRequest,
   QueryAdviceParams,
+  NewDataCheckResult,
 } from '../types';
 
 export const adviceApi = {
+  // 检查是否有新的健康数据
+  checkNewData: async (memberId: string): Promise<NewDataCheckResult> => {
+    return apiClient.get(`/advice/check/${memberId}`);
+  },
+
   // 生成健康建议
   generate: async (data: GenerateAdviceRequest): Promise<HealthAdvice> => {
     return apiClient.post('/advice/generate', data);

@@ -25,6 +25,16 @@ export class AdviceController {
     return user.familyId;
   }
 
+  // 检查是否有新的健康数据
+  @Get('check/:memberId')
+  checkNewData(
+    @CurrentUser() user: CurrentUserData,
+    @Param('memberId', ParseUUIDPipe) memberId: string,
+  ) {
+    const familyId = this.requireFamily(user);
+    return this.adviceService.checkNewData(familyId, memberId);
+  }
+
   // 生成健康建议
   @Post('generate')
   @Throttle({ short: { limit: 10, ttl: 60000 } }) // AI 生成限流：10次/分钟
