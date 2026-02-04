@@ -9,8 +9,8 @@ import { promisify } from 'util';
 
 const execFileAsync = promisify(execFile);
 
-// DashScope API 响应类型
-interface DashScopeMessage {
+// Chat 消息类型（OpenAI 兼容格式）
+interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
 }
@@ -55,28 +55,6 @@ export interface ParsedHealthData {
   rawText: string;
 }
 
-interface DashScopeChoice {
-  message: {
-    role: string;
-    content: string;
-  };
-  finish_reason: string;
-}
-
-interface DashScopeUsage {
-  input_tokens: number;
-  output_tokens: number;
-  total_tokens: number;
-}
-
-interface DashScopeResponse {
-  output: {
-    choices: DashScopeChoice[];
-  };
-  usage: DashScopeUsage;
-  request_id: string;
-}
-
 export interface AiCompletionResult {
   content: string;
   tokensUsed: number;
@@ -94,16 +72,33 @@ export type AiStreamCallback = (chunk: AiStreamChunk) => void;
 @Injectable()
 export class AiService implements OnModuleInit {
   private readonly logger = new Logger(AiService.name);
-  private readonly apiKey: string;
-  private readonly baseUrl = 'https://dashscope.aliyuncs.com/compatible-mode/v1';
-  private readonly defaultModel = 'qwen-plus';
+
+  // DashScope 配置（仅 OCR 使用）
+  private readonly dashscopeApiKey: string;
+  private readonly dashscopeBaseUrl = 'https://dashscope.aliyuncs.com/compatible-mode/v1';
   private readonly ocrModel = 'qwen-vl-ocr';
   private openaiClient: OpenAI | null = null;
 
+  // Google Gemini 配置（chat/advice/analyze 使用）
+  private readonly googleApiKey: string;
+  private readonly googleBaseUrl: string;
+  private readonly geminiModel: string;
+
   constructor(private configService: ConfigService) {
-    this.apiKey = this.configService.get<string>('DASHSCOPE_API_KEY') || '';
-    if (!this.apiKey) {
-      this.logger.warn('DASHSCOPE_API_KEY is not configured');
+    // DashScope（OCR）
+    this.dashscopeApiKey = this.configService.get<string>('DASHSCOPE_API_KEY') || '';
+    if (!this.dashscopeApiKey) {
+      this.logger.warn('DASHSCOPE_API_KEY is not configured (OCR will be unavailable)');
+    }
+
+    // Google Gemini（chat/advice/analyze）
+    this.googleApiKey = this.configService.get<string>('GOOGLE_API_KEY') || '';
+    this.googleBaseUrl = this.configService.get<string>('GOOGLE_API_BASE')
+      || 'https://generativelanguage.googleapis.com/v1beta/openai';
+    this.geminiModel = this.configService.get<string>('GEMINI_MODEL')
+      || 'google/gemini-3-flash-preview';
+    if (!this.googleApiKey) {
+      this.logger.warn('GOOGLE_API_KEY is not configured (chat/advice will be unavailable)');
     }
   }
 
@@ -111,17 +106,17 @@ export class AiService implements OnModuleInit {
     this.initOpenAIClient();
   }
 
-  // 初始化 OpenAI 客户端（用于 OCR）
+  // 初始化 OpenAI 客户端（用于 OCR，连接 DashScope）
   private initOpenAIClient(): boolean {
-    if (!this.apiKey) {
-      this.logger.warn('无法初始化 OpenAI 客户端：API Key 未配置');
+    if (!this.dashscopeApiKey) {
+      this.logger.warn('无法初始化 OCR 客户端：DASHSCOPE_API_KEY 未配置');
       return false;
     }
 
     try {
       this.openaiClient = new OpenAI({
-        apiKey: this.apiKey,
-        baseURL: this.baseUrl,
+        apiKey: this.dashscopeApiKey,
+        baseURL: this.dashscopeBaseUrl,
       });
       this.logger.log('OpenAI 客户端初始化成功');
       return true;
@@ -132,32 +127,32 @@ export class AiService implements OnModuleInit {
     }
   }
 
-  // 检查 API Key 是否配置
+  // 检查 AI 服务是否可用（Google Gemini）
   isConfigured(): boolean {
-    return !!this.apiKey;
+    return !!this.googleApiKey;
   }
 
-  // 调用通义千问 API
+  // 调用 Google Gemini API（OpenAI 兼容端点）
   async chat(
-    messages: DashScopeMessage[],
+    messages: ChatMessage[],
     options?: {
       model?: string;
       temperature?: number;
       maxTokens?: number;
     },
   ): Promise<AiCompletionResult> {
-    if (!this.apiKey) {
-      throw new Error('DASHSCOPE_API_KEY is not configured');
+    if (!this.googleApiKey) {
+      throw new Error('GOOGLE_API_KEY is not configured');
     }
 
-    const model = options?.model || this.defaultModel;
+    const model = options?.model || this.geminiModel;
 
     try {
-      const response = await fetch(`${this.baseUrl}/chat/completions`, {
+      const response = await fetch(`${this.googleBaseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.apiKey}`,
+          Authorization: `Bearer ${this.googleApiKey}`,
         },
         body: JSON.stringify({
           model,
@@ -169,20 +164,14 @@ export class AiService implements OnModuleInit {
 
       if (!response.ok) {
         const errorText = await response.text();
-        this.logger.error(`DashScope API error: ${response.status} - ${errorText}`);
+        this.logger.error(`Gemini API error: ${response.status} - ${errorText}`);
         throw new Error(`AI service error: ${response.status}`);
       }
 
       const data = await response.json();
-      this.logger.log(`DashScope 响应 keys: ${Object.keys(data).join(', ')}`);
 
-      // 兼容 DashScope 原生格式和 OpenAI 兼容格式
-      const content =
-        data.output?.choices?.[0]?.message?.content ||
-        data.choices?.[0]?.message?.content ||
-        '';
-      const tokensUsed =
-        data.usage?.total_tokens || 0;
+      const content = data.choices?.[0]?.message?.content || '';
+      const tokensUsed = data.usage?.total_tokens || 0;
 
       return {
         content,
@@ -190,14 +179,14 @@ export class AiService implements OnModuleInit {
         model,
       };
     } catch (error) {
-      this.logger.error('Failed to call DashScope API', error);
+      this.logger.error('Failed to call Gemini API', error);
       throw error;
     }
   }
 
-  // 流式调用通义千问 API
+  // 流式调用 Google Gemini API（OpenAI 兼容端点）
   async chatStream(
-    messages: DashScopeMessage[],
+    messages: ChatMessage[],
     onChunk: AiStreamCallback,
     options?: {
       model?: string;
@@ -205,18 +194,18 @@ export class AiService implements OnModuleInit {
       maxTokens?: number;
     },
   ): Promise<void> {
-    if (!this.apiKey) {
-      throw new Error('DASHSCOPE_API_KEY is not configured');
+    if (!this.googleApiKey) {
+      throw new Error('GOOGLE_API_KEY is not configured');
     }
 
-    const model = options?.model || this.defaultModel;
+    const model = options?.model || this.geminiModel;
 
     try {
-      const response = await fetch(`${this.baseUrl}/chat/completions`, {
+      const response = await fetch(`${this.googleBaseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.apiKey}`,
+          Authorization: `Bearer ${this.googleApiKey}`,
         },
         body: JSON.stringify({
           model,
@@ -229,7 +218,7 @@ export class AiService implements OnModuleInit {
 
       if (!response.ok) {
         const errorText = await response.text();
-        this.logger.error(`DashScope API error: ${response.status} - ${errorText}`);
+        this.logger.error(`Gemini API error: ${response.status} - ${errorText}`);
         throw new Error(`AI service error: ${response.status}`);
       }
 
@@ -280,7 +269,7 @@ export class AiService implements OnModuleInit {
       // 确保发送结束信号
       onChunk({ content: '', done: true, tokensUsed: totalTokens });
     } catch (error) {
-      this.logger.error('Failed to call DashScope streaming API', error);
+      this.logger.error('Failed to call Gemini streaming API', error);
       throw error;
     }
   }
