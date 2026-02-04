@@ -20,6 +20,7 @@ import {
   HeartOutlined,
   SunOutlined,
   MoonOutlined,
+  BulbOutlined,
 } from '@ant-design/icons';
 import { useAuthStore, useThemeStore } from '../../store';
 import { whitelistApi } from '../../api/whitelist';
@@ -91,6 +92,7 @@ const MainLayout: React.FC = () => {
       children: [
         {
           key: '/advice',
+          icon: <BulbOutlined />,
           label: '健康建议',
         },
         {
