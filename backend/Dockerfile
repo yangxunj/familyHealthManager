@@ -38,14 +38,14 @@ RUN npm install -g pnpm
 # 复制 package.json 和 lock 文件
 COPY package.json pnpm-lock.yaml ./
 
-# 只安装生产依赖
-RUN pnpm install --prod --frozen-lockfile
+# 安装生产依赖（包含 prisma，用于运行 migrate deploy）
+RUN pnpm install --frozen-lockfile --prod
 
 # 从构建阶段复制构建产物
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
-# 复制 Prisma schema（用于运行时）
+# 复制 Prisma schema 和迁移文件（用于 migrate deploy）
 COPY prisma ./prisma
 
 # 创建上传目录
@@ -58,5 +58,5 @@ ENV PORT=5002
 # 暴露端口
 EXPOSE 5002
 
-# 启动命令
-CMD ["node", "dist/main.js"]
+# 启动命令：先执行数据库迁移，再启动应用
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
