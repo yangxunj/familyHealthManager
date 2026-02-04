@@ -41,7 +41,7 @@ export const documentsApi = {
     onComplete: () => void,
   ): (() => void) => {
     const token = useAuthStore.getState().getAccessToken();
-    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5002/api/v1';
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
     const url = `${baseUrl}/documents/${id}/ocr`;
     const controller = new AbortController();
 
