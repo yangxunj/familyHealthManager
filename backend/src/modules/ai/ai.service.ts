@@ -96,7 +96,7 @@ export class AiService implements OnModuleInit {
     this.googleBaseUrl = this.configService.get<string>('GOOGLE_API_BASE')
       || 'https://generativelanguage.googleapis.com/v1beta/openai';
     this.geminiModel = this.configService.get<string>('GEMINI_MODEL')
-      || 'google/gemini-3-flash-preview';
+      || 'gemini-3-flash-preview';
     if (!this.googleApiKey) {
       this.logger.warn('GOOGLE_API_KEY is not configured (chat/advice will be unavailable)');
     }
