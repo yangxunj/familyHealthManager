@@ -19,6 +19,9 @@ build/
 *.swp
 *.swo
 
+# Claude Code
+.mcp.json
+
 # OS
 .DS_Store
 Thumbs.db
