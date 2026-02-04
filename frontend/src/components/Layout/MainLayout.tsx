@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Menu, Avatar, Dropdown, Drawer, Grid, theme, message } from 'antd';
+import { Layout, Menu, Avatar, Dropdown, Drawer, Grid, theme, message, Tooltip } from 'antd';
 import type { MenuProps } from 'antd';
 import {
   HomeOutlined,
@@ -17,8 +17,11 @@ import {
   SafetyOutlined,
   UsergroupAddOutlined,
   MenuOutlined,
+  HeartOutlined,
+  SunOutlined,
+  MoonOutlined,
 } from '@ant-design/icons';
-import { useAuthStore } from '../../store';
+import { useAuthStore, useThemeStore } from '../../store';
 import { whitelistApi } from '../../api/whitelist';
 import { WhitelistManager } from '../WhitelistManager';
 
@@ -32,11 +35,12 @@ const MainLayout: React.FC = () => {
   const [whitelistModalOpen, setWhitelistModalOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, signOut } = useAuthStore();
+  const { user, signOut, hasFamily } = useAuthStore();
+  const { isDark, toggleTheme } = useThemeStore();
   const screens = useBreakpoint();
   const isMobile = !screens.md; // < 768px
   const {
-    token: { colorBgContainer, borderRadiusLG },
+    token: { colorBgContainer },
   } = theme.useToken();
 
   // 检查是否是管理员
@@ -164,35 +168,45 @@ const MainLayout: React.FC = () => {
     return ['/dashboard'];
   };
 
+  // 根据是否有家庭过滤菜单项
+  const visibleMenuItems = hasFamily
+    ? menuItems
+    : menuItems.filter(item => item?.key === '/family');
+
   // 菜单内容（桌面端和移动端共用）
   const siderContent = (
     <>
       <div
         style={{
-          height: 64,
+          height: 72,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          borderBottom: '1px solid #f0f0f0',
+          padding: '20px 0',
+          borderBottom: '1px solid var(--color-border)',
         }}
       >
         <h1
           style={{
             margin: 0,
-            fontSize: !isMobile && collapsed ? 16 : 18,
-            fontWeight: 600,
-            color: '#1890ff',
+            fontSize: !isMobile && collapsed ? 18 : 20,
+            fontWeight: 700,
+            color: '#136dec',
             whiteSpace: 'nowrap',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
           }}
         >
-          {!isMobile && collapsed ? '健康' : '家庭健康管理'}
+          <HeartOutlined />
+          {!isMobile && collapsed ? '' : '家庭健康管理'}
         </h1>
       </div>
       <Menu
         mode="inline"
         selectedKeys={getSelectedKeys()}
-        defaultOpenKeys={['ai']}
-        items={menuItems}
+        defaultOpenKeys={hasFamily ? ['ai'] : []}
+        items={visibleMenuItems}
         onClick={handleMenuClick}
         style={{ borderRight: 0 }}
       />
@@ -209,7 +223,8 @@ const MainLayout: React.FC = () => {
           collapsed={collapsed}
           theme="light"
           style={{
-            borderRight: '1px solid #f0f0f0',
+            borderRight: '1px solid var(--color-border)',
+            background: 'var(--color-bg-elevated)',
           }}
         >
           {siderContent}
@@ -238,7 +253,8 @@ const MainLayout: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderBottom: '1px solid #f0f0f0',
+            boxShadow: '0 1px 4px var(--color-shadow)',
+            zIndex: 1,
           }}
         >
           <div
@@ -253,24 +269,56 @@ const MainLayout: React.FC = () => {
               <MenuFoldOutlined />
             )}
           </div>
-          <Dropdown
-            menu={{ items: userMenuItems, onClick: handleUserMenuClick }}
-            placement="bottomRight"
-          >
-            <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Avatar icon={<UserOutlined />} size={isMobile ? 'small' : 'default'} />
-              {!isMobile && <span>{user?.user_metadata?.full_name || user?.email || '用户'}</span>}
-            </div>
-          </Dropdown>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Tooltip title={isDark ? '切换亮色模式' : '切换暗色模式'}>
+              <div
+                onClick={toggleTheme}
+                style={{
+                  cursor: 'pointer',
+                  fontSize: 18,
+                  padding: '4px 8px',
+                  borderRadius: 8,
+                  transition: 'background 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+              >
+                {isDark ? <SunOutlined /> : <MoonOutlined />}
+              </div>
+            </Tooltip>
+            <Dropdown
+              menu={{ items: userMenuItems, onClick: handleUserMenuClick }}
+              placement="bottomRight"
+            >
+              <div style={{
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '4px 12px',
+                borderRadius: 8,
+                transition: 'background 0.2s',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+              >
+                <Avatar icon={<UserOutlined />} size={isMobile ? 'small' : 'default'} />
+                {!isMobile && <span>{user?.user_metadata?.full_name || user?.email || '用户'}</span>}
+              </div>
+            </Dropdown>
+          </div>
         </Header>
         <Content
           style={{
             margin: isMobile ? 12 : 24,
-            padding: isMobile ? 12 : 24,
+            padding: isMobile ? 12 : 28,
             background: colorBgContainer,
-            borderRadius: borderRadiusLG,
+            borderRadius: 16,
             minHeight: 280,
             overflow: 'auto',
+            boxShadow: '0 1px 4px var(--color-shadow-light)',
           }}
         >
           <Outlet />

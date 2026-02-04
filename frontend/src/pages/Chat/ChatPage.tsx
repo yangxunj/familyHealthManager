@@ -213,7 +213,7 @@ const ChatPage: React.FC = () => {
               width: isMobile ? 30 : 36,
               height: isMobile ? 30 : 36,
               borderRadius: '50%',
-              backgroundColor: isUser ? '#1890ff' : '#52c41a',
+              backgroundColor: isUser ? '#136dec' : '#13ec5b',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -227,12 +227,12 @@ const ChatPage: React.FC = () => {
           </div>
           <div
             style={{
-              backgroundColor: isUser ? '#1890ff' : '#f5f5f5',
-              color: isUser ? '#fff' : '#333',
+              backgroundColor: isUser ? '#136dec' : 'var(--color-bg-chat-ai)',
+              color: isUser ? '#fff' : 'var(--color-text-primary)',
               padding: isMobile ? '8px 12px' : '10px 14px',
-              borderRadius: 12,
-              borderTopLeftRadius: isUser ? 12 : 4,
-              borderTopRightRadius: isUser ? 4 : 12,
+              borderRadius: 16,
+              borderTopLeftRadius: isUser ? 16 : 4,
+              borderTopRightRadius: isUser ? 4 : 16,
               whiteSpace: 'pre-wrap',
               wordBreak: 'break-word',
               fontSize: isMobile ? 14 : undefined,
@@ -270,7 +270,7 @@ const ChatPage: React.FC = () => {
               width: isMobile ? 30 : 36,
               height: isMobile ? 30 : 36,
               borderRadius: '50%',
-              backgroundColor: '#52c41a',
+              backgroundColor: '#13ec5b',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -284,9 +284,9 @@ const ChatPage: React.FC = () => {
           </div>
           <div
             style={{
-              backgroundColor: '#f5f5f5',
-              color: '#333',
-              padding: isMobile ? '8px 12px' : '10px 14px',
+              backgroundColor: 'var(--color-bg-chat-ai)',
+              color: 'var(--color-text-primary)',
+              padding: isMobile ? '8px 12px' : '12px 16px',
               borderRadius: 12,
               borderTopLeftRadius: 4,
               whiteSpace: 'pre-wrap',
@@ -332,7 +332,7 @@ const ChatPage: React.FC = () => {
                   borderRadius: 8,
                   marginBottom: 8,
                   backgroundColor:
-                    selectedSessionId === session.id ? '#e6f4ff' : 'transparent',
+                    selectedSessionId === session.id ? 'var(--color-chat-selected)' : 'transparent',
                 }}
                 onClick={() => setSelectedSessionId(session.id)}
                 actions={[
@@ -357,7 +357,7 @@ const ChatPage: React.FC = () => {
               >
                 <List.Item.Meta
                   avatar={
-                    <MessageOutlined style={{ fontSize: 20, color: '#1890ff' }} />
+                    <MessageOutlined style={{ fontSize: 20, color: '#136dec' }} />
                   }
                   title={
                     <Text ellipsis style={{ maxWidth: isMobile ? 200 : 150 }}>
@@ -420,11 +420,11 @@ const ChatPage: React.FC = () => {
           <div
             style={{
               padding: '12px 16px',
-              borderBottom: '1px solid #f0f0f0',
+              borderBottom: '1px solid var(--color-border)',
               display: 'flex',
               alignItems: 'center',
               gap: 12,
-              background: '#fff',
+              background: 'var(--color-bg-container)',
               flexShrink: 0,
             }}
           >
@@ -498,8 +498,8 @@ const ChatPage: React.FC = () => {
         <div
           style={{
             padding: isMobile ? '10px 12px' : '16px 24px',
-            borderTop: '1px solid #f0f0f0',
-            background: '#fafafa',
+            borderTop: '1px solid var(--color-border)',
+            background: 'var(--color-bg-elevated)',
             flexShrink: 0,
           }}
         >
@@ -543,7 +543,7 @@ const ChatPage: React.FC = () => {
             height: 'calc(100vh - 100px)',
             display: 'flex',
             flexDirection: 'column',
-            background: '#fff',
+            background: 'var(--color-bg-container)',
             margin: -12,
           }}
         >
@@ -589,13 +589,13 @@ const ChatPage: React.FC = () => {
 
   // ========== 桌面端布局 ==========
   return (
-    <Layout style={{ height: 'calc(100vh - 180px)', background: '#fff' }}>
+    <Layout style={{ height: 'calc(100vh - 180px)', background: 'var(--color-bg-container)' }}>
       {/* 会话列表侧边栏 */}
       <Sider
         width={280}
         style={{
-          background: '#fafafa',
-          borderRight: '1px solid #f0f0f0',
+          background: 'var(--color-bg-elevated)',
+          borderRight: '1px solid var(--color-border)',
           padding: 16,
           display: 'flex',
           flexDirection: 'column',

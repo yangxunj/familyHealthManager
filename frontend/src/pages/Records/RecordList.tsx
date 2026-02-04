@@ -230,7 +230,7 @@ const RecordList: React.FC = () => {
               showTotal: (total) => `共 ${total} 条`,
             }}
             renderItem={(record: HealthRecord) => (
-              <List.Item style={{ padding: '12px 16px', borderBottom: '1px solid #f0f0f0' }}>
+              <List.Item style={{ padding: '12px 16px', borderBottom: '1px solid var(--color-border)' }}>
                 <div style={{ width: '100%' }}>
                   <div style={{ marginBottom: 6 }}>
                     <Space wrap>
@@ -247,19 +247,19 @@ const RecordList: React.FC = () => {
                       style={{
                         fontSize: 18,
                         fontWeight: 600,
-                        color: record.isAbnormal ? '#ff4d4f' : '#1890ff',
+                        color: record.isAbnormal ? '#ff4d4f' : '#136dec',
                       }}
                     >
                       {record.value} {record.unit}
                     </span>
                     {record.referenceRange && (
-                      <span style={{ fontSize: 12, color: '#999', marginLeft: 8 }}>
+                      <span style={{ fontSize: 12, color: 'var(--color-text-quaternary)', marginLeft: 8 }}>
                         参考: {record.referenceRange.min} - {record.referenceRange.max}
                       </span>
                     )}
                   </div>
-                  <div style={{ fontSize: 13, color: '#666', marginBottom: 8 }}>
-                    <Space split={<span style={{ color: '#d9d9d9' }}>|</span>} wrap>
+                  <div style={{ fontSize: 13, color: 'var(--color-text-tertiary)', marginBottom: 8 }}>
+                    <Space split={<span style={{ color: 'var(--color-border-secondary)' }}>|</span>} wrap>
                       <span>{record.member?.name}</span>
                       <span>{dayjs(record.recordDate).format('YYYY-MM-DD HH:mm')}</span>
                       <span>

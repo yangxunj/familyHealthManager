@@ -107,7 +107,7 @@ export const WhitelistManager: React.FC<WhitelistManagerProps> = ({
       key: 'email',
       render: (email: string) => (
         <Space>
-          <MailOutlined style={{ color: '#1890ff' }} />
+          <MailOutlined style={{ color: '#136dec' }} />
           <Text strong>{email}</Text>
         </Space>
       ),
@@ -119,7 +119,7 @@ export const WhitelistManager: React.FC<WhitelistManagerProps> = ({
       width: 200,
       render: (addedBy: string | null) => (
         <Space>
-          <UserOutlined style={{ color: '#999' }} />
+          <UserOutlined style={{ color: 'var(--color-text-quaternary)' }} />
           <Text type="secondary">{addedBy || '系统'}</Text>
         </Space>
       ),
@@ -131,7 +131,7 @@ export const WhitelistManager: React.FC<WhitelistManagerProps> = ({
       width: 180,
       render: (createdAt: string) => (
         <Space>
-          <ClockCircleOutlined style={{ color: '#999' }} />
+          <ClockCircleOutlined style={{ color: 'var(--color-text-quaternary)' }} />
           <Text type="secondary">
             {dayjs(createdAt).format('YYYY-MM-DD HH:mm')}
           </Text>
@@ -213,7 +213,7 @@ export const WhitelistManager: React.FC<WhitelistManagerProps> = ({
       />
 
       <div
-        style={{ marginTop: 16, textAlign: 'center', color: '#999', fontSize: 12 }}
+        style={{ marginTop: 16, textAlign: 'center', color: 'var(--color-text-quaternary)', fontSize: 12 }}
       >
         共 {emails.length} 个邮箱
       </div>

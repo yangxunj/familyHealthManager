@@ -96,15 +96,15 @@ const AdvicePage: React.FC = () => {
     if (score === null) return null;
 
     let status: 'success' | 'normal' | 'exception' = 'normal';
-    let color = '#1890ff';
+    let color = '#136dec';
     let text = '一般';
 
     if (score >= 90) {
       status = 'success';
-      color = '#52c41a';
+      color = '#13ec5b';
       text = '优秀';
     } else if (score >= 80) {
-      color = '#52c41a';
+      color = '#13ec5b';
       text = '良好';
     } else if (score >= 70) {
       color = '#faad14';
@@ -128,7 +128,7 @@ const AdvicePage: React.FC = () => {
           format={(percent) => (
             <div>
               <div style={{ fontSize: 32, fontWeight: 'bold' }}>{percent}</div>
-              <div style={{ fontSize: 14, color: '#999' }}>{text}</div>
+              <div style={{ fontSize: 14, color: 'var(--color-text-quaternary)' }}>{text}</div>
             </div>
           )}
         />
@@ -149,7 +149,7 @@ const AdvicePage: React.FC = () => {
         case 'warning':
           return <WarningOutlined style={{ color: '#faad14' }} />;
         default:
-          return <InfoCircleOutlined style={{ color: '#1890ff' }} />;
+          return <InfoCircleOutlined style={{ color: '#136dec' }} />;
       }
     };
 
@@ -221,7 +221,7 @@ const AdvicePage: React.FC = () => {
                     width: 24,
                     height: 24,
                     borderRadius: '50%',
-                    backgroundColor: '#f0f0f0',
+                    backgroundColor: 'var(--color-bg-hover)',
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontSize: 12,
@@ -371,7 +371,7 @@ const AdvicePage: React.FC = () => {
         <Card>
           <div style={{ textAlign: 'center', padding: 50 }}>
             <Spin size="large" />
-            <p style={{ marginTop: 16, color: '#666' }}>
+            <p style={{ marginTop: 16, color: 'var(--color-text-tertiary)' }}>
               AI 正在分析健康数据，请稍候...
             </p>
           </div>
@@ -429,7 +429,7 @@ const AdvicePage: React.FC = () => {
                       size={50}
                       strokeColor={
                         (item.healthScore || 0) >= 80
-                          ? '#52c41a'
+                          ? '#13ec5b'
                           : (item.healthScore || 0) >= 60
                             ? '#faad14'
                             : '#ff4d4f'

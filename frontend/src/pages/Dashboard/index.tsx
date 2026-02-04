@@ -50,61 +50,50 @@ const Dashboard: React.FC = () => {
         <>
           {/* 统计卡片 */}
           <Row gutter={[16, 16]}>
-            <Col xs={24} sm={12} lg={6}>
-              <Card hoverable onClick={() => navigate('/members')}>
-                <div style={{ textAlign: 'center' }}>
-                  <TeamOutlined style={{ fontSize: 32, color: '#1890ff' }} />
-                  <h3>家庭成员</h3>
-                  <p style={{ fontSize: 24, margin: 0, color: '#1890ff' }}>
-                    {stats?.memberCount || 0} <span style={{ fontSize: 14 }}>人</span>
-                  </p>
-                </div>
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} lg={6}>
-              <Card hoverable onClick={() => navigate('/documents')}>
-                <div style={{ textAlign: 'center' }}>
-                  <FileTextOutlined style={{ fontSize: 32, color: '#52c41a' }} />
-                  <h3>健康文档</h3>
-                  <p style={{ fontSize: 24, margin: 0, color: '#52c41a' }}>
-                    {stats?.documentCount || 0} <span style={{ fontSize: 14 }}>份</span>
-                  </p>
-                </div>
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} lg={6}>
-              <Card hoverable onClick={() => navigate('/records')}>
-                <div style={{ textAlign: 'center' }}>
-                  <LineChartOutlined style={{ fontSize: 32, color: '#faad14' }} />
-                  <h3>健康记录</h3>
-                  <p style={{ fontSize: 24, margin: 0, color: '#faad14' }}>
-                    {stats?.recordCount || 0} <span style={{ fontSize: 14 }}>条</span>
-                  </p>
-                </div>
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} lg={6}>
-              <Card hoverable onClick={() => navigate('/advice')}>
-                <div style={{ textAlign: 'center' }}>
-                  <BulbOutlined style={{ fontSize: 32, color: '#722ed1' }} />
-                  <h3>AI 建议</h3>
-                  <p style={{ fontSize: 24, margin: 0, color: '#722ed1' }}>
-                    {stats?.adviceCount || 0} <span style={{ fontSize: 14 }}>次</span>
-                  </p>
-                </div>
-              </Card>
-            </Col>
+            {[
+              { key: '/members', icon: <TeamOutlined />, color: '#136dec', bg: 'var(--color-bg-blue-light)', label: '家庭成员', value: stats?.memberCount || 0, unit: '人' },
+              { key: '/documents', icon: <FileTextOutlined />, color: '#13ec5b', bg: 'var(--color-bg-green-light)', label: '健康文档', value: stats?.documentCount || 0, unit: '份' },
+              { key: '/records', icon: <LineChartOutlined />, color: '#faad14', bg: 'var(--color-bg-yellow-light)', label: '健康记录', value: stats?.recordCount || 0, unit: '条' },
+              { key: '/advice', icon: <BulbOutlined />, color: '#722ed1', bg: 'var(--color-bg-purple-light)', label: 'AI 建议', value: stats?.adviceCount || 0, unit: '次' },
+            ].map((item) => (
+              <Col xs={24} sm={12} lg={6} key={item.key}>
+                <Card hoverable onClick={() => navigate(item.key)} style={{ padding: 4 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <div style={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: '50%',
+                      background: item.bg,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 24,
+                      color: item.color,
+                      flexShrink: 0,
+                    }}>
+                      {item.icon}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 4 }}>{item.label}</div>
+                      <div style={{ fontSize: 32, fontWeight: 700, color: item.color, lineHeight: 1 }}>
+                        {item.value} <span style={{ fontSize: 14, fontWeight: 400 }}>{item.unit}</span>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              </Col>
+            ))}
           </Row>
 
           {/* 新用户引导 */}
           {!hasSelfMember && (
             <Card
-              style={{ marginTop: 24, background: '#e6f7ff', border: '1px solid #91d5ff' }}
+              style={{ marginTop: 24, background: 'var(--color-bg-blue-light)', border: '1px solid var(--color-guide-border)', borderRadius: 16 }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
-                  <h3 style={{ margin: 0, color: '#1890ff' }}>开始使用</h3>
-                  <p style={{ margin: '8px 0 0', color: '#666' }}>
+                  <h3 style={{ margin: 0, color: '#136dec' }}>开始使用</h3>
+                  <p style={{ margin: '8px 0 0', color: 'var(--color-text-tertiary)' }}>
                     请先创建您的个人健康档案，以便开始管理您和家人的健康数据
                   </p>
                 </div>
@@ -158,7 +147,7 @@ const Dashboard: React.FC = () => {
                           icon={<UserOutlined />}
                           src={member.avatar}
                           style={{
-                            backgroundColor: member.gender === 'MALE' ? '#1890ff' : '#eb2f96',
+                            backgroundColor: member.gender === 'MALE' ? '#136dec' : '#eb2f96',
                           }}
                         />
                         <div style={{ flex: 1, minWidth: 0 }}>
@@ -174,7 +163,7 @@ const Dashboard: React.FC = () => {
                               {member.name}
                             </span>
                             {member.gender === 'MALE' ? (
-                              <ManOutlined style={{ color: '#1890ff', fontSize: 12 }} />
+                              <ManOutlined style={{ color: '#136dec', fontSize: 12 }} />
                             ) : (
                               <WomanOutlined style={{ color: '#eb2f96', fontSize: 12 }} />
                             )}
@@ -186,7 +175,7 @@ const Dashboard: React.FC = () => {
                             >
                               {RelationshipLabels[member.relationship]}
                             </Tag>
-                            <span style={{ fontSize: 12, color: '#999' }}>
+                            <span style={{ fontSize: 12, color: 'var(--color-text-quaternary)' }}>
                               {calculateAge(member.birthDate)}岁
                             </span>
                           </div>

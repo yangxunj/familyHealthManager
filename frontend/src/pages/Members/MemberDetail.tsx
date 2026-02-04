@@ -67,7 +67,7 @@ const MemberDetail: React.FC = () => {
                 <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   {member.name}
                   {member.gender === 'MALE' ? (
-                    <ManOutlined style={{ color: '#1890ff' }} />
+                    <ManOutlined style={{ color: '#136dec' }} />
                   ) : (
                     <WomanOutlined style={{ color: '#eb2f96' }} />
                   )}

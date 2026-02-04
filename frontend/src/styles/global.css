@@ -1,3 +1,58 @@
+/* ===== 主题 CSS 变量 ===== */
+:root {
+  --color-bg-page: #f6f7f8;
+  --color-bg-container: #ffffff;
+  --color-bg-elevated: #fafbfc;
+  --color-bg-hover: #f5f7fa;
+  --color-bg-chat-ai: #f5f7fa;
+  --color-text-primary: #0d141b;
+  --color-text-secondary: #4c739a;
+  --color-text-tertiary: #666666;
+  --color-text-quaternary: #999999;
+  --color-border: #e7edf3;
+  --color-border-secondary: #d9d9d9;
+  --color-bg-blue-light: #eef4ff;
+  --color-bg-green-light: #eafff0;
+  --color-bg-yellow-light: #fff8e6;
+  --color-bg-purple-light: #f3edff;
+  --color-guide-border: #c0d8ff;
+  --color-scrollbar: #cbd5e1;
+  --color-scrollbar-hover: #94a3b8;
+  --color-shadow: rgba(0, 0, 0, 0.04);
+  --color-shadow-light: rgba(0, 0, 0, 0.03);
+  --color-chat-selected: #e6f4ff;
+  --color-markdown-th-bg: #fafafa;
+  --color-markdown-tr-hover: #f5f5f5;
+  --color-markdown-border: #e8e8e8;
+}
+
+[data-theme='dark'] {
+  --color-bg-page: #0a0a0a;
+  --color-bg-container: #141414;
+  --color-bg-elevated: #1f1f1f;
+  --color-bg-hover: #2a2a2a;
+  --color-bg-chat-ai: #1f1f1f;
+  --color-text-primary: #e8e8e8;
+  --color-text-secondary: #8c8c8c;
+  --color-text-tertiary: #a0a0a0;
+  --color-text-quaternary: #707070;
+  --color-border: #303030;
+  --color-border-secondary: #404040;
+  --color-bg-blue-light: rgba(19, 109, 236, 0.15);
+  --color-bg-green-light: rgba(19, 236, 91, 0.15);
+  --color-bg-yellow-light: rgba(250, 173, 20, 0.15);
+  --color-bg-purple-light: rgba(114, 46, 209, 0.15);
+  --color-guide-border: rgba(19, 109, 236, 0.3);
+  --color-scrollbar: #555555;
+  --color-scrollbar-hover: #777777;
+  --color-shadow: rgba(0, 0, 0, 0.3);
+  --color-shadow-light: rgba(0, 0, 0, 0.2);
+  --color-chat-selected: rgba(19, 109, 236, 0.2);
+  --color-markdown-th-bg: #1f1f1f;
+  --color-markdown-tr-hover: #1a1a1a;
+  --color-markdown-border: #303030;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -8,12 +63,12 @@ html,
 body,
 #root {
   height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
 }
 
 body {
-  background-color: #f0f2f5;
+  background-color: var(--color-bg-page);
 }
 
 /* 滚动条样式 */
@@ -23,12 +78,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: #d9d9d9;
+  background-color: var(--color-scrollbar);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: #bfbfbf;
+  background-color: var(--color-scrollbar-hover);
 }
 
 ::-webkit-scrollbar-track {
@@ -44,18 +99,18 @@ body {
 
 .markdown-body th,
 .markdown-body td {
-  border: 1px solid #e8e8e8;
+  border: 1px solid var(--color-markdown-border);
   padding: 8px 12px;
   text-align: left;
 }
 
 .markdown-body th {
-  background-color: #fafafa;
+  background-color: var(--color-markdown-th-bg);
   font-weight: 600;
 }
 
 .markdown-body tr:hover {
-  background-color: #f5f5f5;
+  background-color: var(--color-markdown-tr-hover);
 }
 
 .markdown-body h1,
@@ -112,4 +167,14 @@ body {
   h2 {
     font-size: 18px !important;
   }
+}
+
+/* 卡片悬停效果增强 */
+.ant-card-hoverable {
+  transition: all 0.3s ease;
+}
+
+.ant-card-hoverable:hover {
+  box-shadow: 0 6px 20px rgba(19, 109, 236, 0.12) !important;
+  transform: translateY(-2px);
 }

@@ -117,17 +117,17 @@ const RecordTrend: React.FC = () => {
           symbolSize: 8,
           connectNulls: true,
           itemStyle: {
-            color: '#1890ff',
+            color: '#136dec',
           },
           lineStyle: {
-            color: '#1890ff',
+            color: '#136dec',
             width: 2,
           },
           markLine: trendData.referenceRange
             ? {
                 silent: true,
                 lineStyle: {
-                  color: '#52c41a',
+                  color: '#13ec5b',
                   type: 'dashed',
                 },
                 data: [
@@ -152,7 +152,7 @@ const RecordTrend: React.FC = () => {
             ? {
                 silent: true,
                 itemStyle: {
-                  color: 'rgba(82, 196, 26, 0.1)',
+                  color: 'rgba(19, 236, 91, 0.1)',
                 },
                 data: [
                   [
@@ -213,25 +213,25 @@ const RecordTrend: React.FC = () => {
       <Card style={{ marginTop: 16 }}>
         <Space size="large" wrap>
           <div>
-            <span style={{ color: '#999' }}>最高值：</span>
+            <span style={{ color: 'var(--color-text-quaternary)' }}>最高值：</span>
             <span style={{ fontWeight: 'bold' }}>
               {max.toFixed(2)} {trendData.unit}
             </span>
           </div>
           <div>
-            <span style={{ color: '#999' }}>最低值：</span>
+            <span style={{ color: 'var(--color-text-quaternary)' }}>最低值：</span>
             <span style={{ fontWeight: 'bold' }}>
               {min.toFixed(2)} {trendData.unit}
             </span>
           </div>
           <div>
-            <span style={{ color: '#999' }}>平均值：</span>
+            <span style={{ color: 'var(--color-text-quaternary)' }}>平均值：</span>
             <span style={{ fontWeight: 'bold' }}>
               {avg.toFixed(2)} {trendData.unit}
             </span>
           </div>
           <div>
-            <span style={{ color: '#999' }}>异常次数：</span>
+            <span style={{ color: 'var(--color-text-quaternary)' }}>异常次数：</span>
             <span style={{ fontWeight: 'bold', color: abnormalCount > 0 ? '#ff4d4f' : 'inherit' }}>
               {abnormalCount} 次
             </span>
@@ -242,7 +242,7 @@ const RecordTrend: React.FC = () => {
             )}
           </div>
           <div>
-            <span style={{ color: '#999' }}>记录数量：</span>
+            <span style={{ color: 'var(--color-text-quaternary)' }}>记录数量：</span>
             <span style={{ fontWeight: 'bold' }}>{trendData.data.length} 条</span>
           </div>
         </Space>

@@ -128,7 +128,7 @@ export default function FamilyPage() {
       <div style={{ padding: '24px' }}>
         <Card>
           <Empty
-            image={<TeamOutlined style={{ fontSize: 64, color: '#1890ff' }} />}
+            image={<TeamOutlined style={{ fontSize: 64, color: '#136dec' }} />}
             description={
               <Space direction="vertical" size="small">
                 <Title level={4} style={{ margin: 0 }}>

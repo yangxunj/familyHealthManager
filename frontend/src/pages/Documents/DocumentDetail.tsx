@@ -191,9 +191,9 @@ const DocumentDetail: React.FC = () => {
       return <FilePdfOutlined style={{ fontSize: 48, color: '#ff4d4f' }} />;
     }
     if (mimeType?.startsWith('image/')) {
-      return <FileImageOutlined style={{ fontSize: 48, color: '#1890ff' }} />;
+      return <FileImageOutlined style={{ fontSize: 48, color: '#136dec' }} />;
     }
-    return <FileTextOutlined style={{ fontSize: 48, color: '#666' }} />;
+    return <FileTextOutlined style={{ fontSize: 48, color: 'var(--color-text-tertiary)' }} />;
   };
 
   const isImage = (mimeType?: string) => mimeType?.startsWith('image/') ?? false;
@@ -300,7 +300,7 @@ const DocumentDetail: React.FC = () => {
                 '100%': '#87d068',
               }}
             />
-            <p style={{ marginTop: 8, marginBottom: 0, color: '#666' }}>
+            <p style={{ marginTop: 8, marginBottom: 0, color: 'var(--color-text-tertiary)' }}>
               {ocrMessage}
               {ocrTotal > 0 && ` (${ocrCurrent}/${ocrTotal})`}
             </p>
@@ -362,7 +362,7 @@ const DocumentDetail: React.FC = () => {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        background: '#f5f5f5',
+                        background: 'var(--color-bg-hover)',
                       }}
                     >
                       <img
@@ -382,7 +382,7 @@ const DocumentDetail: React.FC = () => {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        background: '#f5f5f5',
+                        background: 'var(--color-bg-hover)',
                       }}
                     >
                       {getFileIcon(file.mimeType)}
@@ -496,7 +496,7 @@ const DocumentDetail: React.FC = () => {
                 whiteSpace: 'pre-wrap',
                 fontFamily: 'monospace',
                 fontSize: 12,
-                background: '#f5f5f5',
+                background: 'var(--color-bg-hover)',
                 padding: 16,
                 borderRadius: 4,
               }}
@@ -573,7 +573,7 @@ const DocumentDetail: React.FC = () => {
                   disabled={compareFileIndex === 0}
                   onClick={() => setCompareFileIndex((i) => i - 1)}
                 />
-                <span style={{ fontSize: 13, color: '#666' }}>
+                <span style={{ fontSize: 13, color: 'var(--color-text-tertiary)' }}>
                   {compareFileIndex + 1} / {document.files.length}
                 </span>
                 <Button
@@ -599,7 +599,7 @@ const DocumentDetail: React.FC = () => {
             style={{
               flex: 1,
               overflow: 'auto',
-              borderRight: '1px solid #f0f0f0',
+              borderRight: '1px solid var(--color-border)',
               display: 'flex',
               flexDirection: 'column',
             }}
@@ -607,9 +607,9 @@ const DocumentDetail: React.FC = () => {
             <div
               style={{
                 padding: '8px 16px',
-                borderBottom: '1px solid #f0f0f0',
+                borderBottom: '1px solid var(--color-border)',
                 fontSize: 13,
-                color: '#666',
+                color: 'var(--color-text-tertiary)',
                 flexShrink: 0,
               }}
             >
@@ -645,7 +645,7 @@ const DocumentDetail: React.FC = () => {
                     alignItems: 'center',
                     justifyContent: 'center',
                     height: '100%',
-                    color: '#999',
+                    color: 'var(--color-text-quaternary)',
                   }}
                 >
                   该文件类型不支持预览
@@ -666,9 +666,9 @@ const DocumentDetail: React.FC = () => {
             <div
               style={{
                 padding: '8px 16px',
-                borderBottom: '1px solid #f0f0f0',
+                borderBottom: '1px solid var(--color-border)',
                 fontSize: 13,
-                color: '#666',
+                color: 'var(--color-text-tertiary)',
                 flexShrink: 0,
               }}
             >

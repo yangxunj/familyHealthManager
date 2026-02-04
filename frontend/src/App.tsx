@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import MainLayout from './components/Layout/MainLayout';
 import Login from './pages/Auth/Login';
 import { AuthCallback } from './components/auth/AuthCallback';
@@ -12,6 +12,16 @@ import { AdvicePage } from './pages/Advice';
 import { ChatPage } from './pages/Chat';
 import FamilyPage from './pages/Family';
 import { useAuthStore } from './store';
+
+function RequireFamily({ children }: { children: React.ReactNode }) {
+  const { hasFamily, isInitialized } = useAuthStore();
+  const location = useLocation();
+
+  if (isInitialized && !hasFamily && location.pathname !== '/family') {
+    return <Navigate to="/family" replace />;
+  }
+  return <>{children}</>;
+}
 
 function App() {
   const { initialize, isInitialized } = useAuthStore();
@@ -35,7 +45,9 @@ function App() {
           path="/"
           element={
             <ProtectedRoute>
-              <MainLayout />
+              <RequireFamily>
+                <MainLayout />
+              </RequireFamily>
             </ProtectedRoute>
           }
         >

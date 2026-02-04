@@ -220,7 +220,7 @@ const DocumentList: React.FC = () => {
               showTotal: (total) => `共 ${total} 条`,
             }}
             renderItem={(doc: HealthDocument) => (
-              <List.Item style={{ padding: '12px 16px', borderBottom: '1px solid #f0f0f0' }}>
+              <List.Item style={{ padding: '12px 16px', borderBottom: '1px solid var(--color-border)' }}>
                 <div style={{ width: '100%' }}>
                   <div style={{ marginBottom: 8 }}>
                     <Space wrap>
@@ -231,14 +231,14 @@ const DocumentList: React.FC = () => {
                       </Tag>
                     </Space>
                   </div>
-                  <div style={{ fontSize: 13, color: '#666', marginBottom: 4 }}>
-                    <Space split={<span style={{ color: '#d9d9d9' }}>|</span>}>
+                  <div style={{ fontSize: 13, color: 'var(--color-text-tertiary)', marginBottom: 4 }}>
+                    <Space split={<span style={{ color: 'var(--color-border-secondary)' }}>|</span>}>
                       <span>{doc.member?.name}</span>
                       <span>{dayjs(doc.checkDate).format('YYYY-MM-DD')}</span>
                     </Space>
                   </div>
-                  <div style={{ fontSize: 13, color: '#666', marginBottom: 8 }}>
-                    <Space split={<span style={{ color: '#d9d9d9' }}>|</span>}>
+                  <div style={{ fontSize: 13, color: 'var(--color-text-tertiary)', marginBottom: 8 }}>
+                    <Space split={<span style={{ color: 'var(--color-border-secondary)' }}>|</span>}>
                       <span>{doc.institution || '-'}</span>
                       <span>{doc.files?.length || 0} 个文件</span>
                     </Space>

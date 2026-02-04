@@ -58,7 +58,7 @@ const MemberList: React.FC = () => {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
-        <h2 style={{ margin: 0 }}>家庭成员</h2>
+        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>家庭成员</h2>
         <Button
           type="primary"
           icon={<PlusOutlined />}
@@ -107,11 +107,11 @@ const MemberList: React.FC = () => {
                 <Card.Meta
                   avatar={
                     <Avatar
-                      size={64}
+                      size={80}
                       icon={<UserOutlined />}
                       src={member.avatar}
                       style={{
-                        backgroundColor: member.gender === 'MALE' ? '#1890ff' : '#eb2f96',
+                        backgroundColor: member.gender === 'MALE' ? '#136dec' : '#eb2f96',
                       }}
                     />
                   }
@@ -119,7 +119,7 @@ const MemberList: React.FC = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span>{member.name}</span>
                       {member.gender === 'MALE' ? (
-                        <ManOutlined style={{ color: '#1890ff' }} />
+                        <ManOutlined style={{ color: '#136dec' }} />
                       ) : (
                         <WomanOutlined style={{ color: '#eb2f96' }} />
                       )}
@@ -130,11 +130,11 @@ const MemberList: React.FC = () => {
                       <Tag color={member.relationship === 'SELF' ? 'blue' : 'default'}>
                         {RelationshipLabels[member.relationship]}
                       </Tag>
-                      <div style={{ marginTop: 8, color: '#666' }}>
+                      <div style={{ marginTop: 8, color: 'var(--color-text-tertiary)' }}>
                         {calculateAge(member.birthDate)} 岁
                       </div>
                       {(member.documentCount || member.recordCount) && (
-                        <div style={{ marginTop: 4, fontSize: 12, color: '#999' }}>
+                        <div style={{ marginTop: 4, fontSize: 12, color: 'var(--color-text-quaternary)' }}>
                           {member.documentCount || 0} 份文档 · {member.recordCount || 0} 条记录
                         </div>
                       )}
