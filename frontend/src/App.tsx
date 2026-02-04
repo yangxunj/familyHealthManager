@@ -18,8 +18,6 @@ function RequireFamily({ children }: { children: React.ReactNode }) {
   const { hasFamily, isInitialized, isFamilyLoaded } = useAuthStore();
   const location = useLocation();
 
-  console.log('[RequireFamily] render - isInitialized:', isInitialized, 'isFamilyLoaded:', isFamilyLoaded, 'hasFamily:', hasFamily, 'path:', location.pathname);
-
   // 家庭数据尚未加载完成，显示加载状态，阻止子组件渲染和 API 调用
   if (isInitialized && !isFamilyLoaded) {
     return (
@@ -30,7 +28,6 @@ function RequireFamily({ children }: { children: React.ReactNode }) {
   }
 
   if (isInitialized && isFamilyLoaded && !hasFamily && location.pathname !== '/family') {
-    console.log('[RequireFamily] >>> REDIRECTING to /family');
     return <Navigate to="/family" replace />;
   }
   return <>{children}</>;
