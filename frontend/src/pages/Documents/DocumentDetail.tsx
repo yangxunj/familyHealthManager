@@ -241,11 +241,11 @@ const DocumentDetail: React.FC = () => {
 
   return (
     <div>
-      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between' }}>
+      <div style={{ marginBottom: 24, display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 8 }}>
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/documents')}>
           返回列表
         </Button>
-        <Space>
+        <Space wrap>
           {/* OCR 识别按钮 */}
           {isOcrRunning ? (
             <Button
