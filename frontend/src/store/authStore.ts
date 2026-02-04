@@ -76,12 +76,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           isAuthenticated: !!session,
         });
 
-        // Load family info on sign in
+        // Load family info on sign in, skip if already loaded (e.g. INITIAL_SESSION, TOKEN_REFRESHED)
         if (session) {
-          set({ isFamilyLoaded: false });
-          get().loadFamily();
+          if (!get().isFamilyLoaded) {
+            get().loadFamily();
+          }
         } else {
-          set({ family: null, hasFamily: false, isFamilyLoaded: true });
+          set({ family: null, hasFamily: false, isFamilyLoaded: false });
         }
       });
     } catch (error) {
