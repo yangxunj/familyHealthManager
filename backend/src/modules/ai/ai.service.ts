@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
+import { ProxyAgent, fetch as undiciFetch } from 'undici';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -83,6 +84,7 @@ export class AiService implements OnModuleInit {
   private readonly googleApiKey: string;
   private readonly googleBaseUrl: string;
   private readonly geminiModel: string;
+  private readonly proxyAgent: ProxyAgent | undefined;
 
   constructor(private configService: ConfigService) {
     // DashScope（OCR）
@@ -99,6 +101,13 @@ export class AiService implements OnModuleInit {
       || 'gemini-3-flash-preview';
     if (!this.googleApiKey) {
       this.logger.warn('GOOGLE_API_KEY is not configured (chat/advice will be unavailable)');
+    }
+
+    // HTTP 代理（用于访问 Google API）
+    const httpProxy = this.configService.get<string>('GEMINI_PROXY');
+    if (httpProxy) {
+      this.proxyAgent = new ProxyAgent(httpProxy);
+      this.logger.log(`Using HTTP proxy for Gemini API: ${httpProxy}`);
     }
   }
 
@@ -148,7 +157,9 @@ export class AiService implements OnModuleInit {
     const model = options?.model || this.geminiModel;
 
     try {
-      const response = await fetch(`${this.googleBaseUrl}/chat/completions`, {
+      this.logger.log(`Gemini chat: model=${model}, messages=${messages.length}, maxTokens=${options?.maxTokens ?? 2000}`);
+
+      const response = await undiciFetch(`${this.googleBaseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -160,7 +171,11 @@ export class AiService implements OnModuleInit {
           temperature: options?.temperature ?? 0.7,
           max_tokens: options?.maxTokens ?? 2000,
         }),
+        signal: AbortSignal.timeout(600_000), // 10 分钟超时（大文本 AI 规整可能较慢）
+        ...(this.proxyAgent ? { dispatcher: this.proxyAgent } : {}),
       });
+
+      this.logger.log(`Gemini chat response: status=${response.status}`);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -168,10 +183,12 @@ export class AiService implements OnModuleInit {
         throw new Error(`AI service error: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as any;
 
       const content = data.choices?.[0]?.message?.content || '';
       const tokensUsed = data.usage?.total_tokens || 0;
+
+      this.logger.log(`Gemini chat completed: contentLen=${content.length}, tokens=${tokensUsed}`);
 
       return {
         content,
@@ -179,7 +196,7 @@ export class AiService implements OnModuleInit {
         model,
       };
     } catch (error) {
-      this.logger.error('Failed to call Gemini API', error);
+      this.logger.error(`Failed to call Gemini API: ${(error as Error).message}`);
       throw error;
     }
   }
@@ -201,7 +218,9 @@ export class AiService implements OnModuleInit {
     const model = options?.model || this.geminiModel;
 
     try {
-      const response = await fetch(`${this.googleBaseUrl}/chat/completions`, {
+      this.logger.log(`Gemini stream: model=${model}, messages=${messages.length}`);
+
+      const response = await undiciFetch(`${this.googleBaseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -214,7 +233,11 @@ export class AiService implements OnModuleInit {
           max_tokens: options?.maxTokens ?? 2000,
           stream: true,
         }),
+        signal: AbortSignal.timeout(180_000), // 3 分钟超时（聊天对话）
+        ...(this.proxyAgent ? { dispatcher: this.proxyAgent } : {}),
       });
+
+      this.logger.log(`Gemini stream response: status=${response.status}`);
 
       if (!response.ok) {
         const errorText = await response.text();
