@@ -47,3 +47,6 @@ uploads/
 # Temp
 tmp/
 temp/
+
+# Database backups
+backups/
