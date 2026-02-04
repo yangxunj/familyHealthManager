@@ -15,6 +15,7 @@ export interface FileInfo {
 }
 
 export type OcrStatus = 'pending' | 'processing' | 'completed' | 'failed';
+export type AnalyzeStatus = 'processing' | 'completed' | 'failed';
 
 export interface HealthDocument {
   id: string;
@@ -28,6 +29,8 @@ export interface HealthDocument {
   ocrStatus?: OcrStatus | null;
   ocrProgress?: number | null;
   ocrError?: string | null;
+  analyzeStatus?: AnalyzeStatus | null;
+  analyzeError?: string | null;
   parsedData?: unknown;
   createdAt: string;
   updatedAt?: string;
@@ -136,9 +139,14 @@ export interface OcrErrorEvent {
 
 export type OcrSseEvent = OcrProgressEvent | OcrCompleteEvent | OcrErrorEvent;
 
-// AI 分析结果
-export interface AnalyzeDocumentResult {
-  document: HealthDocument;
-  parseResult: ParsedHealthData;
-  tokensUsed?: number;
+// AI 规整：触发结果
+export interface AnalyzeStartResult {
+  status: 'processing';
+}
+
+// AI 规整：状态查询结果
+export interface AnalyzeStatusResult {
+  status: AnalyzeStatus | null;
+  error: string | null;
+  parsedData: unknown;
 }

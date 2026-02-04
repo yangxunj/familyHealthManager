@@ -7,7 +7,8 @@ import type {
   FileInfo,
   DocumentParseResult,
   OcrSseEvent,
-  AnalyzeDocumentResult,
+  AnalyzeStartResult,
+  AnalyzeStatusResult,
 } from '../types';
 import { useAuthStore } from '../store/authStore';
 
@@ -111,14 +112,14 @@ export const documentsApi = {
     return apiClient.patch(`/documents/${id}/ocr`, { ocrText });
   },
 
-  // AI 分析 OCR 文本
-  analyzeDocument: async (id: string): Promise<AnalyzeDocumentResult> => {
-    return apiClient.post(`/documents/${id}/analyze`, {}, { timeout: 300000 });
+  // AI 规整：触发后台任务
+  analyzeDocument: async (id: string): Promise<AnalyzeStartResult> => {
+    return apiClient.post(`/documents/${id}/analyze`);
   },
 
-  // 旧的 parseDocument 方法（保留向后兼容，但不推荐使用）
-  parseDocument: async (id: string): Promise<DocumentParseResult> => {
-    return apiClient.post(`/documents/${id}/parse`, {}, { timeout: 300000 });
+  // AI 规整：查询状态
+  getAnalyzeStatus: async (id: string): Promise<AnalyzeStatusResult> => {
+    return apiClient.get(`/documents/${id}/analyze`);
   },
 };
 

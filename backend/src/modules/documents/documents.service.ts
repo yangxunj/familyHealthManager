@@ -2,6 +2,8 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
+  Logger,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { Observable, Subject } from 'rxjs';
@@ -15,6 +17,8 @@ import * as path from 'path';
 
 @Injectable()
 export class DocumentsService {
+  private readonly logger = new Logger(DocumentsService.name);
+
   constructor(
     private prisma: PrismaService,
     private membersService: MembersService,
@@ -97,6 +101,8 @@ export class DocumentsService {
         ocrStatus: true,
         ocrProgress: true,
         ocrError: true,
+        analyzeStatus: true,
+        analyzeError: true,
         parsedData: true,
         createdAt: true,
         updatedAt: true,
@@ -414,17 +420,13 @@ export class DocumentsService {
     return document;
   }
 
-  // AI 分析 OCR 文本
-  async analyzeDocument(id: string, familyId: string) {
-    // 验证文档存在且属于当前家庭
+  // AI 规整：触发后台任务（立即返回）
+  async startAnalyzeDocument(id: string, familyId: string) {
     const document = await this.prisma.document.findFirst({
       where: {
         id,
         deletedAt: null,
-        member: {
-          familyId,
-          deletedAt: null,
-        },
+        member: { familyId, deletedAt: null },
       },
     });
 
@@ -432,49 +434,85 @@ export class DocumentsService {
       throw new NotFoundException('文档不存在');
     }
 
-    // 检查是否有 OCR 文本
     if (!document.ocrText) {
       throw new BadRequestException('请先进行 OCR 识别');
     }
 
-    // 调用 AI 服务规整 OCR 文本
-    const result = await this.aiService.formatOcrText(document.ocrText);
-
-    if (!result.success) {
-      throw new BadRequestException(result.error || 'AI 规整失败');
+    if (document.analyzeStatus === 'processing') {
+      throw new ConflictException('AI 规整正在进行中，请稍候');
     }
 
-    // 更新文档的 parsedData 字段（存储 Markdown 格式）
-    const updatedDocument = await this.prisma.document.update({
+    // 标记为处理中
+    await this.prisma.document.update({
       where: { id },
-      data: {
-        parsedData: { type: 'markdown', content: result.markdown } as unknown as Prisma.JsonObject,
+      data: { analyzeStatus: 'processing', analyzeError: null },
+    });
+
+    // 启动后台任务（不 await）
+    this.performAnalyze(id, document.ocrText).catch((err) => {
+      this.logger.error(`performAnalyze unexpected error for doc ${id}`, err);
+    });
+
+    return { status: 'processing' };
+  }
+
+  // AI 规整：后台执行
+  private async performAnalyze(id: string, ocrText: string) {
+    try {
+      this.logger.log(`AI 规整开始: docId=${id}, textLen=${ocrText.length}`);
+      const result = await this.aiService.formatOcrText(ocrText);
+
+      if (!result.success) {
+        await this.prisma.document.update({
+          where: { id },
+          data: { analyzeStatus: 'failed', analyzeError: result.error || 'AI 规整失败' },
+        });
+        this.logger.warn(`AI 规整失败: docId=${id}, error=${result.error}`);
+        return;
+      }
+
+      await this.prisma.document.update({
+        where: { id },
+        data: {
+          parsedData: { type: 'markdown', content: result.markdown } as unknown as Prisma.JsonObject,
+          analyzeStatus: 'completed',
+          analyzeError: null,
+        },
+      });
+      this.logger.log(`AI 规整完成: docId=${id}, tokensUsed=${result.tokensUsed}`);
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      await this.prisma.document.update({
+        where: { id },
+        data: { analyzeStatus: 'failed', analyzeError: errMsg },
+      }).catch((e) => this.logger.error(`Failed to update analyze error status for doc ${id}`, e));
+      this.logger.error(`AI 规整异常: docId=${id}, error=${errMsg}`);
+    }
+  }
+
+  // AI 规整：查询状态
+  async getAnalyzeStatus(id: string, familyId: string) {
+    const document = await this.prisma.document.findFirst({
+      where: {
+        id,
+        deletedAt: null,
+        member: { familyId, deletedAt: null },
       },
       select: {
-        id: true,
-        type: true,
-        name: true,
-        checkDate: true,
-        institution: true,
-        files: true,
-        notes: true,
-        ocrText: true,
-        ocrStatus: true,
+        analyzeStatus: true,
+        analyzeError: true,
         parsedData: true,
-        createdAt: true,
-        updatedAt: true,
-        member: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
       },
     });
 
+    if (!document) {
+      throw new NotFoundException('文档不存在');
+    }
+
     return {
-      document: updatedDocument,
-      tokensUsed: result.tokensUsed,
+      status: document.analyzeStatus,
+      error: document.analyzeError,
+      parsedData: document.parsedData,
     };
   }
 }

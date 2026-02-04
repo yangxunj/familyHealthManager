@@ -96,13 +96,23 @@ export class DocumentsController {
     return this.documentsService.updateOcrText(id, familyId, dto.ocrText);
   }
 
-  // AI 分析 OCR 文本
+  // AI 规整：触发后台任务
   @Post(':id/analyze')
-  async analyzeDocument(
+  async startAnalyzeDocument(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: CurrentUserData,
   ) {
     const familyId = this.requireFamily(user);
-    return this.documentsService.analyzeDocument(id, familyId);
+    return this.documentsService.startAnalyzeDocument(id, familyId);
+  }
+
+  // AI 规整：查询状态
+  @Get(':id/analyze')
+  async getAnalyzeStatus(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: CurrentUserData,
+  ) {
+    const familyId = this.requireFamily(user);
+    return this.documentsService.getAnalyzeStatus(id, familyId);
   }
 }

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import {
   Card,
   Descriptions,
@@ -12,6 +12,7 @@ import {
   Space,
   Progress,
   Input,
+  Alert,
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -97,17 +98,62 @@ const DocumentDetail: React.FC = () => {
     },
   });
 
-  // AI 分析
-  const analyzeMutation = useMutation({
-    mutationFn: () => documentsApi.analyzeDocument(id!),
-    onSuccess: () => {
-      message.success('AI 分析完成');
-      queryClient.invalidateQueries({ queryKey: ['document', id] });
-    },
-    onError: (error: Error) => {
-      message.error(error.message || 'AI 分析失败');
-    },
-  });
+  // AI 规整：轮询状态
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const analyzeTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const stopAnalyzePolling = useCallback(() => {
+    if (analyzeTimerRef.current) {
+      clearInterval(analyzeTimerRef.current);
+      analyzeTimerRef.current = null;
+    }
+  }, []);
+
+  const pollAnalyzeStatus = useCallback(() => {
+    if (!id) return;
+    stopAnalyzePolling();
+    setIsAnalyzing(true);
+
+    analyzeTimerRef.current = setInterval(async () => {
+      try {
+        const result = await documentsApi.getAnalyzeStatus(id);
+        if (result.status === 'completed') {
+          stopAnalyzePolling();
+          setIsAnalyzing(false);
+          message.success('AI 规整完成');
+          queryClient.invalidateQueries({ queryKey: ['document', id] });
+        } else if (result.status === 'failed') {
+          stopAnalyzePolling();
+          setIsAnalyzing(false);
+          message.error(result.error || 'AI 规整失败');
+          queryClient.invalidateQueries({ queryKey: ['document', id] });
+        }
+      } catch {
+        stopAnalyzePolling();
+        setIsAnalyzing(false);
+        message.error('查询 AI 规整状态失败');
+      }
+    }, 3000);
+  }, [id, queryClient, stopAnalyzePolling]);
+
+  const handleStartAnalyze = useCallback(async () => {
+    if (!id) return;
+    try {
+      await documentsApi.analyzeDocument(id);
+      pollAnalyzeStatus();
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : 'AI 规整启动失败';
+      message.error(errMsg);
+    }
+  }, [id, pollAnalyzeStatus]);
+
+  // 页面加载时，如果 analyzeStatus 为 processing，自动恢复轮询
+  useEffect(() => {
+    if (document?.analyzeStatus === 'processing') {
+      pollAnalyzeStatus();
+    }
+    return () => stopAnalyzePolling();
+  }, [document?.analyzeStatus, pollAnalyzeStatus, stopAnalyzePolling]);
 
   // 开始 OCR 识别
   const handleStartOcr = useCallback(() => {
@@ -270,12 +316,12 @@ const DocumentDetail: React.FC = () => {
           <Button
             type="default"
             icon={<RobotOutlined />}
-            onClick={() => analyzeMutation.mutate()}
-            loading={analyzeMutation.isPending}
-            disabled={!hasOcrText || isOcrRunning}
+            onClick={handleStartAnalyze}
+            loading={isAnalyzing}
+            disabled={!hasOcrText || isOcrRunning || isAnalyzing}
             title={!hasOcrText ? '请先进行 OCR 识别' : ''}
           >
-            AI 规整
+            {isAnalyzing ? 'AI 规整中...' : 'AI 规整'}
           </Button>
 
           <Button
@@ -505,6 +551,18 @@ const DocumentDetail: React.FC = () => {
             </div>
           )}
         </Card>
+      )}
+
+      {/* AI 规整失败提示 */}
+      {document.analyzeStatus === 'failed' && document.analyzeError && (
+        <Alert
+          message="AI 规整失败"
+          description={document.analyzeError}
+          type="error"
+          showIcon
+          closable
+          style={{ marginBottom: 24 }}
+        />
       )}
 
       {/* AI 规整结果展示 */}

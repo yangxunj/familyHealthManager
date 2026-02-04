@@ -202,6 +202,10 @@ model Document {
   ocrProgress   Int?         @map("ocr_progress")  // OCR 进度百分比 0-100
   ocrError      String?      @map("ocr_error") @db.Text  // OCR 错误信息
 
+  // AI 规整状态
+  analyzeStatus String?      @map("analyze_status") @db.VarChar(20)  // processing, completed, failed
+  analyzeError  String?      @map("analyze_error") @db.Text  // AI 规整错误信息
+
   // AI解析结果（可选）
   parsedData    Json?        @map("parsed_data")  // AI解析提取的指标数据
 
