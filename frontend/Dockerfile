@@ -4,7 +4,7 @@ FROM node:20-slim AS builder
 WORKDIR /app
 
 # 安装 pnpm
-RUN npm install -g pnpm
+RUN npm install -g pnpm@8
 
 # 通过构建参数传入前端环境变量（Vite 在构建时注入）
 ARG VITE_API_BASE_URL=/api/v1

@@ -4,7 +4,7 @@ FROM node:20-slim AS builder
 WORKDIR /app
 
 # 安装 pnpm
-RUN npm install -g pnpm
+RUN npm install -g pnpm@8
 
 # 复制 package.json 和 lock 文件
 COPY package.json pnpm-lock.yaml ./
@@ -32,21 +32,12 @@ RUN apt-get update && apt-get install -y \
     openssl \
     && rm -rf /var/lib/apt/lists/*
 
-# 安装 pnpm
-RUN npm install -g pnpm
-
-# 复制 package.json 和 lock 文件
-COPY package.json pnpm-lock.yaml ./
-
-# 安装生产依赖（包含 prisma，用于运行 migrate deploy）
-RUN pnpm install --frozen-lockfile --prod
-
-# 从构建阶段复制构建产物
+# 从构建阶段复制所需文件
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-
-# 复制 Prisma schema 和迁移文件（用于 migrate deploy）
-COPY prisma ./prisma
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./
+COPY --from=builder /app/package.json ./
 
 # 创建上传目录
 RUN mkdir -p uploads && chmod 777 uploads
@@ -59,4 +50,4 @@ ENV PORT=5002
 EXPOSE 5002
 
 # 启动命令：先执行数据库迁移，再启动应用
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/main.js"]

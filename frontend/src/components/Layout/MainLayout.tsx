@@ -259,7 +259,7 @@ const MainLayout: React.FC = () => {
           >
             <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
               <Avatar icon={<UserOutlined />} size={isMobile ? 'small' : 'default'} />
-              {!isMobile && <span>{user?.name || '用户'}</span>}
+              {!isMobile && <span>{user?.user_metadata?.full_name || user?.email || '用户'}</span>}
             </div>
           </Dropdown>
         </Header>

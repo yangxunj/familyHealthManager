@@ -3,7 +3,11 @@ import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as pdfPoppler from 'pdf-poppler';
+import * as os from 'os';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
+
+const execFileAsync = promisify(execFile);
 
 // DashScope API 响应类型
 interface DashScopeMessage {
@@ -468,6 +472,22 @@ ${healthData.documentContent ? `## 健康文档详细内容\n${healthData.docume
     return path.extname(filePath).toLowerCase() === '.pdf';
   }
 
+  // 获取 pdftocairo 可执行文件路径（跨平台）
+  private getPdftocairoPath(): string {
+    const platform = os.platform();
+    if (platform === 'win32') {
+      // Windows: 使用 pdf-poppler 包捆绑的二进制文件
+      try {
+        const pdfPopplerDir = path.dirname(require.resolve('pdf-poppler/package.json'));
+        return path.join(pdfPopplerDir, 'lib', 'win', 'poppler-0.51', 'bin', 'pdftocairo.exe');
+      } catch {
+        return 'pdftocairo'; // 回退到系统 PATH
+      }
+    }
+    // Linux/macOS: 使用系统安装的 pdftocairo
+    return 'pdftocairo';
+  }
+
   // 将 PDF 转换为图片（每页一张）
   private async convertPdfToImages(pdfPath: string): Promise<string[]> {
     // 创建临时目录存放转换后的图片
@@ -477,18 +497,16 @@ ${healthData.documentContent ? `## 健康文档详细内容\n${healthData.docume
     }
 
     const outputPrefix = path.join(tempDir, 'page');
-
-    const options: Parameters<typeof pdfPoppler.convert>[1] = {
-      format: 'png' as const,
-      out_dir: tempDir,
-      out_prefix: 'page',
-      page: null, // 转换所有页面
-      scale: 2048, // 输出图片宽度，保证清晰度
-    };
+    const pdftocairo = this.getPdftocairoPath();
 
     try {
       this.logger.log(`开始将 PDF 转换为图片: ${pdfPath}`);
-      await pdfPoppler.convert(pdfPath, options);
+      await execFileAsync(pdftocairo, [
+        '-png',
+        '-scale-to', '2048',
+        pdfPath,
+        outputPrefix,
+      ]);
 
       // 获取生成的图片文件列表
       const files = fs.readdirSync(tempDir)
