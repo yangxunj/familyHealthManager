@@ -540,7 +540,7 @@ const ChatPage: React.FC = () => {
       <>
         <div
           style={{
-            height: 'calc(100vh - 100px)',
+            height: 'calc(100dvh - 100px)',
             display: 'flex',
             flexDirection: 'column',
             background: 'var(--color-bg-container)',
@@ -589,7 +589,7 @@ const ChatPage: React.FC = () => {
 
   // ========== 桌面端布局 ==========
   return (
-    <Layout style={{ height: 'calc(100vh - 180px)', background: 'var(--color-bg-container)' }}>
+    <Layout style={{ height: 'calc(100dvh - 180px)', background: 'var(--color-bg-container)' }}>
       {/* 会话列表侧边栏 */}
       <Sider
         width={280}

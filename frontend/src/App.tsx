@@ -21,7 +21,7 @@ function RequireFamily({ children }: { children: React.ReactNode }) {
   // 家庭数据尚未加载完成，显示加载状态，阻止子组件渲染和 API 调用
   if (isInitialized && !isFamilyLoaded) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh' }}>
         <Spin size="large" />
       </div>
     );
