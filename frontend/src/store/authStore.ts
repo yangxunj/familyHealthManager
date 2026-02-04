@@ -56,14 +56,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         session,
         user: session?.user ?? null,
         isAuthenticated: !!session,
-        isInitialized: true,
         isLoading: false,
       });
 
-      // Load family info if authenticated
+      // Load family info if authenticated, then mark as initialized
       if (session) {
-        get().loadFamily();
+        await get().loadFamily();
       }
+
+      set({ isInitialized: true });
 
       // Listen for auth state changes
       supabase.auth.onAuthStateChange((_event, session) => {
