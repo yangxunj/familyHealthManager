@@ -13,6 +13,7 @@ import {
   Progress,
   Input,
   Alert,
+  Grid,
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -40,11 +41,14 @@ import { DocumentTypeLabels, DocumentTypeColors } from '../../types';
 import dayjs from 'dayjs';
 
 const { TextArea } = Input;
+const { useBreakpoint } = Grid;
 
 const DocumentDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewFile, setPreviewFile] = useState<FileInfo | null>(null);
@@ -485,7 +489,7 @@ const DocumentDetail: React.FC = () => {
           extra={
             !isEditingOcr ? (
               <Space>
-                {document.files && document.files.length > 0 && (
+                {!isMobile && document.files && document.files.length > 0 && (
                   <Button
                     type="link"
                     icon={<EyeOutlined />}
@@ -571,7 +575,7 @@ const DocumentDetail: React.FC = () => {
           title="AI 规整结果"
           style={{ marginBottom: 24 }}
           extra={
-            document.files && document.files.length > 0 && (
+            !isMobile && document.files && document.files.length > 0 && (
               <Button
                 type="link"
                 icon={<EyeOutlined />}
