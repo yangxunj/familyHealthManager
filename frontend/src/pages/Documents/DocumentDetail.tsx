@@ -554,6 +554,11 @@ const DocumentDetail: React.FC = () => {
               {document.ocrText}
             </div>
           )}
+          {isMobile && document.files && document.files.length > 0 && (
+            <div style={{ marginTop: 12, fontSize: 12, color: 'var(--color-text-quaternary)' }}>
+              提示：在电脑上打开可使用对比检查功能，将识别结果与原文件并排对照。
+            </div>
+          )}
         </Card>
       )}
 
@@ -592,6 +597,11 @@ const DocumentDetail: React.FC = () => {
           <div className="markdown-body" style={{ lineHeight: 1.8 }}>
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{parsedMarkdown}</ReactMarkdown>
           </div>
+          {isMobile && document.files && document.files.length > 0 && (
+            <div style={{ marginTop: 12, fontSize: 12, color: 'var(--color-text-quaternary)' }}>
+              提示：在电脑上打开可使用对比检查功能，将规整结果与原文件并排对照。
+            </div>
+          )}
         </Card>
       )}
 
