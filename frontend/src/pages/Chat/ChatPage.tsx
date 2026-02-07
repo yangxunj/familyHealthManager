@@ -28,6 +28,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { chatApi, membersApi } from '../../api';
 import type {
   ChatSession,
@@ -50,12 +51,14 @@ const QUICK_QUESTIONS = [
 ];
 
 // 预处理 Markdown 内容，修复中文标点旁的加粗渲染问题
-// 在 ** 和中文标点之间插入零宽空格，帮助解析器正确识别边界
+// 把 **"xxx"** 这种模式直接替换成 HTML <strong> 标签
 const preprocessMarkdown = (content: string): string => {
-  // 匹配 **"xxx"** 或 **「xxx」** 等模式，在 ** 和引号之间插入零宽空格
-  return content
-    .replace(/\*\*([""「『【（])/g, '**\u200B$1')  // ** 后紧跟开引号
-    .replace(/([""」』】）])\*\*/g, '$1\u200B**'); // 闭引号后紧跟 **
+  // 匹配 **xxx** 模式，其中 xxx 以中文引号开头或结尾
+  // 把这些替换成 <strong>xxx</strong>
+  return content.replace(
+    /\*\*([""「『【（][^*]*[""」』】）])\*\*/g,
+    '<strong>$1</strong>'
+  );
 };
 
 const ChatPage: React.FC = () => {
@@ -309,7 +312,7 @@ const ChatPage: React.FC = () => {
             {isUser ? (
               <span style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</span>
             ) : (
-              <Markdown remarkPlugins={[remarkGfm]}>{preprocessMarkdown(msg.content)}</Markdown>
+              <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>{preprocessMarkdown(msg.content)}</Markdown>
             )}
           </div>
         </div>
@@ -367,7 +370,7 @@ const ChatPage: React.FC = () => {
             }}
             className="markdown-content"
           >
-            {streamingContent ? <Markdown remarkPlugins={[remarkGfm]}>{preprocessMarkdown(streamingContent)}</Markdown> : <Spin size="small" />}
+            {streamingContent ? <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>{preprocessMarkdown(streamingContent)}</Markdown> : <Spin size="small" />}
           </div>
         </div>
       </div>
