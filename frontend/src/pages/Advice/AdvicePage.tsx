@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Card,
-  Select,
   Button,
   Space,
   Spin,
@@ -16,7 +15,6 @@ import {
   Col,
   message,
   Popconfirm,
-  Badge,
   Typography,
 } from 'antd';
 import {
@@ -136,6 +134,13 @@ const AdvicePage: React.FC = () => {
     queryFn: () => adviceApi.checkNewData(selectedMemberId!),
     enabled: !!selectedMemberId,
   });
+
+  // 默认选中第一个成员
+  useEffect(() => {
+    if (members && members.length > 0 && !selectedMemberId) {
+      setSelectedMemberId(members[0].id);
+    }
+  }, [members, selectedMemberId]);
 
   // 当建议列表加载完成且当前没有选中建议时，自动展示最新的一条
   useEffect(() => {
@@ -474,23 +479,30 @@ const AdvicePage: React.FC = () => {
       />
 
       <Card style={{ marginBottom: 24 }}>
-        <Space size="middle" wrap>
-          <span>选择家庭成员：</span>
-          <Select
-            placeholder="请选择"
-            style={{ width: 200 }}
-            value={selectedMemberId}
-            onChange={(value) => {
-              setSelectedMemberId(value);
-              setSelectedAdvice(null);
-            }}
-          >
-            {members?.map((member) => (
-              <Select.Option key={member.id} value={member.id}>
-                {member.name}
-              </Select.Option>
-            ))}
-          </Select>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
+          <span>家庭成员：</span>
+          {members?.map((member) => (
+            <Button
+              key={member.id}
+              type={selectedMemberId === member.id ? 'primary' : 'default'}
+              style={{
+                borderRadius: 20,
+                minWidth: 80,
+                ...(selectedMemberId === member.id ? {} : {
+                  borderColor: 'var(--color-border)',
+                }),
+              }}
+              onClick={() => {
+                if (selectedMemberId !== member.id) {
+                  setSelectedMemberId(member.id);
+                  setSelectedAdvice(null);
+                }
+              }}
+            >
+              {member.name}
+            </Button>
+          ))}
+          <div style={{ flex: 1 }} />
           {selectedMemberId && newDataCheck?.hasNewData && (
             <Button
               type="primary"
@@ -509,7 +521,7 @@ const AdvicePage: React.FC = () => {
               历史建议
             </Button>
           )}
-        </Space>
+        </div>
 
         {selectedMemberId && newDataCheck && (
           <div style={{ marginTop: 12 }}>
