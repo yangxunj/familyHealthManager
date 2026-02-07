@@ -25,6 +25,7 @@ import {
   ArrowLeftOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { chatApi, membersApi } from '../../api';
 import type {
   ChatSession,
@@ -48,6 +49,7 @@ const QUICK_QUESTIONS = [
 
 const ChatPage: React.FC = () => {
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const screens = useBreakpoint();
   const isMobile = !screens.md;
@@ -58,6 +60,8 @@ const ChatPage: React.FC = () => {
   const [streamingContent, setStreamingContent] = useState('');
   const [localMessages, setLocalMessages] = useState<ChatMessage[]>([]);
   const [showNewSessionModal, setShowNewSessionModal] = useState(false);
+  const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
+  const autoCreateTriggered = useRef(false);
 
   // 获取家庭成员
   const { data: members } = useQuery({
@@ -115,6 +119,22 @@ const ChatPage: React.FC = () => {
     },
   });
 
+  // 处理 URL 参数（从健康建议页面跳转过来）
+  useEffect(() => {
+    const memberId = searchParams.get('memberId');
+    const question = searchParams.get('question');
+
+    if (memberId && question && !autoCreateTriggered.current) {
+      autoCreateTriggered.current = true;
+      // 保存问题，等会话创建后发送
+      setPendingQuestion(question);
+      // 自动创建会话
+      createSessionMutation.mutate({ memberId });
+      // 清除 URL 参数
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams, createSessionMutation]);
+
   // 滚动到底部
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -124,20 +144,34 @@ const ChatPage: React.FC = () => {
     scrollToBottom();
   }, [localMessages, streamingContent, scrollToBottom]);
 
-  // 发送消息
-  const handleSend = async () => {
-    if (!inputValue.trim() || !selectedSessionId || isStreaming) return;
+  // 自动发送预设问题（从健康建议页面跳转过来）
+  useEffect(() => {
+    if (pendingQuestion && selectedSessionId && !isStreaming) {
+      // 延迟一点确保会话已准备好
+      const timer = setTimeout(() => {
+        handleSend(pendingQuestion);
+        setPendingQuestion(null);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingQuestion, selectedSessionId, isStreaming]);
+
+  // 发送消息（可选传入消息内容，用于自动发送）
+  const handleSend = async (messageContent?: string) => {
+    const content = messageContent || inputValue.trim();
+    if (!content || !selectedSessionId || isStreaming) return;
 
     const userMessage: ChatMessage = {
       id: `temp-${Date.now()}`,
       role: 'user',
-      content: inputValue.trim(),
+      content,
       createdAt: new Date().toISOString(),
     };
 
     // 立即添加用户消息到本地
     setLocalMessages((prev) => [...prev, userMessage]);
-    setInputValue('');
+    if (!messageContent) setInputValue('');
     setIsStreaming(true);
     setStreamingContent('');
 

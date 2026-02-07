@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Card,
   Select,
@@ -17,7 +17,9 @@ import {
   Col,
   message,
   Popconfirm,
+  Dropdown,
 } from 'antd';
+import type { MenuProps } from 'antd';
 import {
   RobotOutlined,
   WarningOutlined,
@@ -29,8 +31,10 @@ import {
   FileTextOutlined,
   DatabaseOutlined,
   DeleteOutlined,
+  MessageOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { adviceApi, membersApi } from '../../api';
 import type { HealthAdvice, Concern, Suggestion, ActionItem } from '../../types';
 import {
@@ -42,9 +46,63 @@ import dayjs from 'dayjs';
 
 const AdvicePage: React.FC = () => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [selectedMemberId, setSelectedMemberId] = useState<string | undefined>();
   const [showHistory, setShowHistory] = useState(false);
   const [selectedAdvice, setSelectedAdvice] = useState<HealthAdvice | null>(null);
+
+  // 长按相关状态
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const [longPressItem, setLongPressItem] = useState<{ type: string; title: string; content: string } | null>(null);
+
+  // 生成咨询问题
+  const generateQuestion = useCallback((type: string, title: string, content: string) => {
+    const memberName = members?.find(m => m.id === selectedMemberId)?.name || '';
+    switch (type) {
+      case 'concern':
+        return `关于${memberName}的健康问题「${title}」，AI 建议提到：${content}。请详细解释一下这个问题的严重程度、可能的原因，以及我应该采取哪些具体措施？`;
+      case 'suggestion':
+        return `关于${memberName}的健康建议「${title}」，AI 提到：${content}。请更详细地解释一下这个建议，包括具体应该怎么做、需要注意什么、大概需要多长时间能看到效果？`;
+      case 'action':
+        return `关于${memberName}的行动项「${title}」，请详细说明一下：为什么这个行动很重要？具体应该怎么执行？有什么注意事项？`;
+      default:
+        return `请详细解释一下「${title}」：${content}`;
+    }
+  }, [members, selectedMemberId]);
+
+  // 跳转到聊天页面
+  const handleAskAI = useCallback(() => {
+    if (!longPressItem || !selectedMemberId) return;
+    const question = generateQuestion(longPressItem.type, longPressItem.title, longPressItem.content);
+    // 跳转到聊天页面，传递 memberId 和预填充的问题
+    navigate(`/chat?memberId=${selectedMemberId}&question=${encodeURIComponent(question)}`);
+    setLongPressItem(null);
+  }, [longPressItem, selectedMemberId, generateQuestion, navigate]);
+
+  // 长按开始
+  const handleLongPressStart = useCallback((type: string, title: string, content: string) => {
+    longPressTimer.current = setTimeout(() => {
+      setLongPressItem({ type, title, content });
+    }, 500); // 500ms 触发长按
+  }, []);
+
+  // 长按结束
+  const handleLongPressEnd = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
+
+  // 右键菜单项
+  const contextMenuItems: MenuProps['items'] = [
+    {
+      key: 'ask-ai',
+      label: '咨询 AI',
+      icon: <MessageOutlined />,
+      onClick: handleAskAI,
+    },
+  ];
 
   const { data: members } = useQuery({
     queryKey: ['members'],
@@ -179,20 +237,35 @@ const AdvicePage: React.FC = () => {
         itemLayout="horizontal"
         dataSource={concerns}
         renderItem={(item) => (
-          <List.Item>
-            <List.Item.Meta
-              avatar={getIcon(item.level)}
-              title={
-                <Space>
-                  <span>{item.title}</span>
-                  <Tag color={ConcernLevelConfig[item.level as keyof typeof ConcernLevelConfig]?.color}>
-                    {ConcernLevelConfig[item.level as keyof typeof ConcernLevelConfig]?.label}
-                  </Tag>
-                </Space>
+          <Dropdown
+            menu={{ items: contextMenuItems }}
+            trigger={['contextMenu']}
+            onOpenChange={(open) => {
+              if (open) {
+                setLongPressItem({ type: 'concern', title: item.title, content: item.description });
               }
-              description={item.description}
-            />
-          </List.Item>
+            }}
+          >
+            <List.Item
+              style={{ cursor: 'pointer' }}
+              onTouchStart={() => handleLongPressStart('concern', item.title, item.description)}
+              onTouchEnd={handleLongPressEnd}
+              onTouchCancel={handleLongPressEnd}
+            >
+              <List.Item.Meta
+                avatar={getIcon(item.level)}
+                title={
+                  <Space>
+                    <span>{item.title}</span>
+                    <Tag color={ConcernLevelConfig[item.level as keyof typeof ConcernLevelConfig]?.color}>
+                      {ConcernLevelConfig[item.level as keyof typeof ConcernLevelConfig]?.label}
+                    </Tag>
+                  </Space>
+                }
+                description={item.description}
+              />
+            </List.Item>
+          </Dropdown>
         )}
       />
     );
@@ -210,11 +283,26 @@ const AdvicePage: React.FC = () => {
         items={suggestions.map((item, index) => ({
           key: index.toString(),
           label: (
-            <Space>
-              <span>{SuggestionCategoryIcons[item.category] || '📝'}</span>
-              <Tag>{item.category}</Tag>
-              <span>{item.title}</span>
-            </Space>
+            <Dropdown
+              menu={{ items: contextMenuItems }}
+              trigger={['contextMenu']}
+              onOpenChange={(open) => {
+                if (open) {
+                  setLongPressItem({ type: 'suggestion', title: item.title, content: item.content });
+                }
+              }}
+            >
+              <div
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                onTouchStart={() => handleLongPressStart('suggestion', item.title, item.content)}
+                onTouchEnd={handleLongPressEnd}
+                onTouchCancel={handleLongPressEnd}
+              >
+                <span>{SuggestionCategoryIcons[item.category] || '📝'}</span>
+                <Tag>{item.category}</Tag>
+                <span>{item.title}</span>
+              </div>
+            </Dropdown>
           ),
           children: <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{item.content}</p>,
         }))}
@@ -233,34 +321,49 @@ const AdvicePage: React.FC = () => {
         itemLayout="horizontal"
         dataSource={actionItems}
         renderItem={(item, index) => (
-          <List.Item>
-            <List.Item.Meta
-              avatar={
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    width: 24,
-                    height: 24,
-                    borderRadius: '50%',
-                    backgroundColor: 'var(--color-bg-hover)',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 12,
-                  }}
-                >
-                  {index + 1}
-                </span>
+          <Dropdown
+            menu={{ items: contextMenuItems }}
+            trigger={['contextMenu']}
+            onOpenChange={(open) => {
+              if (open) {
+                setLongPressItem({ type: 'action', title: item.text, content: '' });
               }
-              title={
-                <Space>
-                  <span>{item.text}</span>
-                  <Tag color={ActionPriorityConfig[item.priority as keyof typeof ActionPriorityConfig]?.color}>
-                    {ActionPriorityConfig[item.priority as keyof typeof ActionPriorityConfig]?.label}优先级
-                  </Tag>
-                </Space>
-              }
-            />
-          </List.Item>
+            }}
+          >
+            <List.Item
+              style={{ cursor: 'pointer' }}
+              onTouchStart={() => handleLongPressStart('action', item.text, '')}
+              onTouchEnd={handleLongPressEnd}
+              onTouchCancel={handleLongPressEnd}
+            >
+              <List.Item.Meta
+                avatar={
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      width: 24,
+                      height: 24,
+                      borderRadius: '50%',
+                      backgroundColor: 'var(--color-bg-hover)',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 12,
+                    }}
+                  >
+                    {index + 1}
+                  </span>
+                }
+                title={
+                  <Space>
+                    <span>{item.text}</span>
+                    <Tag color={ActionPriorityConfig[item.priority as keyof typeof ActionPriorityConfig]?.color}>
+                      {ActionPriorityConfig[item.priority as keyof typeof ActionPriorityConfig]?.label}优先级
+                    </Tag>
+                  </Space>
+                }
+              />
+            </List.Item>
+          </Dropdown>
         )}
       />
     );
@@ -495,6 +598,28 @@ const AdvicePage: React.FC = () => {
         ) : (
           <Empty description="暂无历史建议" />
         )}
+      </Modal>
+
+      {/* 长按菜单（移动端） */}
+      <Modal
+        title="操作"
+        open={!!longPressItem}
+        onCancel={() => setLongPressItem(null)}
+        footer={null}
+        width={300}
+        centered
+      >
+        <div style={{ padding: '8px 0' }}>
+          <Button
+            type="text"
+            icon={<MessageOutlined />}
+            onClick={handleAskAI}
+            block
+            style={{ textAlign: 'left', height: 48 }}
+          >
+            咨询 AI
+          </Button>
+        </div>
       </Modal>
     </div>
   );
