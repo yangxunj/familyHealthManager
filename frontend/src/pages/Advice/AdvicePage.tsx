@@ -665,7 +665,6 @@ const AdvicePage: React.FC = () => {
           </div>
         ) : chatHistorySessions && chatHistorySessions.length > 0 ? (
           <List
-            itemLayout="horizontal"
             dataSource={chatHistorySessions}
             renderItem={(session) => (
               <List.Item
@@ -673,35 +672,28 @@ const AdvicePage: React.FC = () => {
                   padding: '12px',
                   borderRadius: 8,
                   marginBottom: 8,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
                 }}
-                extra={
-                  <Button
-                    type="link"
-                    size="small"
-                    onClick={() => {
-                      setChatHistoryModal(null);
-                      navigate(`/chat?sessionId=${session.id}`);
-                    }}
-                  >
-                    查看
-                  </Button>
-                }
               >
-                <List.Item.Meta
-                  avatar={
-                    <MessageOutlined style={{ fontSize: 20, color: '#136dec' }} />
-                  }
-                  title={
-                    <Typography.Text ellipsis style={{ maxWidth: 350 }}>
-                      {session.title}
-                    </Typography.Text>
-                  }
-                  description={
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                      {dayjs(session.createdAt).format('MM-DD HH:mm')}
-                    </Typography.Text>
-                  }
-                />
+                <Space>
+                  <MessageOutlined style={{ fontSize: 18, color: '#136dec' }} />
+                  <Typography.Text>
+                    {dayjs(session.createdAt).format('YYYY-MM-DD HH:mm')}
+                  </Typography.Text>
+                </Space>
+                <Button
+                  type="primary"
+                  size="small"
+                  style={{ borderRadius: 16 }}
+                  onClick={() => {
+                    setChatHistoryModal(null);
+                    navigate(`/chat?sessionId=${session.id}`);
+                  }}
+                >
+                  查看
+                </Button>
               </List.Item>
             )}
           />
