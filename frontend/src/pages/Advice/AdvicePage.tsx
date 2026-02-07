@@ -612,7 +612,7 @@ const AdvicePage: React.FC = () => {
               const score = item.healthScore || 0;
               const scoreColor = score >= 80 ? '#13ec5b' : score >= 60 ? '#faad14' : '#ff4d4f';
               return (
-                <List.Item>
+                <List.Item style={{ padding: isMobile ? '12px 0' : undefined }}>
                   <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: isMobile ? 10 : 16 }}>
                     <div
                       style={{
