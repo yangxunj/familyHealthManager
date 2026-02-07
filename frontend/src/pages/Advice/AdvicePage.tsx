@@ -41,10 +41,8 @@ import {
 } from '../../types';
 import dayjs from 'dayjs';
 
-// 可点击条目的样式
-const clickableItemStyle: React.CSSProperties = {
-  cursor: 'pointer',
-  transition: 'all 0.2s ease',
+// 条目样式
+const itemStyle: React.CSSProperties = {
   borderRadius: 8,
   margin: '4px 0',
 };
@@ -239,9 +237,8 @@ const AdvicePage: React.FC = () => {
         dataSource={concerns}
         renderItem={(item) => (
           <List.Item
-            style={clickableItemStyle}
-            className="advice-clickable-item"
-          >
+            style={itemStyle}
+                      >
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
               <div style={{ paddingTop: 2 }}>{getIcon(item.level)}</div>
               <div style={{ flex: 1 }}>
@@ -302,9 +299,8 @@ const AdvicePage: React.FC = () => {
         dataSource={actionItems}
         renderItem={(item, index) => (
           <List.Item
-            style={clickableItemStyle}
-            className="advice-clickable-item"
-          >
+            style={itemStyle}
+                      >
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%' }}>
               <span
                 style={{
@@ -341,11 +337,6 @@ const AdvicePage: React.FC = () => {
   const renderAdviceReport = (advice: HealthAdvice) => {
     return (
       <div>
-        <style>{`
-          .advice-clickable-item:hover {
-            background-color: var(--color-bg-hover, #f5f5f5);
-          }
-        `}</style>
         <Row gutter={24}>
           <Col xs={24} md={8}>
             <Card title="健康评分" bordered={false}>
