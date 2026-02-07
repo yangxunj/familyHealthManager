@@ -32,6 +32,18 @@ export interface ChatSessionWithMessages extends ChatSession {
 export interface CreateSessionRequest {
   memberId: string;
   title?: string;
+  // 来源追踪（从健康建议页面创建时使用）
+  sourceAdviceId?: string;
+  sourceItemType?: 'concern' | 'suggestion' | 'action';
+  sourceItemIndex?: number;
+  sourceItemTitle?: string;
+}
+
+// 建议会话统计（按条目类型和索引分组）
+export interface AdviceSessionStats {
+  concern: Record<number, number>;
+  suggestion: Record<number, number>;
+  action: Record<number, number>;
 }
 
 // 发送消息请求

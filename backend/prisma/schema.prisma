@@ -280,6 +280,7 @@ model HealthAdvice {
 
   // 关系
   member        FamilyMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  chatSessions  ChatSession[]  // 关联的聊天会话
 
   @@index([memberId])
   @@index([memberId, generatedAt])
@@ -296,6 +297,12 @@ model ChatSession {
   // 会话信息
   title         String       @db.VarChar(200)  // 会话标题（可自动生成）
 
+  // 来源追踪（从健康建议页面创建时记录）
+  sourceAdviceId   String?   @map("source_advice_id")
+  sourceItemType   String?   @map("source_item_type") @db.VarChar(20)  // concern | suggestion | action
+  sourceItemIndex  Int?      @map("source_item_index")  // 条目在数组中的索引位置
+  sourceItemTitle  String?   @map("source_item_title") @db.VarChar(200)  // 条目标题（冗余存储）
+
   // 时间戳
   createdAt     DateTime     @default(now()) @map("created_at")
   updatedAt     DateTime     @updatedAt @map("updated_at")
@@ -303,10 +310,12 @@ model ChatSession {
   // 关系
   family        Family       @relation(fields: [familyId], references: [id], onDelete: Cascade)
   member        FamilyMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  sourceAdvice  HealthAdvice? @relation(fields: [sourceAdviceId], references: [id], onDelete: SetNull)
   messages      ChatMessage[]
 
   @@index([familyId])
   @@index([memberId])
+  @@index([sourceAdviceId])
   @@map("chat_sessions")
 }
 

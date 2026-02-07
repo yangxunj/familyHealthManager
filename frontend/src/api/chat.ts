@@ -7,6 +7,7 @@ import type {
   QuerySessionParams,
   SSEMessageEvent,
   SSEDoneEvent,
+  AdviceSessionStats,
 } from '../types';
 
 // SSE 回调类型
@@ -31,6 +32,19 @@ export const chatApi = {
   // 删除会话
   deleteSession: async (sessionId: string): Promise<{ success: boolean }> => {
     return apiClient.delete(`/chat/sessions/${sessionId}`);
+  },
+
+  // 获取建议的会话统计
+  getAdviceSessionStats: async (adviceId: string): Promise<AdviceSessionStats> => {
+    return apiClient.get(`/chat/advice/${adviceId}/stats`);
+  },
+
+  // 获取建议条目的关联会话列表
+  getSessionsByAdvice: async (
+    adviceId: string,
+    params?: { itemType?: string; itemIndex?: number },
+  ): Promise<ChatSession[]> => {
+    return apiClient.get(`/chat/advice/${adviceId}/sessions`, { params });
   },
 
   // 发送消息（SSE 流式响应）

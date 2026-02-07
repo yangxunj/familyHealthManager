@@ -123,13 +123,35 @@ const ChatPage: React.FC = () => {
   useEffect(() => {
     const memberId = searchParams.get('memberId');
     const question = searchParams.get('question');
+    const sessionId = searchParams.get('sessionId');
+
+    // 如果传入了 sessionId，直接选中该会话
+    if (sessionId) {
+      setSelectedSessionId(sessionId);
+      setSearchParams({}, { replace: true });
+      return;
+    }
 
     if (memberId && question && !autoCreateTriggered.current) {
       autoCreateTriggered.current = true;
       // 保存问题，等会话创建后发送
       setPendingQuestion(question);
-      // 自动创建会话
-      createSessionMutation.mutate({ memberId });
+
+      // 解析来源追踪参数
+      const sourceAdviceId = searchParams.get('sourceAdviceId');
+      const sourceItemType = searchParams.get('sourceItemType') as 'concern' | 'suggestion' | 'action' | null;
+      const sourceItemIndex = searchParams.get('sourceItemIndex');
+      const sourceItemTitle = searchParams.get('sourceItemTitle');
+
+      // 自动创建会话（包含来源信息）
+      createSessionMutation.mutate({
+        memberId,
+        sourceAdviceId: sourceAdviceId || undefined,
+        sourceItemType: sourceItemType || undefined,
+        sourceItemIndex: sourceItemIndex ? parseInt(sourceItemIndex, 10) : undefined,
+        sourceItemTitle: sourceItemTitle || undefined,
+      });
+
       // 清除 URL 参数
       setSearchParams({}, { replace: true });
     }

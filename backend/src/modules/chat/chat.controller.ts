@@ -68,6 +68,33 @@ export class ChatController {
     return this.chatService.deleteSession(familyId, id);
   }
 
+  // 获取建议的会话统计
+  @Get('advice/:adviceId/stats')
+  getAdviceSessionStats(
+    @CurrentUser() user: CurrentUserData,
+    @Param('adviceId', ParseUUIDPipe) adviceId: string,
+  ) {
+    const familyId = this.requireFamily(user);
+    return this.chatService.getAdviceSessionStats(familyId, adviceId);
+  }
+
+  // 获取建议条目的关联会话列表
+  @Get('advice/:adviceId/sessions')
+  findSessionsByAdvice(
+    @CurrentUser() user: CurrentUserData,
+    @Param('adviceId', ParseUUIDPipe) adviceId: string,
+    @Query('itemType') itemType?: string,
+    @Query('itemIndex') itemIndex?: string,
+  ) {
+    const familyId = this.requireFamily(user);
+    return this.chatService.findSessionsByAdvice(
+      familyId,
+      adviceId,
+      itemType,
+      itemIndex !== undefined ? parseInt(itemIndex, 10) : undefined,
+    );
+  }
+
   // 发送消息（SSE 流式响应）
   @Post('sessions/:id/messages')
   @Throttle({ short: { limit: 20, ttl: 60000 } }) // AI 对话限流：20次/分钟

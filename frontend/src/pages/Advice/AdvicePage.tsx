@@ -16,6 +16,8 @@ import {
   Col,
   message,
   Popconfirm,
+  Badge,
+  Typography,
 } from 'antd';
 import {
   RobotOutlined,
@@ -31,8 +33,8 @@ import {
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { adviceApi, membersApi } from '../../api';
-import type { HealthAdvice, Concern, Suggestion, ActionItem } from '../../types';
+import { adviceApi, membersApi, chatApi } from '../../api';
+import type { HealthAdvice, Concern, Suggestion, ActionItem, AdviceSessionStats, ChatSession } from '../../types';
 import {
   ConcernLevelConfig,
   ActionPriorityConfig,
@@ -52,6 +54,14 @@ const AdvicePage: React.FC = () => {
   const [selectedMemberId, setSelectedMemberId] = useState<string | undefined>();
   const [showHistory, setShowHistory] = useState(false);
   const [selectedAdvice, setSelectedAdvice] = useState<HealthAdvice | null>(null);
+
+  // 历史聊天弹窗状态
+  const [chatHistoryModal, setChatHistoryModal] = useState<{
+    visible: boolean;
+    itemType: 'concern' | 'suggestion' | 'action';
+    itemIndex: number;
+    itemTitle: string;
+  } | null>(null);
 
   // 数据查询
   const { data: members } = useQuery({
@@ -75,16 +85,49 @@ const AdvicePage: React.FC = () => {
   }, [members, selectedMemberId]);
 
   // 跳转到聊天页面
-  const handleAskAI = useCallback((type: string, title: string, content: string) => {
-    if (!selectedMemberId) return;
+  const handleAskAI = useCallback((
+    type: 'concern' | 'suggestion' | 'action',
+    index: number,
+    title: string,
+    content: string,
+  ) => {
+    if (!selectedMemberId || !selectedAdvice) return;
     const question = generateQuestion(type, title, content);
-    navigate(`/chat?memberId=${selectedMemberId}&question=${encodeURIComponent(question)}`);
-  }, [selectedMemberId, generateQuestion, navigate]);
+
+    // 构建完整的 URL 参数，包含来源信息
+    const params = new URLSearchParams({
+      memberId: selectedMemberId,
+      question,
+      sourceAdviceId: selectedAdvice.id,
+      sourceItemType: type,
+      sourceItemIndex: String(index),
+      sourceItemTitle: title,
+    });
+
+    navigate(`/chat?${params.toString()}`);
+  }, [selectedMemberId, selectedAdvice, generateQuestion, navigate]);
 
   const { data: adviceList, isLoading: isLoadingHistory } = useQuery({
     queryKey: ['advice', selectedMemberId],
     queryFn: () => adviceApi.getAll({ memberId: selectedMemberId }),
     enabled: showHistory || !!selectedMemberId,
+  });
+
+  // 获取当前建议的会话统计
+  const { data: sessionStats } = useQuery({
+    queryKey: ['advice-session-stats', selectedAdvice?.id],
+    queryFn: () => chatApi.getAdviceSessionStats(selectedAdvice!.id),
+    enabled: !!selectedAdvice,
+  });
+
+  // 获取条目关联的历史会话
+  const { data: chatHistorySessions, isLoading: isLoadingChatHistory } = useQuery({
+    queryKey: ['advice-sessions', selectedAdvice?.id, chatHistoryModal?.itemType, chatHistoryModal?.itemIndex],
+    queryFn: () => chatApi.getSessionsByAdvice(selectedAdvice!.id, {
+      itemType: chatHistoryModal!.itemType,
+      itemIndex: chatHistoryModal!.itemIndex,
+    }),
+    enabled: !!selectedAdvice && !!chatHistoryModal,
   });
 
   // 检查是否有新的健康数据
@@ -142,31 +185,62 @@ const AdvicePage: React.FC = () => {
     generateMutation.mutate({ memberId: selectedMemberId });
   };
 
-  // 渲染咨询按钮
-  const renderAskButton = (type: string, title: string, content: string) => (
-    <Popconfirm
-      title="咨询 AI"
-      description="针对这条内容向 AI 提问？"
-      onConfirm={() => handleAskAI(type, title, content)}
-      okText="确定"
-      cancelText="取消"
-      placement="topRight"
-    >
-      <Button
-        type="text"
-        size="small"
-        icon={<MessageOutlined />}
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          color: 'var(--color-primary)',
-          opacity: 0.7,
-          transition: 'opacity 0.2s',
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.7'; }}
-      />
-    </Popconfirm>
-  );
+  // 渲染咨询按钮和历史聊天徽章
+  const renderAskButton = (
+    type: 'concern' | 'suggestion' | 'action',
+    index: number,
+    title: string,
+    content: string,
+  ) => {
+    const count = sessionStats?.[type]?.[index] || 0;
+
+    return (
+      <Space size={4}>
+        {count > 0 && (
+          <Badge count={count} size="small" offset={[2, 0]}>
+            <Button
+              type="text"
+              size="small"
+              icon={<HistoryOutlined />}
+              onClick={(e) => {
+                e.stopPropagation();
+                setChatHistoryModal({ visible: true, itemType: type, itemIndex: index, itemTitle: title });
+              }}
+              style={{
+                color: 'var(--color-text-secondary)',
+                opacity: 0.7,
+                transition: 'opacity 0.2s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.7'; }}
+            />
+          </Badge>
+        )}
+        <Popconfirm
+          title="咨询 AI"
+          description="针对这条内容向 AI 提问？"
+          onConfirm={() => handleAskAI(type, index, title, content)}
+          okText="确定"
+          cancelText="取消"
+          placement="topRight"
+        >
+          <Button
+            type="text"
+            size="small"
+            icon={<MessageOutlined />}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              color: 'var(--color-primary)',
+              opacity: 0.7,
+              transition: 'opacity 0.2s',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.7'; }}
+          />
+        </Popconfirm>
+      </Space>
+    );
+  };
 
   // 渲染健康评分
   const renderHealthScore = (score: number | null) => {
@@ -234,10 +308,8 @@ const AdvicePage: React.FC = () => {
       <List
         itemLayout="vertical"
         dataSource={concerns}
-        renderItem={(item) => (
-          <List.Item
-            style={itemStyle}
-                      >
+        renderItem={(item, index) => (
+          <List.Item style={itemStyle}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
               <div style={{ paddingTop: 2 }}>{getIcon(item.level)}</div>
               <div style={{ flex: 1 }}>
@@ -248,7 +320,7 @@ const AdvicePage: React.FC = () => {
                       {ConcernLevelConfig[item.level as keyof typeof ConcernLevelConfig]?.label}
                     </Tag>
                   </Space>
-                  {renderAskButton('concern', item.title, item.description)}
+                  {renderAskButton('concern', index, item.title, item.description)}
                 </div>
                 <div style={{ color: 'var(--color-text-secondary)', fontSize: 14 }}>
                   {item.description}
@@ -292,7 +364,7 @@ const AdvicePage: React.FC = () => {
                 <Tag>{item.category}</Tag>
                 <span style={{ fontWeight: 500 }}>{item.title}</span>
               </div>
-              {renderAskButton('suggestion', item.title, item.content)}
+              {renderAskButton('suggestion', index, item.title, item.content)}
             </div>
             <div style={{ padding: '12px 16px' }}>
               <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{item.content}</p>
@@ -340,7 +412,7 @@ const AdvicePage: React.FC = () => {
                     {ActionPriorityConfig[item.priority as keyof typeof ActionPriorityConfig]?.label}优先级
                   </Tag>
                 </Space>
-                {renderAskButton('action', item.text, '')}
+                {renderAskButton('action', index, item.text, '')}
               </div>
             </div>
           </List.Item>
@@ -577,6 +649,56 @@ const AdvicePage: React.FC = () => {
           />
         ) : (
           <Empty description="暂无历史建议" />
+        )}
+      </Modal>
+
+      {/* 历史聊天记录弹窗 */}
+      <Modal
+        title={`「${chatHistoryModal?.itemTitle || ''}」的相关咨询记录`}
+        open={!!chatHistoryModal}
+        onCancel={() => setChatHistoryModal(null)}
+        footer={null}
+        width={500}
+      >
+        {isLoadingChatHistory ? (
+          <div style={{ textAlign: 'center', padding: 50 }}>
+            <Spin />
+          </div>
+        ) : chatHistorySessions && chatHistorySessions.length > 0 ? (
+          <List
+            itemLayout="horizontal"
+            dataSource={chatHistorySessions}
+            renderItem={(session) => (
+              <List.Item
+                style={{ cursor: 'pointer' }}
+                onClick={() => {
+                  setChatHistoryModal(null);
+                  navigate(`/chat?sessionId=${session.id}`);
+                }}
+              >
+                <List.Item.Meta
+                  title={session.title}
+                  description={
+                    <>
+                      <Typography.Text type="secondary">
+                        {dayjs(session.createdAt).format('YYYY-MM-DD HH:mm')}
+                      </Typography.Text>
+                      {session.lastMessage && (
+                        <Typography.Paragraph
+                          ellipsis={{ rows: 1 }}
+                          style={{ marginBottom: 0, marginTop: 4 }}
+                        >
+                          {session.lastMessage}
+                        </Typography.Paragraph>
+                      )}
+                    </>
+                  }
+                />
+              </List.Item>
+            )}
+          />
+        ) : (
+          <Empty description="暂无相关咨询记录" />
         )}
       </Modal>
     </div>

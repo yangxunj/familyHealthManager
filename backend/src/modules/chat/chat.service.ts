@@ -227,12 +227,30 @@ ${context.documentSummary ? `**近期健康文档**\n${context.documentSummary}`
   async createSession(familyId: string, userId: string, dto: CreateSessionDto) {
     await this.validateMemberOwnership(dto.memberId, familyId);
 
+    // 如果指定了来源建议，验证其存在性和归属
+    if (dto.sourceAdviceId) {
+      const advice = await this.prisma.healthAdvice.findFirst({
+        where: {
+          id: dto.sourceAdviceId,
+          member: { familyId },
+        },
+      });
+      if (!advice) {
+        throw new ForbiddenException('无权访问此健康建议');
+      }
+    }
+
     const session = await this.prisma.chatSession.create({
       data: {
         familyId,
         createdBy: userId,
         memberId: dto.memberId,
         title: dto.title || '新对话',
+        // 来源追踪
+        sourceAdviceId: dto.sourceAdviceId,
+        sourceItemType: dto.sourceItemType,
+        sourceItemIndex: dto.sourceItemIndex,
+        sourceItemTitle: dto.sourceItemTitle,
       },
       include: {
         member: {
@@ -407,6 +425,99 @@ ${context.documentSummary ? `**近期健康文档**\n${context.documentSummary}`
     }
 
     return { tokensUsed };
+  }
+
+  // 获取建议的会话统计（按条目类型和索引分组）
+  async getAdviceSessionStats(familyId: string, adviceId: string) {
+    // 验证建议归属
+    const advice = await this.prisma.healthAdvice.findFirst({
+      where: {
+        id: adviceId,
+        member: { familyId },
+      },
+    });
+    if (!advice) {
+      throw new ForbiddenException('无权访问此健康建议');
+    }
+
+    // 查询所有关联的会话
+    const sessions = await this.prisma.chatSession.findMany({
+      where: {
+        sourceAdviceId: adviceId,
+      },
+      select: {
+        sourceItemType: true,
+        sourceItemIndex: true,
+      },
+    });
+
+    // 构建统计结果
+    const stats: Record<string, Record<number, number>> = {
+      concern: {},
+      suggestion: {},
+      action: {},
+    };
+
+    for (const session of sessions) {
+      if (session.sourceItemType && session.sourceItemIndex !== null) {
+        if (!stats[session.sourceItemType][session.sourceItemIndex]) {
+          stats[session.sourceItemType][session.sourceItemIndex] = 0;
+        }
+        stats[session.sourceItemType][session.sourceItemIndex]++;
+      }
+    }
+
+    return stats;
+  }
+
+  // 获取建议条目的关联会话列表
+  async findSessionsByAdvice(
+    familyId: string,
+    adviceId: string,
+    itemType?: string,
+    itemIndex?: number,
+  ) {
+    // 验证建议归属
+    const advice = await this.prisma.healthAdvice.findFirst({
+      where: {
+        id: adviceId,
+        member: { familyId },
+      },
+    });
+    if (!advice) {
+      throw new ForbiddenException('无权访问此健康建议');
+    }
+
+    const where: {
+      familyId: string;
+      sourceAdviceId: string;
+      sourceItemType?: string;
+      sourceItemIndex?: number;
+    } = {
+      familyId,
+      sourceAdviceId: adviceId,
+    };
+
+    if (itemType) {
+      where.sourceItemType = itemType;
+    }
+    if (itemIndex !== undefined) {
+      where.sourceItemIndex = itemIndex;
+    }
+
+    const sessions = await this.prisma.chatSession.findMany({
+      where,
+      include: {
+        member: { select: { id: true, name: true } },
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return sessions.map((s) => this.formatSession(s));
   }
 
   // 格式化会话输出
