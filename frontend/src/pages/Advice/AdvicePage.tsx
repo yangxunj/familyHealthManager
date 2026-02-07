@@ -55,6 +55,12 @@ const AdvicePage: React.FC = () => {
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const [longPressItem, setLongPressItem] = useState<{ type: string; title: string; content: string } | null>(null);
 
+  // 数据查询（必须在 callbacks 之前定义）
+  const { data: members } = useQuery({
+    queryKey: ['members'],
+    queryFn: membersApi.getAll,
+  });
+
   // 生成咨询问题
   const generateQuestion = useCallback((type: string, title: string, content: string) => {
     const memberName = members?.find(m => m.id === selectedMemberId)?.name || '';
@@ -103,11 +109,6 @@ const AdvicePage: React.FC = () => {
       onClick: handleAskAI,
     },
   ];
-
-  const { data: members } = useQuery({
-    queryKey: ['members'],
-    queryFn: membersApi.getAll,
-  });
 
   const { data: adviceList, isLoading: isLoadingHistory } = useQuery({
     queryKey: ['advice', selectedMemberId],
