@@ -49,6 +49,15 @@ const QUICK_QUESTIONS = [
   '帮我分析最近的健康数据',
 ];
 
+// 预处理 Markdown 内容，修复中文标点旁的加粗渲染问题
+// 在 ** 和中文标点之间插入零宽空格，帮助解析器正确识别边界
+const preprocessMarkdown = (content: string): string => {
+  // 匹配 **"xxx"** 或 **「xxx」** 等模式，在 ** 和引号之间插入零宽空格
+  return content
+    .replace(/\*\*([""「『【（])/g, '**\u200B$1')  // ** 后紧跟开引号
+    .replace(/([""」』】）])\*\*/g, '$1\u200B**'); // 闭引号后紧跟 **
+};
+
 const ChatPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -300,7 +309,7 @@ const ChatPage: React.FC = () => {
             {isUser ? (
               <span style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</span>
             ) : (
-              <Markdown remarkPlugins={[remarkGfm]}>{msg.content}</Markdown>
+              <Markdown remarkPlugins={[remarkGfm]}>{preprocessMarkdown(msg.content)}</Markdown>
             )}
           </div>
         </div>
@@ -358,7 +367,7 @@ const ChatPage: React.FC = () => {
             }}
             className="markdown-content"
           >
-            {streamingContent ? <Markdown remarkPlugins={[remarkGfm]}>{streamingContent}</Markdown> : <Spin size="small" />}
+            {streamingContent ? <Markdown remarkPlugins={[remarkGfm]}>{preprocessMarkdown(streamingContent)}</Markdown> : <Spin size="small" />}
           </div>
         </div>
       </div>
