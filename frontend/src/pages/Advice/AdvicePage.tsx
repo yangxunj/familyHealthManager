@@ -17,7 +17,6 @@ import {
   Col,
   message,
   Popconfirm,
-  Tooltip,
 } from 'antd';
 import {
   RobotOutlined,
@@ -148,15 +147,19 @@ const AdvicePage: React.FC = () => {
 
   // 渲染咨询按钮
   const renderAskButton = (type: string, title: string, content: string) => (
-    <Tooltip title="咨询 AI">
+    <Popconfirm
+      title="咨询 AI"
+      description="针对这条内容向 AI 提问？"
+      onConfirm={() => handleAskAI(type, title, content)}
+      okText="确定"
+      cancelText="取消"
+      placement="topRight"
+    >
       <Button
         type="text"
         size="small"
         icon={<MessageOutlined />}
-        onClick={(e) => {
-          e.stopPropagation();
-          handleAskAI(type, title, content);
-        }}
+        onClick={(e) => e.stopPropagation()}
         style={{
           color: 'var(--color-primary)',
           opacity: 0.7,
@@ -165,7 +168,7 @@ const AdvicePage: React.FC = () => {
         onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
         onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.7'; }}
       />
-    </Tooltip>
+    </Popconfirm>
   );
 
   // 渲染健康评分
