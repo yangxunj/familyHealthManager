@@ -26,6 +26,7 @@ import {
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
+import Markdown from 'react-markdown';
 import { chatApi, membersApi } from '../../api';
 import type {
   ChatSession,
@@ -289,13 +290,17 @@ const ChatPage: React.FC = () => {
               borderRadius: 16,
               borderTopLeftRadius: isUser ? 16 : 4,
               borderTopRightRadius: isUser ? 4 : 16,
-              whiteSpace: 'pre-wrap',
               wordBreak: 'break-word',
               fontSize: isMobile ? 14 : undefined,
               lineHeight: 1.6,
             }}
+            className={isUser ? undefined : 'markdown-content'}
           >
-            {msg.content}
+            {isUser ? (
+              <span style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</span>
+            ) : (
+              <Markdown>{msg.content}</Markdown>
+            )}
           </div>
         </div>
       </div>
@@ -345,14 +350,14 @@ const ChatPage: React.FC = () => {
               padding: isMobile ? '8px 12px' : '12px 16px',
               borderRadius: 12,
               borderTopLeftRadius: 4,
-              whiteSpace: 'pre-wrap',
               wordBreak: 'break-word',
               minWidth: 60,
               fontSize: isMobile ? 14 : undefined,
               lineHeight: 1.6,
             }}
+            className="markdown-content"
           >
-            {streamingContent || <Spin size="small" />}
+            {streamingContent ? <Markdown>{streamingContent}</Markdown> : <Spin size="small" />}
           </div>
         </div>
       </div>
