@@ -280,7 +280,11 @@ const AdvicePage: React.FC = () => {
               <span>{item.title}</span>
             </div>
           ),
-          extra: renderAskButton('suggestion', item.title, item.content),
+          extra: (
+            <div onClick={(e) => e.stopPropagation()}>
+              {renderAskButton('suggestion', item.title, item.content)}
+            </div>
+          ),
           children: <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{item.content}</p>,
         }))}
       />
