@@ -43,6 +43,13 @@ interface HealthContext {
     isAbnormal: boolean;
   }[];
   documentSummary?: string;
+  latestDocumentContent?: string; // 最新文档的 AI 解析内容
+  sourceAdvice?: {
+    summary: string;
+    concerns: { level: string; title: string; description: string }[];
+    suggestions: { category: string; title: string; content: string }[];
+    actionItems: { priority: string; text: string }[];
+  };
 }
 
 @Injectable()
@@ -76,7 +83,10 @@ export class ChatService {
         id: sessionId,
         familyId,
       },
-      include: {
+      select: {
+        id: true,
+        memberId: true,
+        sourceAdviceId: true,
         member: {
           select: {
             id: true,
@@ -98,7 +108,10 @@ export class ChatService {
   }
 
   // 收集成员健康数据（用于上下文）
-  private async collectHealthContext(memberId: string): Promise<HealthContext> {
+  private async collectHealthContext(
+    memberId: string,
+    sourceAdviceId?: string,
+  ): Promise<HealthContext> {
     const member = await this.prisma.familyMember.findUnique({
       where: { id: memberId },
       select: {
@@ -126,20 +139,29 @@ export class ChatService {
       age--;
     }
 
-    // 获取最近 30 天的健康记录
+    // 健康记录获取策略：至少取最近 30 天，不够 30 条就往前追溯
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const records = await this.prisma.healthRecord.findMany({
+    // 先获取最近 30 天的记录
+    let records = await this.prisma.healthRecord.findMany({
       where: {
         memberId,
         recordDate: { gte: thirtyDaysAgo },
       },
       orderBy: { recordDate: 'desc' },
-      take: 30,
     });
 
-    // 获取最近的文档信息
+    // 如果不够 30 条，往前追溯凑够 30 条
+    if (records.length < 30) {
+      records = await this.prisma.healthRecord.findMany({
+        where: { memberId },
+        orderBy: { recordDate: 'desc' },
+        take: 30,
+      });
+    }
+
+    // 获取最近的文档信息（包含 AI 解析内容）
     const documents = await this.prisma.document.findMany({
       where: {
         memberId,
@@ -151,6 +173,7 @@ export class ChatService {
         name: true,
         type: true,
         checkDate: true,
+        parsedData: true,
       },
     });
 
@@ -160,6 +183,42 @@ export class ChatService {
             .map((d) => `${d.checkDate.toISOString().split('T')[0]} - ${d.name}`)
             .join('\n')
         : undefined;
+
+    // 获取最新文档的 AI 解析内容（如果有）
+    // parsedData 是 JSON 格式，需要转换为字符串
+    let latestDocumentContent: string | undefined = undefined;
+    if (documents[0]?.parsedData) {
+      const parsed = documents[0].parsedData as { summary?: string; items?: unknown[] };
+      if (parsed.summary) {
+        latestDocumentContent = parsed.summary;
+      } else if (typeof parsed === 'object') {
+        // 如果没有 summary，尝试序列化整个对象
+        latestDocumentContent = JSON.stringify(parsed, null, 2);
+      }
+    }
+
+    // 如果有来源建议，获取其完整内容
+    let sourceAdvice: HealthContext['sourceAdvice'] = undefined;
+    if (sourceAdviceId) {
+      const advice = await this.prisma.healthAdvice.findUnique({
+        where: { id: sourceAdviceId },
+      });
+      if (advice && advice.content) {
+        // content 是 JSON 格式，包含 summary, concerns, suggestions, actionItems
+        const content = advice.content as {
+          summary?: string;
+          concerns?: { level: string; title: string; description: string }[];
+          suggestions?: { category: string; title: string; content: string }[];
+          actionItems?: { priority: string; text: string }[];
+        };
+        sourceAdvice = {
+          summary: content.summary || '',
+          concerns: content.concerns || [],
+          suggestions: content.suggestions || [],
+          actionItems: content.actionItems || [],
+        };
+      }
+    }
 
     return {
       memberInfo: {
@@ -178,11 +237,48 @@ export class ChatService {
         isAbnormal: r.isAbnormal,
       })),
       documentSummary,
+      latestDocumentContent,
+      sourceAdvice,
     };
   }
 
   // 构建系统提示词
   private buildSystemPrompt(context: HealthContext): string {
+    // 构建健康建议部分（如果有来源建议）
+    let adviceSection = '';
+    if (context.sourceAdvice) {
+      const { summary, concerns, suggestions, actionItems } = context.sourceAdvice;
+      adviceSection = `
+## 当前咨询的健康建议
+
+**健康概述**
+${summary}
+
+**需要关注的问题**
+${concerns.map((c) => `- [${c.level}] ${c.title}：${c.description}`).join('\n')}
+
+**健康建议**
+${suggestions.map((s) => `- [${s.category}] ${s.title}：${s.content}`).join('\n')}
+
+**行动清单**
+${actionItems.map((a) => `- [${a.priority}优先级] ${a.text}`).join('\n')}
+`;
+    }
+
+    // 构建最新文档内容部分（如果有）
+    let latestDocSection = '';
+    if (context.latestDocumentContent) {
+      // 限制文档内容长度，避免上下文过长
+      const truncatedContent =
+        context.latestDocumentContent.length > 3000
+          ? context.latestDocumentContent.substring(0, 3000) + '...(内容已截断)'
+          : context.latestDocumentContent;
+      latestDocSection = `
+**最新体检报告解析**
+${truncatedContent}
+`;
+    }
+
     return `你是一位专业、友善的健康顾问AI助手。你正在为一位家庭成员提供健康咨询服务。
 
 ## 成员健康档案
@@ -194,11 +290,10 @@ export class ChatService {
 ${context.memberInfo.bloodType ? `- 血型：${context.memberInfo.bloodType}` : ''}
 ${context.memberInfo.chronicDiseases?.length ? `- 慢性病史：${context.memberInfo.chronicDiseases.join('、')}` : ''}
 
-**近期健康记录**
+**近期健康记录（${context.recentRecords.length} 条）**
 ${
   context.recentRecords.length > 0
     ? context.recentRecords
-        .slice(0, 15)
         .map(
           (r) =>
             `- ${r.date} ${r.type}：${r.value}${r.unit}${r.isAbnormal ? ' ⚠️异常' : ''}`,
@@ -208,7 +303,8 @@ ${
 }
 
 ${context.documentSummary ? `**近期健康文档**\n${context.documentSummary}` : ''}
-
+${latestDocSection}
+${adviceSection}
 ## 回答要求
 
 1. **专业性**：基于成员的健康档案，提供个性化的建议
@@ -371,8 +467,11 @@ ${context.documentSummary ? `**近期健康文档**\n${context.documentSummary}`
       take: 20,
     });
 
-    // 收集健康上下文
-    const healthContext = await this.collectHealthContext(session.memberId);
+    // 收集健康上下文（包含来源建议信息）
+    const healthContext = await this.collectHealthContext(
+      session.memberId,
+      session.sourceAdviceId || undefined,
+    );
 
     // 构建消息数组
     const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
