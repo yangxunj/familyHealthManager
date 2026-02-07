@@ -329,11 +329,11 @@ const AdvicePage: React.FC = () => {
         renderItem={(item, index) => (
           <List.Item style={itemStyle}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-              <div style={{ paddingTop: 2 }}>{getIcon(item.level)}</div>
+              <div style={{ fontSize: 16, lineHeight: '22px' }}>{getIcon(item.level)}</div>
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                   <Space>
-                    <span style={{ fontWeight: 500 }}>{item.title}</span>
+                    <span style={{ fontWeight: 500, lineHeight: '22px' }}>{item.title}</span>
                     <Tag color={ConcernLevelConfig[item.level as keyof typeof ConcernLevelConfig]?.color}>
                       {ConcernLevelConfig[item.level as keyof typeof ConcernLevelConfig]?.label}
                     </Tag>
