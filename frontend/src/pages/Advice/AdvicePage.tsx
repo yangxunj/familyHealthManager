@@ -670,15 +670,22 @@ const AdvicePage: React.FC = () => {
             renderItem={(session) => (
               <List.Item
                 style={{
-                  cursor: 'pointer',
                   padding: '12px',
                   borderRadius: 8,
                   marginBottom: 8,
                 }}
-                onClick={() => {
-                  setChatHistoryModal(null);
-                  navigate(`/chat?sessionId=${session.id}`);
-                }}
+                extra={
+                  <Button
+                    type="link"
+                    size="small"
+                    onClick={() => {
+                      setChatHistoryModal(null);
+                      navigate(`/chat?sessionId=${session.id}`);
+                    }}
+                  >
+                    查看
+                  </Button>
+                }
               >
                 <List.Item.Meta
                   avatar={
