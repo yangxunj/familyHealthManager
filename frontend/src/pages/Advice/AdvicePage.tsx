@@ -54,6 +54,14 @@ const AdvicePage: React.FC = () => {
   const [selectedMemberId, setSelectedMemberId] = useState<string | undefined>();
   const [showHistory, setShowHistory] = useState(false);
   const [selectedAdvice, setSelectedAdvice] = useState<HealthAdvice | null>(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  // 监听窗口大小变化
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // 历史聊天弹窗状态
   const [chatHistoryModal, setChatHistoryModal] = useState<{
@@ -230,6 +238,8 @@ const AdvicePage: React.FC = () => {
           okText="确定"
           cancelText="取消"
           placement="topRight"
+          okButtonProps={{ size: 'middle', style: { minWidth: 60 } }}
+          cancelButtonProps={{ size: 'middle', style: { minWidth: 60 } }}
         >
           <Button
             type="text"
@@ -626,11 +636,11 @@ const AdvicePage: React.FC = () => {
                         健康评分 {score} 分
                       </div>
                     </div>
-                    <Space>
+                    <Space direction={isMobile ? 'vertical' : 'horizontal'} size={8}>
                       <Button
                         type="primary"
                         icon={<EyeOutlined />}
-                        style={{ borderRadius: 16 }}
+                        style={{ borderRadius: 16, width: isMobile ? 80 : 'auto' }}
                         onClick={() => {
                           setSelectedAdvice(item);
                           setShowHistory(false);
@@ -651,7 +661,7 @@ const AdvicePage: React.FC = () => {
                         <Button
                           danger
                           icon={<DeleteOutlined />}
-                          style={{ borderRadius: 16 }}
+                          style={{ borderRadius: 16, width: isMobile ? 80 : 'auto' }}
                           loading={deleteMutation.isPending}
                           onClick={(e) => e.stopPropagation()}
                         >
@@ -695,9 +705,9 @@ const AdvicePage: React.FC = () => {
                   alignItems: 'center',
                 }}
               >
-                <Space>
-                  <MessageOutlined style={{ fontSize: 18, color: '#136dec' }} />
-                  <Typography.Text>
+                <Space size={12}>
+                  <MessageOutlined style={{ fontSize: 22, color: '#136dec' }} />
+                  <Typography.Text style={{ fontSize: 15 }}>
                     {dayjs(session.createdAt).format('YYYY-MM-DD HH:mm')}
                   </Typography.Text>
                 </Space>
