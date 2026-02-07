@@ -19,7 +19,6 @@ import {
   Popconfirm,
   Dropdown,
 } from 'antd';
-import type { MenuProps } from 'antd';
 import {
   RobotOutlined,
   WarningOutlined,
@@ -51,7 +50,7 @@ const AdvicePage: React.FC = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [selectedAdvice, setSelectedAdvice] = useState<HealthAdvice | null>(null);
 
-  // 长按相关状态
+  // 长按相关状态（手机端模态框）
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const [longPressItem, setLongPressItem] = useState<{ type: string; title: string; content: string } | null>(null);
 
@@ -76,10 +75,11 @@ const AdvicePage: React.FC = () => {
     }
   }, [members, selectedMemberId]);
 
-  // 跳转到聊天页面
-  const handleAskAI = useCallback(() => {
-    if (!longPressItem || !selectedMemberId) return;
-    const question = generateQuestion(longPressItem.type, longPressItem.title, longPressItem.content);
+  // 跳转到聊天页面（支持手机端模态框和桌面端右键菜单）
+  const handleAskAI = useCallback((itemOverride?: { type: string; title: string; content: string }) => {
+    const item = itemOverride || longPressItem;
+    if (!item || !selectedMemberId) return;
+    const question = generateQuestion(item.type, item.title, item.content);
     // 跳转到聊天页面，传递 memberId 和预填充的问题
     navigate(`/chat?memberId=${selectedMemberId}&question=${encodeURIComponent(question)}`);
     setLongPressItem(null);
@@ -99,16 +99,6 @@ const AdvicePage: React.FC = () => {
       longPressTimer.current = null;
     }
   }, []);
-
-  // 右键菜单项
-  const contextMenuItems: MenuProps['items'] = [
-    {
-      key: 'ask-ai',
-      label: '咨询 AI',
-      icon: <MessageOutlined />,
-      onClick: handleAskAI,
-    },
-  ];
 
   const { data: adviceList, isLoading: isLoadingHistory } = useQuery({
     queryKey: ['advice', selectedMemberId],
@@ -237,37 +227,44 @@ const AdvicePage: React.FC = () => {
       <List
         itemLayout="horizontal"
         dataSource={concerns}
-        renderItem={(item) => (
-          <Dropdown
-            menu={{ items: contextMenuItems }}
-            trigger={['contextMenu']}
-            onOpenChange={(open) => {
-              if (open) {
-                setLongPressItem({ type: 'concern', title: item.title, content: item.description });
-              }
-            }}
-          >
-            <List.Item
-              style={{ cursor: 'pointer' }}
-              onTouchStart={() => handleLongPressStart('concern', item.title, item.description)}
-              onTouchEnd={handleLongPressEnd}
-              onTouchCancel={handleLongPressEnd}
+        renderItem={(item) => {
+          const itemData = { type: 'concern', title: item.title, content: item.description };
+          return (
+            <Dropdown
+              menu={{
+                items: [
+                  {
+                    key: 'ask-ai',
+                    label: '咨询 AI',
+                    icon: <MessageOutlined />,
+                    onClick: () => handleAskAI(itemData),
+                  },
+                ],
+              }}
+              trigger={['contextMenu']}
             >
-              <List.Item.Meta
-                avatar={getIcon(item.level)}
-                title={
-                  <Space>
-                    <span>{item.title}</span>
-                    <Tag color={ConcernLevelConfig[item.level as keyof typeof ConcernLevelConfig]?.color}>
-                      {ConcernLevelConfig[item.level as keyof typeof ConcernLevelConfig]?.label}
-                    </Tag>
-                  </Space>
-                }
-                description={item.description}
-              />
-            </List.Item>
-          </Dropdown>
-        )}
+              <List.Item
+                style={{ cursor: 'pointer' }}
+                onTouchStart={() => handleLongPressStart('concern', item.title, item.description)}
+                onTouchEnd={handleLongPressEnd}
+                onTouchCancel={handleLongPressEnd}
+              >
+                <List.Item.Meta
+                  avatar={getIcon(item.level)}
+                  title={
+                    <Space>
+                      <span>{item.title}</span>
+                      <Tag color={ConcernLevelConfig[item.level as keyof typeof ConcernLevelConfig]?.color}>
+                        {ConcernLevelConfig[item.level as keyof typeof ConcernLevelConfig]?.label}
+                      </Tag>
+                    </Space>
+                  }
+                  description={item.description}
+                />
+              </List.Item>
+            </Dropdown>
+          );
+        }}
       />
     );
   };
@@ -281,32 +278,39 @@ const AdvicePage: React.FC = () => {
     return (
       <Collapse
         defaultActiveKey={suggestions.map((_, i) => i.toString())}
-        items={suggestions.map((item, index) => ({
-          key: index.toString(),
-          label: (
-            <Dropdown
-              menu={{ items: contextMenuItems }}
-              trigger={['contextMenu']}
-              onOpenChange={(open) => {
-                if (open) {
-                  setLongPressItem({ type: 'suggestion', title: item.title, content: item.content });
-                }
-              }}
-            >
-              <div
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
-                onTouchStart={() => handleLongPressStart('suggestion', item.title, item.content)}
-                onTouchEnd={handleLongPressEnd}
-                onTouchCancel={handleLongPressEnd}
+        items={suggestions.map((item, index) => {
+          const itemData = { type: 'suggestion', title: item.title, content: item.content };
+          return {
+            key: index.toString(),
+            label: (
+              <Dropdown
+                menu={{
+                  items: [
+                    {
+                      key: 'ask-ai',
+                      label: '咨询 AI',
+                      icon: <MessageOutlined />,
+                      onClick: () => handleAskAI(itemData),
+                    },
+                  ],
+                }}
+                trigger={['contextMenu']}
               >
-                <span>{SuggestionCategoryIcons[item.category] || '📝'}</span>
-                <Tag>{item.category}</Tag>
-                <span>{item.title}</span>
-              </div>
-            </Dropdown>
-          ),
-          children: <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{item.content}</p>,
-        }))}
+                <div
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                  onTouchStart={() => handleLongPressStart('suggestion', item.title, item.content)}
+                  onTouchEnd={handleLongPressEnd}
+                  onTouchCancel={handleLongPressEnd}
+                >
+                  <span>{SuggestionCategoryIcons[item.category] || '📝'}</span>
+                  <Tag>{item.category}</Tag>
+                  <span>{item.title}</span>
+                </div>
+              </Dropdown>
+            ),
+            children: <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{item.content}</p>,
+          };
+        })}
       />
     );
   };
@@ -321,51 +325,58 @@ const AdvicePage: React.FC = () => {
       <List
         itemLayout="horizontal"
         dataSource={actionItems}
-        renderItem={(item, index) => (
-          <Dropdown
-            menu={{ items: contextMenuItems }}
-            trigger={['contextMenu']}
-            onOpenChange={(open) => {
-              if (open) {
-                setLongPressItem({ type: 'action', title: item.text, content: '' });
-              }
-            }}
-          >
-            <List.Item
-              style={{ cursor: 'pointer' }}
-              onTouchStart={() => handleLongPressStart('action', item.text, '')}
-              onTouchEnd={handleLongPressEnd}
-              onTouchCancel={handleLongPressEnd}
+        renderItem={(item, index) => {
+          const itemData = { type: 'action', title: item.text, content: '' };
+          return (
+            <Dropdown
+              menu={{
+                items: [
+                  {
+                    key: 'ask-ai',
+                    label: '咨询 AI',
+                    icon: <MessageOutlined />,
+                    onClick: () => handleAskAI(itemData),
+                  },
+                ],
+              }}
+              trigger={['contextMenu']}
             >
-              <List.Item.Meta
-                avatar={
-                  <span
-                    style={{
-                      display: 'inline-flex',
-                      width: 24,
-                      height: 24,
-                      borderRadius: '50%',
-                      backgroundColor: 'var(--color-bg-hover)',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: 12,
-                    }}
-                  >
-                    {index + 1}
-                  </span>
-                }
-                title={
-                  <Space>
-                    <span>{item.text}</span>
-                    <Tag color={ActionPriorityConfig[item.priority as keyof typeof ActionPriorityConfig]?.color}>
-                      {ActionPriorityConfig[item.priority as keyof typeof ActionPriorityConfig]?.label}优先级
-                    </Tag>
-                  </Space>
-                }
-              />
-            </List.Item>
-          </Dropdown>
-        )}
+              <List.Item
+                style={{ cursor: 'pointer' }}
+                onTouchStart={() => handleLongPressStart('action', item.text, '')}
+                onTouchEnd={handleLongPressEnd}
+                onTouchCancel={handleLongPressEnd}
+              >
+                <List.Item.Meta
+                  avatar={
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        width: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        backgroundColor: 'var(--color-bg-hover)',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 12,
+                      }}
+                    >
+                      {index + 1}
+                    </span>
+                  }
+                  title={
+                    <Space>
+                      <span>{item.text}</span>
+                      <Tag color={ActionPriorityConfig[item.priority as keyof typeof ActionPriorityConfig]?.color}>
+                        {ActionPriorityConfig[item.priority as keyof typeof ActionPriorityConfig]?.label}优先级
+                      </Tag>
+                    </Space>
+                  }
+                />
+              </List.Item>
+            </Dropdown>
+          );
+        }}
       />
     );
   };
