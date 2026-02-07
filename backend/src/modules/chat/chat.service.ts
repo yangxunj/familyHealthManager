@@ -526,12 +526,12 @@ ${adviceSection}
         },
       });
 
-      // 更新会话标题（如果是第一条消息）
+      // 更新会话标题（如果是第一条消息，用 AI 生成简短标题）
       if (historyMessages.length <= 1) {
-        const title = dto.content.length > 20 ? dto.content.substring(0, 20) + '...' : dto.content;
-        await this.prisma.chatSession.update({
-          where: { id: sessionId },
-          data: { title },
+        // 异步生成标题，不阻塞主流程
+        this.generateSessionTitle(sessionId, dto.content, fullContent).catch((err) => {
+          // 标题生成失败不影响主流程，使用用户问题前几个字作为备用
+          console.error('生成会话标题失败:', err);
         });
       }
 
@@ -543,6 +543,46 @@ ${adviceSection}
     }
 
     return { tokensUsed };
+  }
+
+  // 用 AI 生成会话标题
+  private async generateSessionTitle(
+    sessionId: string,
+    userQuestion: string,
+    aiResponse: string,
+  ): Promise<void> {
+    try {
+      const result = await this.aiService.chat(
+        [
+          {
+            role: 'system',
+            content: '你是一个标题生成助手。根据用户的问题和AI的回答，生成一个简短的对话标题（不超过15个字）。只输出标题本身，不要有任何额外的解释或标点符号。',
+          },
+          {
+            role: 'user',
+            content: `用户问题：${userQuestion.substring(0, 200)}\n\nAI回答：${aiResponse.substring(0, 300)}\n\n请生成一个简短的标题：`,
+          },
+        ],
+        { maxTokens: 30 },
+      );
+
+      const title = result.content.trim().substring(0, 30);
+      if (title) {
+        await this.prisma.chatSession.update({
+          where: { id: sessionId },
+          data: { title },
+        });
+      }
+    } catch (error) {
+      // 生成失败时使用用户问题前几个字作为备用
+      const fallbackTitle = userQuestion.length > 20
+        ? userQuestion.substring(0, 20) + '...'
+        : userQuestion;
+      await this.prisma.chatSession.update({
+        where: { id: sessionId },
+        data: { title: fallbackTitle },
+      });
+    }
   }
 
   // 获取建议的会话统计（按条目类型和索引分组）
