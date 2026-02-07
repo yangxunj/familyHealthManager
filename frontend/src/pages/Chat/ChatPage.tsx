@@ -51,14 +51,19 @@ const QUICK_QUESTIONS = [
 ];
 
 // 预处理 Markdown 内容，修复中文标点旁的加粗渲染问题
-// 把 **"xxx"** 这种模式直接替换成 HTML <strong> 标签
+// 把 **xxx** 模式中，紧邻中文标点的情况替换成 HTML <strong> 标签
 const preprocessMarkdown = (content: string): string => {
-  // 匹配 **xxx** 模式，其中 xxx 以中文引号开头或结尾
-  // 把这些替换成 <strong>xxx</strong>
-  return content.replace(
-    /\*\*([""「『【（][^*]*[""」』】）])\*\*/g,
-    '<strong>$1</strong>'
-  );
+  // 匹配所有 **xxx** 模式，其中 xxx 以中文标点开头或结尾
+  const chinesePunctuation = /[""「『【（）】』」""]/;
+
+  return content.replace(/\*\*([^*]+)\*\*/g, (match, inner) => {
+    // 如果内容以中文标点开头或结尾，使用 HTML 标签
+    if (chinesePunctuation.test(inner.charAt(0)) || chinesePunctuation.test(inner.charAt(inner.length - 1))) {
+      return `<strong>${inner}</strong>`;
+    }
+    // 否则保持原样，让 Markdown 解析器处理
+    return match;
+  });
 };
 
 const ChatPage: React.FC = () => {
