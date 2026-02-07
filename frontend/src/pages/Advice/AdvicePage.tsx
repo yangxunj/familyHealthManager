@@ -196,9 +196,8 @@ const AdvicePage: React.FC = () => {
 
     return (
       <Space size={4}>
-        {/* 历史聊天按钮（暂时隐藏数字角标） */}
+        {/* 历史聊天按钮 */}
         {count > 0 && (
-          // <Badge count={count} size="small" offset={[-4, 0]} color="#999">
           <Button
             type="text"
             size="small"
@@ -208,14 +207,13 @@ const AdvicePage: React.FC = () => {
               setChatHistoryModal({ visible: true, itemType: type, itemIndex: index, itemTitle: title });
             }}
             style={{
-              color: 'var(--color-text-secondary)',
+              color: 'var(--color-primary)',
               opacity: 0.7,
               transition: 'opacity 0.2s',
             }}
             onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
             onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.7'; }}
           />
-          // </Badge>
         )}
         <Popconfirm
           title="咨询 AI"
@@ -671,28 +669,30 @@ const AdvicePage: React.FC = () => {
             dataSource={chatHistorySessions}
             renderItem={(session) => (
               <List.Item
-                style={{ cursor: 'pointer' }}
+                style={{
+                  cursor: 'pointer',
+                  padding: '12px',
+                  borderRadius: 8,
+                  marginBottom: 8,
+                }}
                 onClick={() => {
                   setChatHistoryModal(null);
                   navigate(`/chat?sessionId=${session.id}`);
                 }}
               >
                 <List.Item.Meta
-                  title={session.title}
+                  avatar={
+                    <MessageOutlined style={{ fontSize: 20, color: '#136dec' }} />
+                  }
+                  title={
+                    <Typography.Text ellipsis style={{ maxWidth: 350 }}>
+                      {session.title}
+                    </Typography.Text>
+                  }
                   description={
-                    <>
-                      <Typography.Text type="secondary">
-                        {dayjs(session.createdAt).format('YYYY-MM-DD HH:mm')}
-                      </Typography.Text>
-                      {session.lastMessage && (
-                        <Typography.Paragraph
-                          ellipsis={{ rows: 1 }}
-                          style={{ marginBottom: 0, marginTop: 4 }}
-                        >
-                          {session.lastMessage}
-                        </Typography.Paragraph>
-                      )}
-                    </>
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                      {dayjs(session.createdAt).format('MM-DD HH:mm')}
+                    </Typography.Text>
                   }
                 />
               </List.Item>
