@@ -597,7 +597,8 @@ const AdvicePage: React.FC = () => {
         open={showHistory}
         onCancel={() => setShowHistory(false)}
         footer={null}
-        width={700}
+        width={isMobile ? '95vw' : 700}
+        styles={{ body: { padding: isMobile ? '12px 8px' : undefined } }}
       >
         {isLoadingHistory ? (
           <div style={{ textAlign: 'center', padding: 50 }}>
@@ -612,7 +613,7 @@ const AdvicePage: React.FC = () => {
               const scoreColor = score >= 80 ? '#13ec5b' : score >= 60 ? '#faad14' : '#ff4d4f';
               return (
                 <List.Item>
-                  <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: isMobile ? 10 : 16 }}>
                     <div
                       style={{
                         width: 48,
@@ -636,11 +637,11 @@ const AdvicePage: React.FC = () => {
                         健康评分 {score} 分
                       </div>
                     </div>
-                    <Space direction={isMobile ? 'vertical' : 'horizontal'} size={8}>
+                    <Space size={8}>
                       <Button
                         type="primary"
                         icon={<EyeOutlined />}
-                        style={{ borderRadius: 16, width: isMobile ? 80 : 'auto' }}
+                        style={{ borderRadius: 16 }}
                         onClick={() => {
                           setSelectedAdvice(item);
                           setShowHistory(false);
@@ -661,7 +662,7 @@ const AdvicePage: React.FC = () => {
                         <Button
                           danger
                           icon={<DeleteOutlined />}
-                          style={{ borderRadius: 16, width: isMobile ? 80 : 'auto' }}
+                          style={{ borderRadius: 16 }}
                           loading={deleteMutation.isPending}
                           onClick={(e) => e.stopPropagation()}
                         >
