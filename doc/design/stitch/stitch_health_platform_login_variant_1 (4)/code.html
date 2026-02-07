@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI Health Advice Dashboard</title>
+<!-- Fonts & Icons -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec5b",
+                        "primary-hover": "#0fd451",
+                        "background-light": "#f6f8f6",
+                        "background-dark": "#102216",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1a2e22",
+                        "text-main": "#0d1b12",
+                        "text-secondary": "#4c9a66",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom Scrollbar for cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cfe7d7; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4c9a66; 
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #2a4535;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-text-main dark:text-gray-100 antialiased overflow-hidden">
+<div class="flex h-screen w-full overflow-hidden">
+<!-- Sidebar -->
+<aside class="hidden md:flex flex-col w-64 h-full border-r border-[#cfe7d7] dark:border-[#2a4535] bg-surface-light dark:bg-surface-dark overflow-y-auto shrink-0">
+<div class="flex flex-col h-full p-4 justify-between">
+<div class="flex flex-col gap-6">
+<!-- Brand / Profile -->
+<div class="flex items-center gap-3 px-2">
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-12 shrink-0 border border-primary/30" data-alt="abstract green health gradient logo" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDponJDdpsfg0aG7GH0QUMohWvrPduvpD7n1jNUAv-f-0K9qqF4sqbrtlPV47EQylg8U4TEyRYqtoGPzpKJqwH98c3LC-e7IiDKnyEgYZ7H6fwKJFlT7y7Ln4_qXlM9vRuMXFvR-AJwiAtYyaLroXzGkjECJKXsok2F8AQOjO7MzjKN2ly72ui7WedDAp91UCBqen4xzzcTa2JruVUVKKwOrmVKwczcVRo-2rOv46iS3KcTDrXS3bM11snY4zQ3qFHuXG04rzDhdnE");'>
+</div>
+<div class="flex flex-col">
+<h1 class="text-text-main dark:text-white text-lg font-bold leading-tight">HealthConnect</h1>
+<p class="text-text-secondary dark:text-gray-400 text-xs font-medium">Family Management</p>
+</div>
+</div>
+<!-- Navigation -->
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-[#e7f3eb] dark:hover:bg-[#2a4535] transition-colors group" href="#">
+<span class="material-symbols-outlined text-text-secondary dark:text-gray-400 group-hover:text-text-main dark:group-hover:text-primary">home</span>
+<p class="text-text-main dark:text-gray-200 text-sm font-medium">Overview</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-[#e7f3eb] dark:hover:bg-[#2a4535] transition-colors group" href="#">
+<span class="material-symbols-outlined text-text-secondary dark:text-gray-400 group-hover:text-text-main dark:group-hover:text-primary">folder_shared</span>
+<p class="text-text-main dark:text-gray-200 text-sm font-medium">Health Records</p>
+</a>
+<!-- Active State -->
+<a class="flex items-center gap-3 px-3 py-3 rounded-xl bg-primary/10 dark:bg-primary/20 border border-primary/10 dark:border-transparent" href="#">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">lightbulb</span>
+<p class="text-text-main dark:text-white text-sm font-bold">AI Advice</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-[#e7f3eb] dark:hover:bg-[#2a4535] transition-colors group" href="#">
+<span class="material-symbols-outlined text-text-secondary dark:text-gray-400 group-hover:text-text-main dark:group-hover:text-primary">medication</span>
+<p class="text-text-main dark:text-gray-200 text-sm font-medium">Medications</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-[#e7f3eb] dark:hover:bg-[#2a4535] transition-colors group" href="#">
+<span class="material-symbols-outlined text-text-secondary dark:text-gray-400 group-hover:text-text-main dark:group-hover:text-primary">settings</span>
+<p class="text-text-main dark:text-gray-200 text-sm font-medium">Settings</p>
+</a>
+</nav>
+</div>
+<!-- Bottom User Info -->
+<div class="mt-auto px-2">
+<div class="p-3 rounded-xl bg-[#e7f3eb] dark:bg-[#2a4535] flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">account_circle</span>
+<div class="flex flex-col">
+<span class="text-xs font-bold text-text-main dark:text-white">Dr. Sarah Lin</span>
+<span class="text-[10px] text-text-secondary dark:text-gray-300">Admin</span>
+</div>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col h-full overflow-hidden relative">
+<!-- Scrollable Area -->
+<div class="flex-1 overflow-y-auto p-4 md:p-8">
+<div class="max-w-6xl mx-auto flex flex-col gap-6">
+<!-- Header Section: Title & Controls -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h2 class="text-2xl font-bold text-text-main dark:text-white mb-1">AI Health Advice</h2>
+<p class="text-text-secondary dark:text-gray-400 text-sm">Personalized insights powered by health data.</p>
+</div>
+<!-- Controls -->
+<div class="flex flex-wrap items-center gap-3">
+<!-- Dropdown -->
+<div class="relative min-w-[200px]">
+<select class="w-full appearance-none rounded-xl border border-[#cfe7d7] dark:border-[#2a4535] bg-surface-light dark:bg-surface-dark py-2.5 pl-4 pr-10 text-sm font-medium text-text-main dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50">
+<option value="1">Grandpa Zhang</option>
+<option value="2">Grandma Li</option>
+<option value="3">Little Ming</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-text-secondary">
+<span class="material-symbols-outlined text-lg">expand_more</span>
+</div>
+</div>
+<!-- History Button -->
+<button class="flex items-center justify-center gap-2 rounded-xl bg-white dark:bg-surface-dark border border-[#cfe7d7] dark:border-[#2a4535] px-4 py-2.5 text-sm font-bold text-text-main dark:text-white hover:bg-gray-50 dark:hover:bg-[#2a4535]/80 transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[20px]">history</span>
+<span>History</span>
+</button>
+<!-- Generate Button -->
+<button class="flex items-center justify-center gap-2 rounded-xl bg-primary hover:bg-primary-hover px-5 py-2.5 text-sm font-bold text-[#0d1b12] shadow-sm shadow-primary/30 transition-all active:scale-95">
+<span class="material-symbols-outlined text-[20px]">smart_toy</span>
+<span>Generate Advice</span>
+</button>
+</div>
+</div>
+<!-- Disclaimer Banner -->
+<!-- Used amber/yellow as requested for a soft warning look -->
+<div class="rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700/50 p-4 flex items-start md:items-center gap-3">
+<span class="material-symbols-outlined text-amber-600 dark:text-amber-400 shrink-0">warning</span>
+<div class="flex flex-1 flex-col md:flex-row justify-between gap-2">
+<p class="text-sm font-medium text-amber-900 dark:text-amber-100">
+<span class="font-bold">Disclaimer:</span> AI suggestions are for reference only and not a substitute for professional diagnosis. (AI建议仅供参考，不能替代专业医疗诊断)
+                            </p>
+<button class="text-xs font-bold text-amber-700 dark:text-amber-300 hover:underline shrink-0">Dismiss</button>
+</div>
+</div>
+<!-- Main Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+<!-- LEFT COLUMN: Side Info -->
+<div class="md:col-span-4 flex flex-col gap-6">
+<!-- Health Score Card -->
+<div class="rounded-2xl bg-surface-light dark:bg-surface-dark border border-[#cfe7d7] dark:border-[#2a4535] p-6 flex flex-col items-center justify-center shadow-sm">
+<h3 class="text-text-main dark:text-white font-bold text-lg mb-4 self-start w-full flex justify-between items-center">
+                                    Health Score
+                                    <span class="material-symbols-outlined text-primary text-2xl">ecg_heart</span>
+</h3>
+<div class="relative size-48">
+<svg class="size-full -rotate-90" viewbox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+<!-- Background Circle -->
+<circle class="stroke-gray-100 dark:stroke-[#2a4535]" cx="18" cy="18" fill="none" r="16" stroke-width="3"></circle>
+<!-- Progress Circle -->
+<circle class="stroke-primary" cx="18" cy="18" fill="none" r="16" stroke-dasharray="100" stroke-dashoffset="18" stroke-linecap="round" stroke-width="3"></circle>
+</svg>
+<!-- Text in middle -->
+<div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+<span class="text-4xl font-extrabold text-text-main dark:text-white">82</span>
+<span class="text-xs font-semibold text-text-secondary dark:text-primary uppercase tracking-wide">Good</span>
+</div>
+</div>
+<p class="text-center text-sm text-text-secondary dark:text-gray-400 mt-4 px-2">
+                                    Score updated today based on latest vitals.
+                                </p>
+</div>
+<!-- Action Checklist -->
+<div class="rounded-2xl bg-surface-light dark:bg-surface-dark border border-[#cfe7d7] dark:border-[#2a4535] p-6 shadow-sm flex-1">
+<h3 class="text-text-main dark:text-white font-bold text-lg mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">check_circle</span>
+                                    Action Checklist
+                                </h3>
+<div class="flex flex-col gap-3">
+<!-- Item 1 -->
+<label class="flex items-start gap-3 p-3 rounded-xl hover:bg-[#f8fcf9] dark:hover:bg-[#2a4535]/50 cursor-pointer transition-colors border border-transparent hover:border-[#cfe7d7] dark:hover:border-[#2a4535]">
+<input checked="" class="mt-1 size-5 rounded border-gray-300 text-primary focus:ring-primary/50" type="checkbox"/>
+<div class="flex flex-col">
+<span class="text-sm font-bold text-text-main dark:text-gray-200 line-through decoration-primary decoration-2 opacity-70">Measure Blood Pressure</span>
+<span class="text-xs text-text-secondary dark:text-gray-500">Completed 8:00 AM</span>
+</div>
+</label>
+<!-- Item 2 -->
+<label class="flex items-start gap-3 p-3 rounded-xl hover:bg-[#f8fcf9] dark:hover:bg-[#2a4535]/50 cursor-pointer transition-colors border border-transparent hover:border-[#cfe7d7] dark:hover:border-[#2a4535]">
+<input class="mt-1 size-5 rounded border-gray-300 text-primary focus:ring-primary/50" type="checkbox"/>
+<div class="flex flex-col">
+<span class="text-sm font-bold text-text-main dark:text-gray-200">Take Medication (Noon)</span>
+<span class="text-xs text-text-secondary dark:text-gray-500">Amlodipine 5mg</span>
+</div>
+</label>
+<!-- Item 3 -->
+<label class="flex items-start gap-3 p-3 rounded-xl hover:bg-[#f8fcf9] dark:hover:bg-[#2a4535]/50 cursor-pointer transition-colors border border-transparent hover:border-[#cfe7d7] dark:hover:border-[#2a4535]">
+<input class="mt-1 size-5 rounded border-gray-300 text-primary focus:ring-primary/50" type="checkbox"/>
+<div class="flex flex-col">
+<span class="text-sm font-bold text-text-main dark:text-gray-200">Afternoon Walk</span>
+<span class="text-xs text-text-secondary dark:text-gray-500">Target: 30 minutes</span>
+</div>
+</label>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN: Main Analysis -->
+<div class="md:col-span-8 flex flex-col gap-6">
+<!-- Health Overview Card -->
+<div class="rounded-2xl bg-surface-light dark:bg-surface-dark border border-[#cfe7d7] dark:border-[#2a4535] p-6 shadow-sm">
+<div class="flex items-center gap-3 mb-3">
+<span class="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 material-symbols-outlined">analytics</span>
+<h3 class="text-lg font-bold text-text-main dark:text-white">Health Overview (健康概述)</h3>
+</div>
+<p class="text-text-main dark:text-gray-300 text-base leading-relaxed">
+                                    Overall health status is stable. Blood pressure fluctuations have been observed in the last 48 hours, correlating with reported high-sodium meal intake. Sleep patterns have improved slightly compared to last week. The AI recommends continuing the current medication regimen but strictly controlling salt intake for the next 3 days.
+                                </p>
+</div>
+<!-- Concerns Section -->
+<div class="rounded-2xl bg-surface-light dark:bg-surface-dark border border-[#cfe7d7] dark:border-[#2a4535] p-6 shadow-sm">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-3">
+<span class="p-2 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300 material-symbols-outlined">notification_important</span>
+<h3 class="text-lg font-bold text-text-main dark:text-white">Needs Attention (需要关注)</h3>
+</div>
+<span class="text-xs font-medium text-text-secondary bg-[#f8fcf9] dark:bg-[#2a4535] px-2 py-1 rounded-md">2 Issues Found</span>
+</div>
+<div class="space-y-3">
+<!-- High Priority Item -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-red-50/50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30">
+<div class="flex items-center gap-3">
+<div class="size-2 rounded-full bg-red-500"></div>
+<div>
+<p class="font-bold text-text-main dark:text-red-100">Systolic Pressure Spike</p>
+<p class="text-sm text-text-secondary dark:text-red-200/70">Recorded 145 mmHg at 8:00 AM</p>
+</div>
+</div>
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                                            High Priority
+                                        </span>
+</div>
+<!-- Medium Priority Item -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-orange-50/50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/30">
+<div class="flex items-center gap-3">
+<div class="size-2 rounded-full bg-orange-400"></div>
+<div>
+<p class="font-bold text-text-main dark:text-orange-100">Irregular Sleep Cycle</p>
+<p class="text-sm text-text-secondary dark:text-orange-200/70">Average deep sleep &lt; 15%</p>
+</div>
+</div>
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
+                                            Moderate
+                                        </span>
+</div>
+</div>
+</div>
+<!-- Recommendations Section -->
+<div class="rounded-2xl bg-surface-light dark:bg-surface-dark border border-[#cfe7d7] dark:border-[#2a4535] p-6 shadow-sm">
+<div class="flex items-center gap-3 mb-5">
+<span class="p-2 rounded-lg bg-primary/10 text-primary material-symbols-outlined">medical_services</span>
+<h3 class="text-lg font-bold text-text-main dark:text-white">AI Recommendations</h3>
+</div>
+<div class="flex flex-col gap-4">
+<!-- Diet Advice (Open State) -->
+<div class="border border-primary/30 rounded-xl overflow-hidden bg-[#f8fcf9] dark:bg-[#15261d]">
+<div class="flex items-center justify-between p-4 cursor-pointer bg-primary/5 dark:bg-primary/10">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">restaurant</span>
+<span class="font-bold text-text-main dark:text-white">Dietary Advice (饮食建议)</span>
+</div>
+<span class="material-symbols-outlined text-text-secondary">expand_less</span>
+</div>
+<div class="p-4 pt-2 border-t border-primary/10">
+<ul class="list-disc list-inside space-y-2 text-sm text-text-main dark:text-gray-300">
+<li><strong class="text-primary dark:text-primary-hover">Reduce Sodium:</strong> Limit daily salt intake to less than 5g. Avoid pickled vegetables this week.</li>
+<li><strong class="text-primary dark:text-primary-hover">Increase Potassium:</strong> Eat more bananas and spinach to help regulate blood pressure.</li>
+<li><strong class="text-primary dark:text-primary-hover">Hydration:</strong> Drink at least 2000ml of water daily, spread evenly.</li>
+</ul>
+</div>
+</div>
+<!-- Exercise Advice (Closed State) -->
+<div class="border border-[#cfe7d7] dark:border-[#2a4535] rounded-xl overflow-hidden hover:border-primary/30 transition-colors">
+<div class="flex items-center justify-between p-4 cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-text-secondary dark:text-gray-400">directions_run</span>
+<span class="font-bold text-text-main dark:text-white">Exercise Plan (运动建议)</span>
+</div>
+<span class="material-symbols-outlined text-text-secondary">expand_more</span>
+</div>
+</div>
+<!-- Sleep Advice (Closed State) -->
+<div class="border border-[#cfe7d7] dark:border-[#2a4535] rounded-xl overflow-hidden hover:border-primary/30 transition-colors">
+<div class="flex items-center justify-between p-4 cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-text-secondary dark:text-gray-400">bedtime</span>
+<span class="font-bold text-text-main dark:text-white">Sleep Hygiene (作息建议)</span>
+</div>
+<span class="material-symbols-outlined text-text-secondary">expand_more</span>
+</div>
+</div>
+<!-- Medication Reminder (Closed State) -->
+<div class="border border-[#cfe7d7] dark:border-[#2a4535] rounded-xl overflow-hidden hover:border-primary/30 transition-colors">
+<div class="flex items-center justify-between p-4 cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-text-secondary dark:text-gray-400">pill</span>
+<span class="font-bold text-text-main dark:text-white">Medications (用药提醒)</span>
+</div>
+<span class="material-symbols-outlined text-text-secondary">expand_more</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Spacer -->
+<div class="h-8"></div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

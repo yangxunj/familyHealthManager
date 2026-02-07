@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Family Health Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#136dec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101822",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+<div class="flex h-screen w-full overflow-hidden">
+<!-- Sidebar -->
+<aside class="flex w-64 flex-col justify-between bg-[#101822] border-r border-slate-800 p-4 shrink-0 transition-all duration-300">
+<div class="flex flex-col gap-8">
+<!-- Logo -->
+<div class="flex items-center gap-3 px-2 pt-2">
+<div class="flex items-center justify-center rounded-lg bg-primary size-10 text-white shrink-0">
+<span class="material-symbols-outlined text-[24px]">medical_services</span>
+</div>
+<h1 class="text-white text-lg font-bold leading-normal tracking-tight">家庭健康管理</h1>
+</div>
+<!-- Navigation -->
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-3 px-3 py-3 rounded-xl bg-primary text-white shadow-lg shadow-primary/20 transition-all" href="#">
+<span class="material-symbols-outlined text-[22px]">home</span>
+<p class="text-sm font-medium">首页</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-[22px]">diversity_1</span>
+<p class="text-sm font-medium">家庭成员</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-[22px]">description</span>
+<p class="text-sm font-medium">健康文档</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-[22px]">monitor_heart</span>
+<p class="text-sm font-medium">健康记录</p>
+</a>
+<!-- AI Assistant with simple nesting logic visual -->
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer group">
+<span class="material-symbols-outlined text-[22px]">smart_toy</span>
+<div class="flex flex-1 items-center justify-between">
+<p class="text-sm font-medium">AI助手</p>
+<span class="material-symbols-outlined text-[16px] opacity-0 group-hover:opacity-100 transition-opacity">expand_more</span>
+</div>
+</div>
+<!-- Submenu items visual -->
+<div class="pl-11 flex flex-col gap-1">
+<a class="text-slate-500 hover:text-primary text-xs py-1 transition-colors" href="#">健康咨询</a>
+<a class="text-slate-500 hover:text-primary text-xs py-1 transition-colors" href="#">智能建议</a>
+</div>
+</div>
+<a class="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-[22px]">settings</span>
+<p class="text-sm font-medium">家庭设置</p>
+</a>
+</nav>
+</div>
+<!-- User Profile -->
+<div class="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-slate-800 transition-colors cursor-pointer border-t border-slate-800/50 mt-4">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border-2 border-slate-700" data-alt="User profile picture of Mr. Zhang" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBWQOsh9Lju7G6yOGu9orsEmZxxAcCOy7JhT6cDSZrpGB1bNhjfsnjuA1Imj4iLyL748PHbecjdVwktNBUzejQCTfGkEORvIAo6IrGa0tTsPmgzWtTQPf7mtRGy8blxm1-2swzH7S70jYlRUWlhKkAiJHKBCyEN8gS-0mAKRR8CJU7vUx5vmo9YeunLLLs0jObuNt_B-_Dqfo4nvhEiRKwhiT-KJu-FLTObt-Rc5RoeCXBzpb-r2PyGPXjy5-Ele46c4A4BcVGLFCA");'>
+</div>
+<div class="flex flex-col overflow-hidden">
+<p class="text-white text-sm font-medium truncate">张伟先生</p>
+<p class="text-slate-500 text-xs truncate">至尊会员</p>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col h-full overflow-y-auto bg-background-light dark:bg-background-dark relative">
+<div class="max-w-[1200px] mx-auto w-full p-6 md:p-8 flex flex-col gap-8">
+<!-- Header -->
+<header class="flex flex-wrap justify-between items-end gap-4">
+<div class="flex flex-col gap-2">
+<h2 class="text-slate-900 dark:text-white text-3xl font-extrabold leading-tight tracking-tight">欢迎回来，张先生 👋</h2>
+<p class="text-slate-500 dark:text-slate-400 text-base font-normal">今天也是关注家人健康的一天，系统已为您更新今日健康日报。</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-4 py-2 rounded-lg shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-700 text-sm font-medium">
+<span class="material-symbols-outlined text-[20px]">calendar_today</span>
+<span>2023年 10月 24日</span>
+</button>
+<button class="flex items-center justify-center bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 p-2 rounded-lg shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-700">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+</button>
+</div>
+</header>
+<!-- Stats Cards -->
+<section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- Stat 1 -->
+<div class="flex flex-col gap-3 p-5 rounded-2xl bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start">
+<div class="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+<span class="material-symbols-outlined text-[24px]">diversity_1</span>
+</div>
+<span class="flex items-center text-xs font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[14px] mr-1">arrow_upward</span>
+                                +1
+                            </span>
+</div>
+<div>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">家庭成员</p>
+<p class="text-slate-900 dark:text-white text-2xl font-bold mt-1">6 <span class="text-xs font-normal text-slate-400">人</span></p>
+</div>
+</div>
+<!-- Stat 2 -->
+<div class="flex flex-col gap-3 p-5 rounded-2xl bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start">
+<div class="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+<span class="material-symbols-outlined text-[24px]">description</span>
+</div>
+<span class="flex items-center text-xs font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[14px] mr-1">arrow_upward</span>
+                                +3
+                            </span>
+</div>
+<div>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">健康文档</p>
+<p class="text-slate-900 dark:text-white text-2xl font-bold mt-1">23 <span class="text-xs font-normal text-slate-400">份</span></p>
+</div>
+</div>
+<!-- Stat 3 -->
+<div class="flex flex-col gap-3 p-5 rounded-2xl bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start">
+<div class="p-2.5 rounded-xl bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400">
+<span class="material-symbols-outlined text-[24px]">monitor_heart</span>
+</div>
+<span class="flex items-center text-xs font-medium text-slate-500 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full">
+                                持平
+                            </span>
+</div>
+<div>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">健康记录</p>
+<p class="text-slate-900 dark:text-white text-2xl font-bold mt-1">156 <span class="text-xs font-normal text-slate-400">条</span></p>
+</div>
+</div>
+<!-- Stat 4 -->
+<div class="flex flex-col gap-3 p-5 rounded-2xl bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start">
+<div class="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
+<span class="material-symbols-outlined text-[24px]">psychology</span>
+</div>
+<span class="flex items-center text-xs font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[14px] mr-1">arrow_upward</span>
+                                New
+                            </span>
+</div>
+<div>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">AI 建议</p>
+<p class="text-slate-900 dark:text-white text-2xl font-bold mt-1">12 <span class="text-xs font-normal text-slate-400">条</span></p>
+</div>
+</div>
+</section>
+<!-- Alert Banner -->
+<section class="rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-900 p-1 border border-blue-100 dark:border-slate-700 shadow-sm">
+<div class="flex flex-col md:flex-row items-center justify-between gap-6 p-6 md:pr-8 bg-white/60 dark:bg-slate-800/60 rounded-xl backdrop-blur-sm">
+<div class="flex items-start gap-4">
+<div class="flex-shrink-0 size-12 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-primary dark:text-blue-400">
+<span class="material-symbols-outlined text-[28px]">assignment_ind</span>
+</div>
+<div class="flex flex-col gap-1">
+<h3 class="text-slate-900 dark:text-white text-lg font-bold leading-tight">您还没有添加本人详细健康档案</h3>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-normal max-w-xl">建议先完善本人信息（如身高、体重、过往病史等），以便 AI 助手为您提供更精准的个性化健康建议和风险预警。</p>
+</div>
+</div>
+<button class="flex-shrink-0 bg-primary hover:bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 shadow-lg shadow-blue-500/20">
+<span>立即添加</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+</section>
+<!-- Family Members Grid Section -->
+<section class="flex flex-col gap-5">
+<div class="flex items-center justify-between">
+<h2 class="text-slate-900 dark:text-white text-xl font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">groups</span>
+                            家庭成员概览
+                        </h2>
+<a class="text-primary hover:text-blue-700 text-sm font-semibold flex items-center gap-1 transition-colors" href="#">
+                            查看全部
+                            <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+<!-- Member Card 1 (Self) -->
+<div class="group relative flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-all hover:border-blue-200 dark:hover:border-blue-900">
+<div class="relative">
+<div class="size-16 rounded-full bg-cover bg-center border-2 border-white dark:border-slate-600 shadow-sm" data-alt="Portrait of Asian man in his 30s" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCbaxJ98NiezQuFEeTuj6ynjxVE0sTDHVog-BpBqYv0m484Th1znnZz7QpsVyWc-8q2cha6Okw1Cj3vfZMXIIExogk3Fjk26H8sFCTajBJZ3qy_ow3VaW-tzZ9LsLtjr9Rf7W17VpPyDGRzERF0aIiIuCneAhYsjdL8N8mg2rLgucwEWkZSRmLXkq7amGXiB5cVdaiTgKXivJ_Bvx0k9mnyn1WOLnXgZLZQNqpCzyz79dvSgvj4O51AZjEkBnGd600CjzIwQVkKodQ');"></div>
+<div class="absolute -bottom-1 -right-1 bg-white dark:bg-slate-800 rounded-full p-1 border border-slate-100 dark:border-slate-700">
+<div class="bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full size-5 flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px]">male</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-1 flex-1">
+<div class="flex items-center justify-between">
+<p class="text-slate-900 dark:text-white font-bold">张伟</p>
+<span class="text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full border border-blue-100 dark:border-blue-900">本人</span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-xs">35 岁 • A型血</p>
+<div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5 mt-2 overflow-hidden">
+<div class="bg-green-500 h-1.5 rounded-full" style="width: 85%"></div>
+</div>
+<p class="text-[10px] text-slate-400 mt-0.5 text-right">健康评分: 85</p>
+</div>
+</div>
+<!-- Member Card 2 (Spouse) -->
+<div class="group relative flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-all hover:border-pink-200 dark:hover:border-pink-900">
+<div class="relative">
+<div class="size-16 rounded-full bg-cover bg-center border-2 border-white dark:border-slate-600 shadow-sm" data-alt="Portrait of Asian woman in her 30s" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDAi8vqjpGetfgFH4vyN-sg3PzRImaQ7LGUNb9Hmq3fir814Io5mGKnLSvvQTG-h5MjP4-pdPD-btyZq2X9YZWeVCr9N1lE1Ee9ldkLAuUX3WNyD-oNRssEJKwy5pvTdQPbEXe8ZXwRfu-1GqLXUixsMlrzMRzSSibqAPv6fqp1CrJw6MlzEkl8BBjEuXIlwVPM8hD4cZyM1A5CSND2ZyO9Sz9ov1YoeYJcKNHU4bH5xk6_tMQ1xKQwjavKFlGK1N6CyBWhVlG54Lo');"></div>
+<div class="absolute -bottom-1 -right-1 bg-white dark:bg-slate-800 rounded-full p-1 border border-slate-100 dark:border-slate-700">
+<div class="bg-pink-100 dark:bg-pink-900 text-pink-600 dark:text-pink-400 rounded-full size-5 flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px]">female</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-1 flex-1">
+<div class="flex items-center justify-between">
+<p class="text-slate-900 dark:text-white font-bold">李娜</p>
+<span class="text-[10px] font-bold uppercase tracking-wider text-pink-600 bg-pink-50 dark:bg-pink-900/30 px-2 py-0.5 rounded-full border border-pink-100 dark:border-pink-900">配偶</span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-xs">32 岁 • O型血</p>
+<div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5 mt-2 overflow-hidden">
+<div class="bg-emerald-500 h-1.5 rounded-full" style="width: 92%"></div>
+</div>
+<p class="text-[10px] text-slate-400 mt-0.5 text-right">健康评分: 92</p>
+</div>
+</div>
+<!-- Member Card 3 (Father) -->
+<div class="group relative flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-all hover:border-slate-200 dark:hover:border-slate-600">
+<div class="relative">
+<div class="size-16 rounded-full bg-cover bg-center border-2 border-white dark:border-slate-600 shadow-sm" data-alt="Portrait of senior Asian man" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDcNKws7dp_BRmxt__SGs5jHxkzdgtmxdQOaY96Y_al66u0xYDjfgPH03v4s-JztkFEJw_F_7MsIBg6LGYT8TFLjFoPJl93Vels1VsOhJMGuXM_bERHqJKyP2anvq0TajePN-9yznw06ZUembTmXNdo46bBMprpAn4sykzl-62bg_4A80-q9akOZwyd2_Z6pD2BRP73MzhksnGKV586DOA_faU4oj0cpQl0Vo2WOiwEd1yfnji512KZwzrFk5jKY71jMOcQELVjjog');"></div>
+<div class="absolute -bottom-1 -right-1 bg-white dark:bg-slate-800 rounded-full p-1 border border-slate-100 dark:border-slate-700">
+<div class="bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full size-5 flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px]">male</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-1 flex-1">
+<div class="flex items-center justify-between">
+<p class="text-slate-900 dark:text-white font-bold">张建国</p>
+<span class="text-[10px] font-bold uppercase tracking-wider text-slate-600 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-600">父亲</span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-xs">68 岁 • 高血压关注</p>
+<div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5 mt-2 overflow-hidden">
+<div class="bg-yellow-500 h-1.5 rounded-full" style="width: 70%"></div>
+</div>
+<p class="text-[10px] text-slate-400 mt-0.5 text-right">健康评分: 70</p>
+</div>
+</div>
+<!-- Member Card 4 (Mother) -->
+<div class="group relative flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-all hover:border-slate-200 dark:hover:border-slate-600">
+<div class="relative">
+<div class="size-16 rounded-full bg-cover bg-center border-2 border-white dark:border-slate-600 shadow-sm" data-alt="Portrait of senior Asian woman" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBhojrHv-TbU5LwrwXwZcIeBc_TEevT_WCyjWcMob8LX2tkfmW0-PRbA_QwG1h2v9cRMho6N0M2Qw91Ieo7CSwNghUP0EKyg8nzRBcOJ5puNmEJf93eqsDlGdpFdYroGJIlGQPsJL1eDUbiM685VPgxhHXqlX-P-ergg67syigRX1vDAby56juj-aialn1zISn0PSFpdZaYrErSaxyNtamy1Mw-VSBVRgghIMMd0TIiHn1H3rpPzz8xnuFlXHV8TXgj0Ype7XcuHUI');"></div>
+<div class="absolute -bottom-1 -right-1 bg-white dark:bg-slate-800 rounded-full p-1 border border-slate-100 dark:border-slate-700">
+<div class="bg-pink-100 dark:bg-pink-900 text-pink-600 dark:text-pink-400 rounded-full size-5 flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px]">female</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-1 flex-1">
+<div class="flex items-center justify-between">
+<p class="text-slate-900 dark:text-white font-bold">王淑芬</p>
+<span class="text-[10px] font-bold uppercase tracking-wider text-slate-600 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-600">母亲</span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-xs">65 岁 • 糖尿病关注</p>
+<div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5 mt-2 overflow-hidden">
+<div class="bg-yellow-500 h-1.5 rounded-full" style="width: 68%"></div>
+</div>
+<p class="text-[10px] text-slate-400 mt-0.5 text-right">健康评分: 68</p>
+</div>
+</div>
+<!-- Member Card 5 (Son) -->
+<div class="group relative flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-all hover:border-blue-200 dark:hover:border-blue-900">
+<div class="relative">
+<div class="size-16 rounded-full bg-cover bg-center border-2 border-white dark:border-slate-600 shadow-sm" data-alt="Portrait of a young boy" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA8Qp5QQ7-DFc4cDHPXnaB4r-7YG3f6gGTSx7B6RGuR0jA1M_WGT1VfvT8i0QB7__ag3BoSEyi93dpmBMth3hU7kCiEBZlIVB_NkW71vh8Gp0X12Bvj9frFft1SIro0OmhRhnWwkOGr5mJ3cKkC8iQ8yuDGAS4QDRCUMideVknyHefmQLxRhyJpyAR__zY4IugeJM3yDUehF1AB4GvpFL8PhsqZdOeJAD8UVe68uFKTMP71E6wCne0M3qMQmLuX_CycpStqJrxLC4s');"></div>
+<div class="absolute -bottom-1 -right-1 bg-white dark:bg-slate-800 rounded-full p-1 border border-slate-100 dark:border-slate-700">
+<div class="bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full size-5 flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px]">male</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-1 flex-1">
+<div class="flex items-center justify-between">
+<p class="text-slate-900 dark:text-white font-bold">张小明</p>
+<span class="text-[10px] font-bold uppercase tracking-wider text-green-600 bg-green-50 dark:bg-green-900/30 px-2 py-0.5 rounded-full border border-green-100 dark:border-green-900">儿子</span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-xs">8 岁 • 生长发育期</p>
+<div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5 mt-2 overflow-hidden">
+<div class="bg-emerald-500 h-1.5 rounded-full" style="width: 95%"></div>
+</div>
+<p class="text-[10px] text-slate-400 mt-0.5 text-right">健康评分: 95</p>
+</div>
+</div>
+<!-- Member Card 6 (Daughter) -->
+<div class="group relative flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-all hover:border-pink-200 dark:hover:border-pink-900">
+<div class="relative">
+<div class="size-16 rounded-full bg-cover bg-center border-2 border-white dark:border-slate-600 shadow-sm" data-alt="Portrait of a young girl" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDTKo_lae73eNGfaZtVB2JFFSwP6IK0F2HcJ2pQKGya6jLDUV0tDV01ApT4BfVOz-eacu15yGSVF11eYcEdaFe6BOsNfsNPMpbKH3Xqls4L4kcXy4UNN4Bd2PLu046nEKv5_DQBe-eJ-b-DOjfby2n1uT537JPyDTVW0h2tTHeKQGZxELNfUO5zGQ1g51JYing2Tpue6ftyfM7nb8EGJB-Y_UFaWC0BJkKEAksAnwYdbZTn35Fa5zmAnhvP_IR-K_arChteqwxrbaY');"></div>
+<div class="absolute -bottom-1 -right-1 bg-white dark:bg-slate-800 rounded-full p-1 border border-slate-100 dark:border-slate-700">
+<div class="bg-pink-100 dark:bg-pink-900 text-pink-600 dark:text-pink-400 rounded-full size-5 flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px]">female</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-1 flex-1">
+<div class="flex items-center justify-between">
+<p class="text-slate-900 dark:text-white font-bold">张小红</p>
+<span class="text-[10px] font-bold uppercase tracking-wider text-green-600 bg-green-50 dark:bg-green-900/30 px-2 py-0.5 rounded-full border border-green-100 dark:border-green-900">女儿</span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-xs">5 岁 • 生长发育期</p>
+<div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5 mt-2 overflow-hidden">
+<div class="bg-emerald-500 h-1.5 rounded-full" style="width: 96%"></div>
+</div>
+<p class="text-[10px] text-slate-400 mt-0.5 text-right">健康评分: 96</p>
+</div>
+</div>
+</div>
+</section>
+<footer class="mt-8 pb-8 text-center text-xs text-slate-400">
+<p>© 2023 Family Health Management Platform. All rights reserved.</p>
+</footer>
+</div>
+</main>
+</div>
+</body></html>

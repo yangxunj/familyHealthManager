@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Family Health Documents Manager</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "primary-content": "#ffffff",
+                        "secondary": "#3b82f6",
+                        "accent": "#10b981",
+                        "danger": "#ef4444",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1a2632",
+                        "border-light": "#e2e8f0",
+                        "border-dark": "#2d3b4a",
+                        "text-main": "#0d141b",
+                        "text-secondary": "#4c739a",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "Noto Sans", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Noto+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-text-main antialiased overflow-hidden h-screen flex">
+<!-- Sidebar -->
+<aside class="w-64 bg-surface-light dark:bg-surface-dark border-r border-border-light dark:border-border-dark flex-shrink-0 flex flex-col h-full z-10 transition-colors">
+<div class="p-6 flex flex-col gap-1">
+<h1 class="text-text-main dark:text-white text-xl font-bold leading-tight">Family Health</h1>
+<p class="text-text-secondary dark:text-gray-400 text-xs font-medium uppercase tracking-wider">Management Platform</p>
+</div>
+<nav class="flex-1 px-4 space-y-1 overflow-y-auto">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-secondary dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:text-primary transition-colors">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary dark:text-primary dark:bg-primary/20 transition-colors" href="#">
+<span class="material-symbols-outlined text-2xl font-variation-fill">description</span>
+<span class="text-sm font-bold">Health Documents</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-secondary dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:text-primary transition-colors">diversity_1</span>
+<span class="text-sm font-medium">Family Members</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-secondary dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:text-primary transition-colors">calendar_month</span>
+<span class="text-sm font-medium">Calendar</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-secondary dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:text-primary transition-colors">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</a>
+</nav>
+<div class="p-4 border-t border-border-light dark:border-border-dark">
+<div class="flex items-center gap-3 px-2 py-2">
+<div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="User profile avatar of a smiling man" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA0ylbsuv2DytLorMe79PhrSL8ER_4luQejj7OZqMS1-Lm7e63Egw9PZXX-djlhL3a8bzB-QWmQSNLvDKM5n-fppRNcaOh96Ge7_Mxl8eqsIHucMoHci_gcHauafsSL4DprVOEhyLhqMnUDEYw_Mq9LgwSnQK_I0XhdMElkJUY5k2QKSlJ655-QtXAM_B82PBEVxLos2uAUF3jvrCikGElgPg76bbKlR-7HEPABAVw2wCpDy_HFKobTdnA4JHSaIg9-QSFLEgKpcsE"/>
+</div>
+<div class="flex flex-col">
+<p class="text-sm font-bold text-text-main dark:text-white">Dr. Alex Chen</p>
+<p class="text-xs text-text-secondary">Admin</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col h-full overflow-hidden relative">
+<!-- Header & Top Nav -->
+<header class="h-16 flex items-center justify-between px-8 bg-surface-light dark:bg-surface-dark border-b border-border-light dark:border-border-dark flex-shrink-0">
+<!-- Breadcrumbs -->
+<nav class="flex items-center text-sm font-medium text-text-secondary dark:text-gray-400">
+<a class="hover:text-primary transition-colors" href="#">Home</a>
+<span class="mx-2 text-slate-300">/</span>
+<span class="text-text-main dark:text-white font-semibold">Health Documents</span>
+</nav>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-full text-text-secondary hover:bg-slate-100 dark:hover:bg-slate-800 relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-danger rounded-full border-2 border-white dark:border-surface-dark"></span>
+</button>
+<button class="p-2 rounded-full text-text-secondary hover:bg-slate-100 dark:hover:bg-slate-800">
+<span class="material-symbols-outlined">help</span>
+</button>
+</div>
+</header>
+<!-- Scrollable Content Area -->
+<div class="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark p-8">
+<div class="max-w-[1200px] mx-auto space-y-6">
+<!-- Page Title -->
+<div class="flex justify-between items-end">
+<div>
+<h2 class="text-2xl font-bold text-text-main dark:text-white">健康文档</h2>
+<p class="text-text-secondary dark:text-gray-400 mt-1">Manage and organize your family's medical records securely.</p>
+</div>
+</div>
+<!-- Filters & Actions Toolbar -->
+<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-xl border border-border-light dark:border-border-dark shadow-sm flex flex-wrap gap-4 items-center justify-between">
+<!-- Left: Search & Filter Groups -->
+<div class="flex flex-1 items-center gap-3 flex-wrap">
+<div class="relative group w-full max-w-xs">
+<span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-400">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-lg text-sm focus:ring-2 focus:ring-primary placeholder-gray-400 text-text-main dark:text-white h-10 transition-all" placeholder="Search documents, institutions..." type="text"/>
+</div>
+<div class="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1 hidden sm:block"></div>
+<div class="flex items-center gap-2">
+<button class="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-sm font-medium text-text-main dark:text-white border border-transparent hover:border-slate-200 dark:hover:border-slate-600 transition-all">
+<span class="material-symbols-outlined text-[18px] text-gray-500">person</span>
+                                Member
+                                <span class="material-symbols-outlined text-[16px] text-gray-400">expand_more</span>
+</button>
+<button class="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-sm font-medium text-text-main dark:text-white border border-transparent hover:border-slate-200 dark:hover:border-slate-600 transition-all">
+<span class="material-symbols-outlined text-[18px] text-gray-500">category</span>
+                                Type
+                                <span class="material-symbols-outlined text-[16px] text-gray-400">expand_more</span>
+</button>
+<button class="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-sm font-medium text-text-main dark:text-white border border-transparent hover:border-slate-200 dark:hover:border-slate-600 transition-all">
+<span class="material-symbols-outlined text-[18px] text-gray-500">calendar_today</span>
+                                Date Range
+                                <span class="material-symbols-outlined text-[16px] text-gray-400">expand_more</span>
+</button>
+</div>
+</div>
+<!-- Right: Main Action -->
+<button class="flex items-center justify-center gap-2 bg-primary hover:bg-blue-600 text-white px-5 py-2.5 rounded-lg shadow-sm hover:shadow-md transition-all font-bold text-sm">
+<span class="material-symbols-outlined text-[20px]">upload_file</span>
+                        上传文档 (Upload)
+                    </button>
+</div>
+<!-- Data Table Card -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50 dark:bg-slate-800/50 border-b border-border-light dark:border-border-dark text-xs uppercase tracking-wider text-text-secondary dark:text-gray-400">
+<th class="px-6 py-4 font-semibold w-64">Document Name</th>
+<th class="px-6 py-4 font-semibold">Type</th>
+<th class="px-6 py-4 font-semibold">Member</th>
+<th class="px-6 py-4 font-semibold">Date</th>
+<th class="px-6 py-4 font-semibold">Institution</th>
+<th class="px-6 py-4 font-semibold text-center">Files</th>
+<th class="px-6 py-4 font-semibold text-center">Status</th>
+<th class="px-6 py-4 font-semibold text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-light dark:divide-border-dark text-sm">
+<!-- Row 1 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+<td class="px-6 py-3.5 font-medium text-text-main dark:text-white">
+                                        Annual Physical Checkup 2023
+                                    </td>
+<td class="px-6 py-3.5">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                                            Physical Exam
+                                        </span>
+</td>
+<td class="px-6 py-3.5">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-300 text-xs font-bold">D</div>
+<span class="text-text-main dark:text-gray-200">Dad</span>
+</div>
+</td>
+<td class="px-6 py-3.5 text-text-secondary dark:text-gray-400">
+                                        Oct 12, 2023
+                                    </td>
+<td class="px-6 py-3.5 text-text-main dark:text-gray-300">
+                                        Central City Hospital
+                                    </td>
+<td class="px-6 py-3.5 text-center">
+<div class="inline-flex items-center gap-1 text-text-secondary dark:text-gray-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-xs">
+<span class="material-symbols-outlined text-[14px]">attachment</span> 3
+                                        </div>
+</td>
+<td class="px-6 py-3.5 text-center">
+<div class="relative group/tooltip inline-block cursor-help">
+<span class="block w-2.5 h-2.5 bg-danger rounded-full mx-auto ring-2 ring-red-100 dark:ring-red-900/30"></span>
+<span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-slate-800 rounded opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">Abnormal Findings</span>
+</div>
+</td>
+<td class="px-6 py-3.5 text-right">
+<button class="text-gray-400 hover:text-primary transition-colors p-1">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+<td class="px-6 py-3.5 font-medium text-text-main dark:text-white">
+                                        CBC Blood Work Panel
+                                    </td>
+<td class="px-6 py-3.5">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                            Lab Results
+                                        </span>
+</td>
+<td class="px-6 py-3.5">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-300 text-xs font-bold">M</div>
+<span class="text-text-main dark:text-gray-200">Mom</span>
+</div>
+</td>
+<td class="px-6 py-3.5 text-text-secondary dark:text-gray-400">
+                                        Sep 05, 2023
+                                    </td>
+<td class="px-6 py-3.5 text-text-main dark:text-gray-300">
+                                        Community Clinic
+                                    </td>
+<td class="px-6 py-3.5 text-center">
+<div class="inline-flex items-center gap-1 text-text-secondary dark:text-gray-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-xs">
+<span class="material-symbols-outlined text-[14px]">attachment</span> 1
+                                        </div>
+</td>
+<td class="px-6 py-3.5 text-center">
+<span class="block w-2.5 h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto"></span>
+</td>
+<td class="px-6 py-3.5 text-right">
+<button class="text-gray-400 hover:text-primary transition-colors p-1">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+<td class="px-6 py-3.5 font-medium text-text-main dark:text-white">
+                                        Dental X-Ray (Full Mouth)
+                                    </td>
+<td class="px-6 py-3.5">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
+                                            Imaging
+                                        </span>
+</td>
+<td class="px-6 py-3.5">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center text-pink-600 dark:text-pink-300 text-xs font-bold">S</div>
+<span class="text-text-main dark:text-gray-200">Sarah</span>
+</div>
+</td>
+<td class="px-6 py-3.5 text-text-secondary dark:text-gray-400">
+                                        Aug 21, 2023
+                                    </td>
+<td class="px-6 py-3.5 text-text-main dark:text-gray-300">
+                                        Bright Smile Dental
+                                    </td>
+<td class="px-6 py-3.5 text-center">
+<div class="inline-flex items-center gap-1 text-text-secondary dark:text-gray-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-xs">
+<span class="material-symbols-outlined text-[14px]">attachment</span> 4
+                                        </div>
+</td>
+<td class="px-6 py-3.5 text-center">
+<span class="block w-2.5 h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto"></span>
+</td>
+<td class="px-6 py-3.5 text-right">
+<button class="text-gray-400 hover:text-primary transition-colors p-1">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+<td class="px-6 py-3.5 font-medium text-text-main dark:text-white">
+                                        Vaccination Record (Flu Shot)
+                                    </td>
+<td class="px-6 py-3.5">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300">
+                                            Immunization
+                                        </span>
+</td>
+<td class="px-6 py-3.5">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-300 text-xs font-bold">J</div>
+<span class="text-text-main dark:text-gray-200">Jason</span>
+</div>
+</td>
+<td class="px-6 py-3.5 text-text-secondary dark:text-gray-400">
+                                        Aug 10, 2023
+                                    </td>
+<td class="px-6 py-3.5 text-text-main dark:text-gray-300">
+                                        School Nurse
+                                    </td>
+<td class="px-6 py-3.5 text-center">
+<div class="inline-flex items-center gap-1 text-text-secondary dark:text-gray-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-xs">
+<span class="material-symbols-outlined text-[14px]">attachment</span> 1
+                                        </div>
+</td>
+<td class="px-6 py-3.5 text-center">
+<span class="block w-2.5 h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto"></span>
+</td>
+<td class="px-6 py-3.5 text-right">
+<button class="text-gray-400 hover:text-primary transition-colors p-1">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+<td class="px-6 py-3.5 font-medium text-text-main dark:text-white">
+                                        MRI Scan (Lower Back)
+                                    </td>
+<td class="px-6 py-3.5">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
+                                            Imaging
+                                        </span>
+</td>
+<td class="px-6 py-3.5">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-300 text-xs font-bold">D</div>
+<span class="text-text-main dark:text-gray-200">Dad</span>
+</div>
+</td>
+<td class="px-6 py-3.5 text-text-secondary dark:text-gray-400">
+                                        Jul 22, 2023
+                                    </td>
+<td class="px-6 py-3.5 text-text-main dark:text-gray-300">
+                                        Regional Imaging Ctr
+                                    </td>
+<td class="px-6 py-3.5 text-center">
+<div class="inline-flex items-center gap-1 text-text-secondary dark:text-gray-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-xs">
+<span class="material-symbols-outlined text-[14px]">attachment</span> 12
+                                        </div>
+</td>
+<td class="px-6 py-3.5 text-center">
+<div class="relative group/tooltip inline-block cursor-help">
+<span class="block w-2.5 h-2.5 bg-danger rounded-full mx-auto ring-2 ring-red-100 dark:ring-red-900/30"></span>
+</div>
+</td>
+<td class="px-6 py-3.5 text-right">
+<button class="text-gray-400 hover:text-primary transition-colors p-1">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="px-6 py-4 border-t border-border-light dark:border-border-dark flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30">
+<div class="text-xs text-text-secondary dark:text-gray-400">
+                            Showing <span class="font-bold text-text-main dark:text-white">1-5</span> of <span class="font-bold text-text-main dark:text-white">24</span> results
+                        </div>
+<div class="flex items-center gap-1">
+<button class="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-gray-400 disabled:opacity-50">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="px-3 py-1 rounded text-sm font-bold bg-primary text-white shadow-sm">1</button>
+<button class="px-3 py-1 rounded text-sm font-medium text-text-secondary hover:bg-slate-200 dark:hover:bg-slate-700 dark:text-gray-400 transition-colors">2</button>
+<button class="px-3 py-1 rounded text-sm font-medium text-text-secondary hover:bg-slate-200 dark:hover:bg-slate-700 dark:text-gray-400 transition-colors">3</button>
+<span class="px-2 text-gray-400">...</span>
+<button class="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-gray-400">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Upload Modal Overlay -->
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+<!-- Backdrop -->
+<div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
+<!-- Modal Content -->
+<div class="relative w-full max-w-lg bg-surface-light dark:bg-surface-dark rounded-2xl shadow-2xl border border-border-light dark:border-border-dark overflow-hidden flex flex-col max-h-[90vh]">
+<!-- Modal Header -->
+<div class="px-6 py-4 border-b border-border-light dark:border-border-dark flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30">
+<h3 class="text-lg font-bold text-text-main dark:text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">upload_file</span>
+                    Upload New Document
+                </h3>
+<button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<!-- Modal Body -->
+<div class="p-6 space-y-5 overflow-y-auto">
+<!-- Form Fields -->
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-1.5">
+<label class="text-xs font-semibold text-text-secondary dark:text-gray-400 uppercase tracking-wide">Family Member</label>
+<div class="relative">
+<select class="w-full appearance-none bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2.5 px-3 pr-8 text-sm text-text-main dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
+<option>Select member...</option>
+<option>Dad</option>
+<option selected="">Mom</option>
+<option>Sarah</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-2.5 text-gray-400 pointer-events-none text-[20px]">expand_more</span>
+</div>
+</div>
+<div class="space-y-1.5">
+<label class="text-xs font-semibold text-text-secondary dark:text-gray-400 uppercase tracking-wide">Document Type</label>
+<div class="relative">
+<select class="w-full appearance-none bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2.5 px-3 pr-8 text-sm text-text-main dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
+<option>Select type...</option>
+<option>Physical Exam</option>
+<option selected="">Lab Results</option>
+<option>Imaging</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-2.5 text-gray-400 pointer-events-none text-[20px]">expand_more</span>
+</div>
+</div>
+</div>
+<div class="space-y-1.5">
+<label class="text-xs font-semibold text-text-secondary dark:text-gray-400 uppercase tracking-wide">Document Name</label>
+<input class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2.5 px-3 text-sm text-text-main dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none" type="text" value="Blood Work - Oct 2023"/>
+</div>
+<div class="space-y-1.5">
+<label class="text-xs font-semibold text-text-secondary dark:text-gray-400 uppercase tracking-wide">Date of Visit</label>
+<div class="relative">
+<input class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2.5 px-3 pl-10 text-sm text-text-main dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none" type="text" value="Oct 24, 2023"/>
+<span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-400 pointer-events-none text-[20px]">calendar_today</span>
+</div>
+</div>
+<!-- Drag & Drop Zone -->
+<div class="border-2 border-dashed border-primary/40 bg-primary/5 rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-primary/10 transition-colors group">
+<div class="w-12 h-12 rounded-full bg-white dark:bg-slate-700 shadow-sm flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary text-2xl">cloud_upload</span>
+</div>
+<p class="text-sm font-semibold text-text-main dark:text-white">Click to upload or drag and drop</p>
+<p class="text-xs text-text-secondary dark:text-gray-400 mt-1">PDF, JPG or PNG (max. 10MB)</p>
+</div>
+<!-- Upload Progress -->
+<div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 border border-border-light dark:border-border-dark flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-red-100 flex items-center justify-center text-red-600 flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]">picture_as_pdf</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between mb-1">
+<p class="text-xs font-medium text-text-main dark:text-white truncate">blood_work_oct_2023.pdf</p>
+<p class="text-xs text-text-secondary">75%</p>
+</div>
+<div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5">
+<div class="bg-primary h-1.5 rounded-full" style="width: 75%"></div>
+</div>
+</div>
+<button class="text-gray-400 hover:text-danger transition-colors">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</div>
+<!-- Modal Footer -->
+<div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-border-light dark:border-border-dark flex justify-end gap-3">
+<button class="px-4 py-2 rounded-lg text-sm font-semibold text-text-secondary hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">Cancel</button>
+<button class="px-6 py-2 rounded-lg text-sm font-bold text-white bg-primary hover:bg-blue-600 shadow-sm hover:shadow transition-all">Save Document</button>
+</div>
+</div>
+</div>
+</body></html>

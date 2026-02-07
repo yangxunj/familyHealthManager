@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Family Health Records</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;family=Noto+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec5b",
+                        "background-light": "#f6f8f6",
+                        "background-dark": "#102216",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1c2e24",
+                        "text-main": "#0d1b12",
+                        "text-muted": "#4c9a66",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "Noto Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+        .chart-grid-line {
+            stroke: #e2e8f0;
+            stroke-dasharray: 4;
+        }
+        .dark .chart-grid-line {
+            stroke: #2d4a3e;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-text-main dark:text-white font-display antialiased overflow-hidden selection:bg-primary/30">
+<div class="flex h-screen w-full flex-row overflow-hidden">
+<!-- Sidebar -->
+<aside class="hidden lg:flex w-64 flex-col border-r border-[#cfe7d7] dark:border-[#2a4535] bg-surface-light dark:bg-surface-dark h-full">
+<div class="flex h-full flex-col justify-between p-4">
+<div class="flex flex-col gap-4">
+<!-- User Profile -->
+<div class="flex items-center gap-3 px-2 py-4 border-b border-[#cfe7d7] dark:border-[#2a4535] mb-2">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-12 shadow-sm ring-2 ring-primary/20" data-alt="Profile picture of the family administrator" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuB4ylPwGKoAk5z8grQ7iC8jmm0eqD0eR5oXE2n25O0aWj6sgNImqmd_LVGJ5JGeBilxIMa7vtg0NDXyuxdpUDeFUPl5-CY5KaO2cFUVxva1xr32N8T_-jy9Kw4Lt_PtPhqIQ-_7wLPq2wltIpP8JyJVyA4qlckmK_lfVia0zLsf2llmhwe_x75W8bJINHUdwSJOxzo64NOiZr4WL2NQMUaWoG66sh-Fqystr6L041M9ayysDH_xTGJ_lZclWY22HoTX4PvJUXe6x9E");'></div>
+<div class="flex flex-col">
+<h1 class="text-text-main dark:text-white text-base font-bold leading-tight">Family Health</h1>
+<span class="text-text-muted text-xs font-medium">Admin View</span>
+</div>
+</div>
+<!-- Navigation -->
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-background-light dark:hover:bg-background-dark text-text-main dark:text-white group transition-colors" href="#">
+<span class="material-symbols-outlined text-text-muted group-hover:text-primary transition-colors">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg bg-[#e7f3eb] dark:bg-primary/20 text-text-main dark:text-white shadow-sm border border-transparent dark:border-primary/20" href="#">
+<span class="material-symbols-outlined text-green-700 dark:text-primary">receipt_long</span>
+<span class="text-sm font-bold">Health Records</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-background-light dark:hover:bg-background-dark text-text-main dark:text-white group transition-colors" href="#">
+<span class="material-symbols-outlined text-text-muted group-hover:text-primary transition-colors">diversity_1</span>
+<span class="text-sm font-medium">Family Members</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-background-light dark:hover:bg-background-dark text-text-main dark:text-white group transition-colors" href="#">
+<span class="material-symbols-outlined text-text-muted group-hover:text-primary transition-colors">calendar_month</span>
+<span class="text-sm font-medium">Appointments</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-background-light dark:hover:bg-background-dark text-text-main dark:text-white group transition-colors" href="#">
+<span class="material-symbols-outlined text-text-muted group-hover:text-primary transition-colors">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</a>
+</nav>
+</div>
+<!-- Bottom Action -->
+<div class="p-2">
+<button class="flex w-full items-center gap-2 rounded-lg p-3 text-text-muted hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+<span class="material-symbols-outlined text-lg">logout</span>
+<span class="text-sm font-medium">Log Out</span>
+</button>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex flex-1 flex-col h-full overflow-hidden bg-background-light dark:bg-background-dark relative">
+<!-- Top Bar / Header -->
+<header class="flex-none px-6 py-6 lg:px-10">
+<div class="max-w-[1200px] mx-auto w-full flex flex-wrap items-center justify-between gap-4">
+<div>
+<h2 class="text-text-main dark:text-white text-3xl font-black tracking-tight">健康记录</h2>
+<p class="text-text-muted text-sm mt-1">Manage and track your family's vital statistics</p>
+</div>
+<button class="flex items-center justify-center gap-2 rounded-xl h-11 px-6 bg-primary hover:bg-green-400 text-[#0d1b12] text-sm font-bold shadow-lg shadow-primary/20 transition-all active:scale-95">
+<span class="material-symbols-outlined text-lg">add_circle</span>
+<span>添加记录</span>
+</button>
+</div>
+</header>
+<!-- Scrollable Content -->
+<div class="flex-1 overflow-y-auto px-6 pb-10 lg:px-10">
+<div class="max-w-[1200px] mx-auto w-full flex flex-col gap-6">
+<!-- Filter Bar -->
+<section class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 bg-surface-light dark:bg-surface-dark p-4 rounded-xl shadow-sm border border-[#cfe7d7] dark:border-[#2a4535]">
+<div class="relative">
+<label class="block text-xs font-semibold text-text-muted uppercase mb-1.5 px-1">Family Member</label>
+<div class="relative">
+<select class="w-full appearance-none rounded-lg bg-background-light dark:bg-background-dark border border-[#cfe7d7] dark:border-[#2a4535] text-text-main dark:text-white py-2.5 pl-3 pr-10 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none cursor-pointer">
+<option>All Members</option>
+<option>Dad (David)</option>
+<option>Mom (Sarah)</option>
+<option>Grandma (Mary)</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-primary pointer-events-none text-xl">expand_more</span>
+</div>
+</div>
+<div class="relative">
+<label class="block text-xs font-semibold text-text-muted uppercase mb-1.5 px-1">Record Type</label>
+<div class="relative">
+<select class="w-full appearance-none rounded-lg bg-background-light dark:bg-background-dark border border-[#cfe7d7] dark:border-[#2a4535] text-text-main dark:text-white py-2.5 pl-3 pr-10 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none cursor-pointer">
+<option>Blood Pressure</option>
+<option>Blood Glucose</option>
+<option>Heart Rate</option>
+<option>Weight</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-primary pointer-events-none text-xl">monitor_heart</span>
+</div>
+</div>
+<div class="relative md:col-span-1 lg:col-span-2">
+<label class="block text-xs font-semibold text-text-muted uppercase mb-1.5 px-1">Date Range</label>
+<div class="relative">
+<div class="flex items-center w-full rounded-lg bg-background-light dark:bg-background-dark border border-[#cfe7d7] dark:border-[#2a4535] overflow-hidden">
+<input class="w-full bg-transparent border-none text-text-main dark:text-white text-sm py-2.5 px-3 focus:ring-0" type="date" value="2023-10-01"/>
+<span class="text-text-muted px-2">-</span>
+<input class="w-full bg-transparent border-none text-text-main dark:text-white text-sm py-2.5 px-3 focus:ring-0" type="date" value="2023-10-31"/>
+</div>
+</div>
+</div>
+</section>
+<!-- Data Table -->
+<section class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-[#cfe7d7] dark:border-[#2a4535] overflow-hidden flex flex-col">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead class="bg-[#e7f3eb] dark:bg-[#1a2e22] text-text-main dark:text-green-100">
+<tr>
+<th class="p-4 text-xs font-bold uppercase tracking-wider w-12">Metric</th>
+<th class="p-4 text-xs font-bold uppercase tracking-wider">Value</th>
+<th class="p-4 text-xs font-bold uppercase tracking-wider">Member</th>
+<th class="p-4 text-xs font-bold uppercase tracking-wider">Time</th>
+<th class="p-4 text-xs font-bold uppercase tracking-wider hidden md:table-cell">Scene</th>
+<th class="p-4 text-xs font-bold uppercase tracking-wider hidden sm:table-cell">Reference</th>
+<th class="p-4 text-xs font-bold uppercase tracking-wider">Status</th>
+<th class="p-4 text-xs font-bold uppercase tracking-wider text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-[#cfe7d7] dark:divide-[#2a4535]">
+<!-- Row 1: Abnormal -->
+<tr class="group hover:bg-background-light dark:hover:bg-background-dark/50 transition-colors">
+<td class="p-4">
+<div class="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-2 rounded-full w-fit">
+<span class="material-symbols-outlined text-lg block">favorite</span>
+</div>
+</td>
+<td class="p-4">
+<div class="flex flex-col">
+<span class="text-lg font-bold text-red-600 dark:text-red-400">145/95</span>
+<span class="text-xs text-text-muted">mmHg</span>
+</div>
+</td>
+<td class="p-4">
+<div class="flex items-center gap-2">
+<div class="size-6 rounded-full bg-gray-200 bg-cover" data-alt="Avatar of Dad" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAvf1I7esLoglkAetblUd-kHi0i0M9WirGxnY_jXfX1OpczVWjkyNtJ_bCwSrA4YnNLktYX2cDGi4NPLHfWzF6oIABgPYDx2kmkled81t2hP7yrOpb2Octvd4XPyyUw7L3nDhmAIdFH7s9qGMxuIvcl9LVp_hLvBCn_xLgTu0aJV5CCyvCNj19Wb18DPMY34FLTWGGe7X7LIVvsmczVpuCTWI8Ly13Cr--7pApEaTzfLwqRZJIQCVxJPJ9ZRrJfXcAmOvZBGDQX9zU");'></div>
+<span class="text-sm font-medium dark:text-gray-200">Dad</span>
+</div>
+</td>
+<td class="p-4 text-sm text-text-main dark:text-gray-300">
+                                            Oct 24 <br/><span class="text-xs text-text-muted">08:00 AM</span>
+</td>
+<td class="p-4 text-sm text-text-main dark:text-gray-300 hidden md:table-cell">Post-wake</td>
+<td class="p-4 text-sm text-text-muted hidden sm:table-cell">120/80</td>
+<td class="p-4">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border border-red-200 dark:border-red-800">
+<span class="material-symbols-outlined text-[14px]">warning</span> High
+                                            </span>
+</td>
+<td class="p-4 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg text-text-muted hover:text-primary transition-colors" title="View Trend">
+<span class="material-symbols-outlined text-lg">show_chart</span>
+</button>
+<button class="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-text-muted hover:text-red-500 transition-colors" title="Delete">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2: Normal -->
+<tr class="group hover:bg-background-light dark:hover:bg-background-dark/50 transition-colors">
+<td class="p-4">
+<div class="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 p-2 rounded-full w-fit">
+<span class="material-symbols-outlined text-lg block">water_drop</span>
+</div>
+</td>
+<td class="p-4">
+<div class="flex flex-col">
+<span class="text-lg font-bold text-primary dark:text-green-400">5.4</span>
+<span class="text-xs text-text-muted">mmol/L</span>
+</div>
+</td>
+<td class="p-4">
+<div class="flex items-center gap-2">
+<div class="size-6 rounded-full bg-gray-200 bg-cover" data-alt="Avatar of Mom" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuA9C0_MzYoOVzjOA1Ip3IibJOmSGO3fRe6lQDLnDh26dn1b8n-LMInXkLWq7CDvAjrQSEMkVc7megK9WMjSdW7WJ5yd-HB1MX8AxmYDkz9ecwba7q0zI_E3paFZWR7IrOxpAga9gCyVhrtlS5SHcUbCut8ZVoYOMqlBpUHHfdu-eblXl5qN0S_9FxmEiOVL3I8SRQXpwKZ3_a2_dPQh2nCsPriHMRSGZM49BtASsao5Q-umgvaQNNXzmblA_c4p1jkB2Jco93ifsgE");'></div>
+<span class="text-sm font-medium dark:text-gray-200">Mom</span>
+</div>
+</td>
+<td class="p-4 text-sm text-text-main dark:text-gray-300">
+                                            Oct 23 <br/><span class="text-xs text-text-muted">07:00 PM</span>
+</td>
+<td class="p-4 text-sm text-text-main dark:text-gray-300 hidden md:table-cell">Post-dinner</td>
+<td class="p-4 text-sm text-text-muted hidden sm:table-cell">&lt; 7.8</td>
+<td class="p-4">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-[#e7f3eb] text-[#0d1b12] dark:bg-green-900/40 dark:text-green-300 border border-[#cfe7d7] dark:border-green-800">
+                                                Normal
+                                            </span>
+</td>
+<td class="p-4 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg text-text-muted hover:text-primary transition-colors" title="View Trend">
+<span class="material-symbols-outlined text-lg">show_chart</span>
+</button>
+<button class="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-text-muted hover:text-red-500 transition-colors" title="Delete">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3: Normal -->
+<tr class="group hover:bg-background-light dark:hover:bg-background-dark/50 transition-colors">
+<td class="p-4">
+<div class="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-2 rounded-full w-fit">
+<span class="material-symbols-outlined text-lg block">favorite</span>
+</div>
+</td>
+<td class="p-4">
+<div class="flex flex-col">
+<span class="text-lg font-bold text-primary dark:text-green-400">118/78</span>
+<span class="text-xs text-text-muted">mmHg</span>
+</div>
+</td>
+<td class="p-4">
+<div class="flex items-center gap-2">
+<div class="size-6 rounded-full bg-gray-200 bg-cover" data-alt="Avatar of Dad" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuA4rM8dRyc3IUxPOiNmlQVuhWU89gWgu0E6306UP2jUvfpKtpeITy2097hgY8K1pEwyCw5c8EyLQLUQ30rbzbSk3gRSy1OV0DT0o7EdY-3cZXCW8Q7FfivZup8FGuWmvuhgQl2VE3so3UZpJQyHqC8vYLWjqsl8okAirNq6cheSBw_Qku1KOcpNXvSmXidkUCBMV0OKpEhFzWqT91RPGo10l0pDNr55eRRNaI13iX5ykOs4LjHlUU6C6yJV_svdCCC3GFdXuWrLz7I");'></div>
+<span class="text-sm font-medium dark:text-gray-200">Dad</span>
+</div>
+</td>
+<td class="p-4 text-sm text-text-main dark:text-gray-300">
+                                            Oct 23 <br/><span class="text-xs text-text-muted">07:00 AM</span>
+</td>
+<td class="p-4 text-sm text-text-main dark:text-gray-300 hidden md:table-cell">Fasting</td>
+<td class="p-4 text-sm text-text-muted hidden sm:table-cell">120/80</td>
+<td class="p-4">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-[#e7f3eb] text-[#0d1b12] dark:bg-green-900/40 dark:text-green-300 border border-[#cfe7d7] dark:border-green-800">
+                                                Normal
+                                            </span>
+</td>
+<td class="p-4 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg text-text-muted hover:text-primary transition-colors" title="View Trend">
+<span class="material-symbols-outlined text-lg">show_chart</span>
+</button>
+<button class="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-text-muted hover:text-red-500 transition-colors" title="Delete">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark p-3 text-center border-t border-[#cfe7d7] dark:border-[#2a4535]">
+<button class="text-sm font-bold text-primary hover:text-green-400 transition-colors">View All Records</button>
+</div>
+</section>
+<!-- Trend Analysis & Stats -->
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+<!-- Chart Section -->
+<section class="xl:col-span-2 bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-[#cfe7d7] dark:border-[#2a4535] p-6 flex flex-col">
+<div class="flex flex-wrap items-center justify-between mb-6 gap-4">
+<div>
+<h3 class="text-lg font-bold text-text-main dark:text-white">Blood Pressure Trend</h3>
+<div class="flex items-center gap-3 text-xs mt-1">
+<div class="flex items-center gap-1 text-blue-500"><span class="w-2 h-2 rounded-full bg-blue-500"></span> Systolic</div>
+<div class="flex items-center gap-1 text-primary"><span class="w-2 h-2 rounded-full bg-primary"></span> Diastolic</div>
+</div>
+</div>
+<div class="bg-background-light dark:bg-background-dark p-1 rounded-lg flex border border-[#cfe7d7] dark:border-[#2a4535]">
+<button class="px-3 py-1 text-xs font-bold rounded-md hover:bg-white dark:hover:bg-white/10 text-text-muted transition-all">7D</button>
+<button class="px-3 py-1 text-xs font-bold rounded-md bg-primary text-[#0d1b12] shadow-sm transition-all">30D</button>
+<button class="px-3 py-1 text-xs font-bold rounded-md hover:bg-white dark:hover:bg-white/10 text-text-muted transition-all">90D</button>
+<button class="px-3 py-1 text-xs font-bold rounded-md hover:bg-white dark:hover:bg-white/10 text-text-muted transition-all">All</button>
+</div>
+</div>
+<!-- Custom CSS Chart Visualization -->
+<div class="relative w-full h-64 mt-auto">
+<svg class="w-full h-full overflow-visible" preserveaspectratio="none" viewbox="0 0 800 300">
+<!-- Grid Lines -->
+<line class="chart-grid-line" stroke-width="1" x1="0" x2="800" y1="0" y2="0"></line>
+<line class="chart-grid-line" stroke-width="1" x1="0" x2="800" y1="75" y2="75"></line>
+<line class="chart-grid-line" stroke-width="1" x1="0" x2="800" y1="150" y2="150"></line>
+<line class="chart-grid-line" stroke-width="1" x1="0" x2="800" y1="225" y2="225"></line>
+<line class="chart-grid-line" stroke-width="1" x1="0" x2="800" y1="300" y2="300"></line>
+<!-- Normal Zone (Approx 80-120 range represented visually) -->
+<rect fill="#13ec5b" fill-opacity="0.08" height="100" width="800" x="0" y="100"></rect>
+<!-- Systolic Line (Blue) -->
+<polyline fill="none" points="0,90 100,80 200,85 300,50 400,95 500,85 600,100 700,90 800,85" stroke="#3b82f6" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"></polyline>
+<!-- Diastolic Line (Green/Primary) -->
+<polyline fill="none" points="0,200 100,190 200,195 300,160 400,205 500,195 600,210 700,200 800,195" stroke="#13ec5b" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"></polyline>
+<!-- Data Points (Highlighting anomalies) -->
+<!-- Anomaly Point Sys -->
+<circle cx="300" cy="50" fill="#ef4444" r="6" stroke="white" stroke-width="2"></circle>
+<!-- Normal Point Sys -->
+<circle cx="600" cy="100" fill="#3b82f6" r="4" stroke="white" stroke-width="2"></circle>
+<!-- Anomaly Point Dia -->
+<circle cx="300" cy="160" fill="#ef4444" r="6" stroke="white" stroke-width="2"></circle>
+</svg>
+<!-- X Axis Labels -->
+<div class="flex justify-between w-full text-xs text-text-muted mt-2">
+<span>Oct 1</span>
+<span>Oct 7</span>
+<span>Oct 14</span>
+<span>Oct 21</span>
+<span>Today</span>
+</div>
+</div>
+</section>
+<!-- Stats Grid -->
+<section class="xl:col-span-1 grid grid-cols-2 xl:grid-cols-1 gap-4">
+<!-- Card 1 -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-[#cfe7d7] dark:border-[#2a4535] p-4 flex items-center gap-4">
+<div class="size-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 dark:text-red-400">
+<span class="material-symbols-outlined">expand_less</span>
+</div>
+<div>
+<p class="text-xs font-semibold text-text-muted uppercase">Max BP</p>
+<p class="text-xl font-bold text-text-main dark:text-white">150/95</p>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-[#cfe7d7] dark:border-[#2a4535] p-4 flex items-center gap-4">
+<div class="size-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+<span class="material-symbols-outlined">expand_more</span>
+</div>
+<div>
+<p class="text-xs font-semibold text-text-muted uppercase">Min BP</p>
+<p class="text-xl font-bold text-text-main dark:text-white">110/70</p>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-[#cfe7d7] dark:border-[#2a4535] p-4 flex items-center gap-4">
+<div class="size-10 rounded-full bg-[#e7f3eb] dark:bg-primary/20 flex items-center justify-center text-green-700 dark:text-primary">
+<span class="material-symbols-outlined">functions</span>
+</div>
+<div>
+<p class="text-xs font-semibold text-text-muted uppercase">Average</p>
+<p class="text-xl font-bold text-text-main dark:text-white">125/82</p>
+</div>
+</div>
+<!-- Card 4 & 5 (Split in 2 col grid inside) -->
+<div class="col-span-2 xl:col-span-1 grid grid-cols-2 gap-4">
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-[#cfe7d7] dark:border-[#2a4535] p-4 text-center">
+<p class="text-xs font-semibold text-text-muted uppercase mb-1">Abnormal</p>
+<p class="text-2xl font-black text-red-500">3</p>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-[#cfe7d7] dark:border-[#2a4535] p-4 text-center">
+<p class="text-xs font-semibold text-text-muted uppercase mb-1">Total</p>
+<p class="text-2xl font-black text-text-main dark:text-white">24</p>
+</div>
+</div>
+</section>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>
