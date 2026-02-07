@@ -53,12 +53,17 @@ const QUICK_QUESTIONS = [
 // 预处理 Markdown 内容，修复中文标点旁的加粗渲染问题
 // 把 **xxx** 模式中，紧邻中文标点的情况替换成 HTML <strong> 标签
 const preprocessMarkdown = (content: string): string => {
-  // 匹配所有 **xxx** 模式，其中 xxx 以中文标点开头或结尾
-  const chinesePunctuation = /[""「『【（）】』」""]/;
+  // 使用 Unicode 确保正确匹配中文引号和标点
+  // \u201C " 左双引号, \u201D " 右双引号, \u2018 ' 左单引号, \u2019 ' 右单引号
+  // \u300C 「, \u300D 」, \u300E 『, \u300F 』, \u3010 【, \u3011 】
+  // \uFF08 （, \uFF09 ）
+  const chinesePunctuation = /[\u201C\u201D\u2018\u2019\u300C\u300D\u300E\u300F\u3010\u3011\uFF08\uFF09]/;
 
   return content.replace(/\*\*([^*]+)\*\*/g, (match, inner) => {
+    const firstChar = inner.charAt(0);
+    const lastChar = inner.charAt(inner.length - 1);
     // 如果内容以中文标点开头或结尾，使用 HTML 标签
-    if (chinesePunctuation.test(inner.charAt(0)) || chinesePunctuation.test(inner.charAt(inner.length - 1))) {
+    if (chinesePunctuation.test(firstChar) || chinesePunctuation.test(lastChar)) {
       return `<strong>${inner}</strong>`;
     }
     // 否则保持原样，让 Markdown 解析器处理
