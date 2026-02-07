@@ -640,7 +640,6 @@ const AdvicePage: React.FC = () => {
                     <Space size={8}>
                       <Button
                         type="primary"
-                        icon={<EyeOutlined />}
                         style={{ borderRadius: 16 }}
                         onClick={() => {
                           setSelectedAdvice(item);
@@ -661,7 +660,6 @@ const AdvicePage: React.FC = () => {
                       >
                         <Button
                           danger
-                          icon={<DeleteOutlined />}
                           style={{ borderRadius: 16 }}
                           loading={deleteMutation.isPending}
                           onClick={(e) => e.stopPropagation()}
