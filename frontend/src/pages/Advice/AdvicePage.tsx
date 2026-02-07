@@ -28,6 +28,8 @@ import {
   FileTextOutlined,
   DatabaseOutlined,
   MessageOutlined,
+  EyeOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -200,13 +202,12 @@ const AdvicePage: React.FC = () => {
     const count = sessionStats?.[type]?.[index] || 0;
 
     return (
-      <Space size={4}>
+      <Space size={8}>
         {/* 历史聊天按钮 */}
         {count > 0 && (
           <Button
             type="text"
-            size="small"
-            icon={<HistoryOutlined />}
+            icon={<HistoryOutlined style={{ fontSize: 18 }} />}
             onClick={(e) => {
               e.stopPropagation();
               setChatHistoryModal({ visible: true, itemType: type, itemIndex: index, itemTitle: title });
@@ -215,6 +216,8 @@ const AdvicePage: React.FC = () => {
               color: 'var(--color-primary)',
               opacity: 0.7,
               transition: 'opacity 0.2s',
+              width: 36,
+              height: 36,
             }}
             onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
             onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.7'; }}
@@ -230,13 +233,14 @@ const AdvicePage: React.FC = () => {
         >
           <Button
             type="text"
-            size="small"
-            icon={<MessageOutlined />}
+            icon={<MessageOutlined style={{ fontSize: 18 }} />}
             onClick={(e) => e.stopPropagation()}
             style={{
               color: 'var(--color-primary)',
               opacity: 0.7,
               transition: 'opacity 0.2s',
+              width: 36,
+              height: 36,
             }}
             onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
             onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.7'; }}
@@ -625,7 +629,8 @@ const AdvicePage: React.FC = () => {
                     <Space>
                       <Button
                         type="primary"
-                        size="small"
+                        icon={<EyeOutlined />}
+                        style={{ borderRadius: 16 }}
                         onClick={() => {
                           setSelectedAdvice(item);
                           setShowHistory(false);
@@ -644,8 +649,9 @@ const AdvicePage: React.FC = () => {
                         cancelText="取消"
                       >
                         <Button
-                          size="small"
                           danger
+                          icon={<DeleteOutlined />}
+                          style={{ borderRadius: 16 }}
                           loading={deleteMutation.isPending}
                           onClick={(e) => e.stopPropagation()}
                         >
@@ -697,7 +703,7 @@ const AdvicePage: React.FC = () => {
                 </Space>
                 <Button
                   type="primary"
-                  size="small"
+                  icon={<EyeOutlined />}
                   style={{ borderRadius: 16 }}
                   onClick={() => {
                     setChatHistoryModal(null);
