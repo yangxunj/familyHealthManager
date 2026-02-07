@@ -161,14 +161,24 @@ export class ChatService {
       });
     }
 
-    // 获取最近的文档信息（包含 AI 解析内容）
+    // 文档类型优先级（体检报告最重要，其次是检验报告等）
+    const documentTypePriority: Record<string, number> = {
+      PHYSICAL_EXAM: 1,   // 体检报告 - 最全面的健康信息
+      LAB_REPORT: 2,      // 检验报告 - 具体指标数据
+      MEDICAL_RECORD: 3,  // 病历记录 - 就诊信息
+      IMAGING_REPORT: 4,  // 影像报告 - 特定检查
+      PRESCRIPTION: 5,    // 处方单 - 用药信息
+      OTHER: 6,           // 其他
+    };
+
+    // 获取最近的文档信息
     const documents = await this.prisma.document.findMany({
       where: {
         memberId,
         deletedAt: null,
       },
       orderBy: { checkDate: 'desc' },
-      take: 3,
+      take: 10, // 多取一些，按优先级筛选
       select: {
         name: true,
         type: true,
@@ -180,19 +190,28 @@ export class ChatService {
     const documentSummary =
       documents.length > 0
         ? documents
+            .slice(0, 3) // 摘要只显示最近 3 份
             .map((d) => `${d.checkDate.toISOString().split('T')[0]} - ${d.name}`)
             .join('\n')
         : undefined;
 
-    // 获取最新文档的 AI 解析内容（如果有）
-    // parsedData 是 JSON 格式，需要转换为字符串
+    // 按优先级选择一份有解析内容的文档
+    // 策略：在有 parsedData 的文档中，选择优先级最高的那份
     let latestDocumentContent: string | undefined = undefined;
-    if (documents[0]?.parsedData) {
-      const parsed = documents[0].parsedData as { summary?: string; items?: unknown[] };
+    const documentsWithContent = documents
+      .filter((d) => d.parsedData)
+      .sort((a, b) => {
+        const priorityA = documentTypePriority[a.type] || 99;
+        const priorityB = documentTypePriority[b.type] || 99;
+        return priorityA - priorityB; // 优先级数字小的排前面
+      });
+
+    if (documentsWithContent.length > 0) {
+      const selectedDoc = documentsWithContent[0];
+      const parsed = selectedDoc.parsedData as { summary?: string; items?: unknown[] };
       if (parsed.summary) {
         latestDocumentContent = parsed.summary;
       } else if (typeof parsed === 'object') {
-        // 如果没有 summary，尝试序列化整个对象
         latestDocumentContent = JSON.stringify(parsed, null, 2);
       }
     }
