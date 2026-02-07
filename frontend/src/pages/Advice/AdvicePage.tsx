@@ -196,25 +196,26 @@ const AdvicePage: React.FC = () => {
 
     return (
       <Space size={4}>
+        {/* 历史聊天按钮（暂时隐藏数字角标） */}
         {count > 0 && (
-          <Badge count={count} size="small" offset={[-4, 0]} color="#999">
-            <Button
-              type="text"
-              size="small"
-              icon={<HistoryOutlined />}
-              onClick={(e) => {
-                e.stopPropagation();
-                setChatHistoryModal({ visible: true, itemType: type, itemIndex: index, itemTitle: title });
-              }}
-              style={{
-                color: 'var(--color-text-secondary)',
-                opacity: 0.7,
-                transition: 'opacity 0.2s',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.7'; }}
-            />
-          </Badge>
+          // <Badge count={count} size="small" offset={[-4, 0]} color="#999">
+          <Button
+            type="text"
+            size="small"
+            icon={<HistoryOutlined />}
+            onClick={(e) => {
+              e.stopPropagation();
+              setChatHistoryModal({ visible: true, itemType: type, itemIndex: index, itemTitle: title });
+            }}
+            style={{
+              color: 'var(--color-text-secondary)',
+              opacity: 0.7,
+              transition: 'opacity 0.2s',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.7'; }}
+          />
+          // </Badge>
         )}
         <Popconfirm
           title="咨询 AI"
