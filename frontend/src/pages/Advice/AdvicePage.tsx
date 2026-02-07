@@ -197,7 +197,7 @@ const AdvicePage: React.FC = () => {
     return (
       <Space size={4}>
         {count > 0 && (
-          <Badge count={count} size="small" offset={[2, 0]}>
+          <Badge count={count} size="small" offset={[-4, 0]} color="#999">
             <Button
               type="text"
               size="small"
