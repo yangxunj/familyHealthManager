@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Card,
   Table,
@@ -8,7 +8,6 @@ import {
   Modal,
   message,
   Select,
-  DatePicker,
   Row,
   Col,
   Grid,
@@ -22,13 +21,44 @@ import {
 } from '@ant-design/icons';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { recordsApi, membersApi } from '../../api';
+import { recordsApi } from '../../api';
 import type { HealthRecord, RecordType, QueryRecordParams } from '../../types';
 import { RecordTypeLabels, MeasurementContextLabels } from '../../types';
 import dayjs from 'dayjs';
 
-const { RangePicker } = DatePicker;
 const { useBreakpoint } = Grid;
+
+// 时间范围选项
+type TimeRangeKey = '7d' | '30d' | '3m' | '6m' | '1y' | 'all';
+const timeRangeOptions: { key: TimeRangeKey; label: string }[] = [
+  { key: '7d', label: '最近 7 天' },
+  { key: '30d', label: '最近 30 天' },
+  { key: '3m', label: '最近 3 个月' },
+  { key: '6m', label: '最近 6 个月' },
+  { key: '1y', label: '最近 1 年' },
+  { key: 'all', label: '全部' },
+];
+
+// 根据时间范围 key 计算起止日期
+const getDateRange = (key: TimeRangeKey): { startDate?: string; endDate?: string } => {
+  const today = dayjs();
+  const endDate = today.format('YYYY-MM-DD');
+  switch (key) {
+    case '7d':
+      return { startDate: today.subtract(7, 'day').format('YYYY-MM-DD'), endDate };
+    case '30d':
+      return { startDate: today.subtract(30, 'day').format('YYYY-MM-DD'), endDate };
+    case '3m':
+      return { startDate: today.subtract(3, 'month').format('YYYY-MM-DD'), endDate };
+    case '6m':
+      return { startDate: today.subtract(6, 'month').format('YYYY-MM-DD'), endDate };
+    case '1y':
+      return { startDate: today.subtract(1, 'year').format('YYYY-MM-DD'), endDate };
+    case 'all':
+    default:
+      return { startDate: undefined, endDate: undefined };
+  }
+};
 
 const RecordList: React.FC = () => {
   const navigate = useNavigate();
@@ -41,16 +71,42 @@ const RecordList: React.FC = () => {
   const [filters, setFilters] = useState<QueryRecordParams>({
     memberId: searchParams.get('memberId') || undefined,
   });
+  const [timeRange, setTimeRange] = useState<TimeRangeKey | undefined>(undefined);
 
-  const { data: members } = useQuery({
-    queryKey: ['members'],
-    queryFn: membersApi.getAll,
+  // 查询所有记录用于提取筛选器选项
+  const { data: allRecords } = useQuery({
+    queryKey: ['records', 'all'],
+    queryFn: () => recordsApi.getAll({}),
   });
 
   const { data: records, isLoading } = useQuery({
     queryKey: ['records', filters],
     queryFn: () => recordsApi.getAll(filters),
   });
+
+  // 从所有记录中提取可用的家庭成员
+  const availableMembers = useMemo(() => {
+    if (!allRecords || allRecords.length === 0) return [];
+    const membersMap = new Map<string, { id: string; name: string }>();
+    allRecords.forEach((record) => {
+      if (record.member && !membersMap.has(record.member.id)) {
+        membersMap.set(record.member.id, { id: record.member.id, name: record.member.name });
+      }
+    });
+    return Array.from(membersMap.values()).sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
+  }, [allRecords]);
+
+  // 从所有记录中提取可用的指标类型
+  const availableTypes = useMemo(() => {
+    if (!allRecords || allRecords.length === 0) return [];
+    const typesSet = new Set<RecordType>();
+    allRecords.forEach((record) => {
+      if (record.recordType) {
+        typesSet.add(record.recordType);
+      }
+    });
+    return Array.from(typesSet);
+  }, [allRecords]);
 
   const deleteMutation = useMutation({
     mutationFn: recordsApi.delete,
@@ -174,8 +230,9 @@ const RecordList: React.FC = () => {
               style={{ width: '100%' }}
               value={filters.memberId}
               onChange={(value) => setFilters({ ...filters, memberId: value })}
+              notFoundContent="暂无记录"
             >
-              {members?.map((member) => (
+              {availableMembers.map((member) => (
                 <Select.Option key={member.id} value={member.id}>
                   {member.name}
                 </Select.Option>
@@ -189,33 +246,37 @@ const RecordList: React.FC = () => {
               style={{ width: '100%' }}
               value={filters.recordType}
               onChange={(value) => setFilters({ ...filters, recordType: value })}
+              notFoundContent="暂无记录"
             >
-              {(Object.keys(RecordTypeLabels) as RecordType[]).map((key) => (
-                <Select.Option key={key} value={key}>
-                  {RecordTypeLabels[key]}
+              {availableTypes.map((type) => (
+                <Select.Option key={type} value={type}>
+                  {RecordTypeLabels[type]}
                 </Select.Option>
               ))}
             </Select>
           </Col>
           <Col xs={24} sm={8}>
-            <RangePicker
+            <Select
+              placeholder="选择时间范围"
+              allowClear
               style={{ width: '100%' }}
-              onChange={(dates) => {
-                if (dates) {
-                  setFilters({
-                    ...filters,
-                    startDate: dates[0]?.format('YYYY-MM-DD'),
-                    endDate: dates[1]?.format('YYYY-MM-DD'),
-                  });
+              value={timeRange}
+              onChange={(value) => {
+                setTimeRange(value);
+                if (value) {
+                  const { startDate, endDate } = getDateRange(value);
+                  setFilters({ ...filters, startDate, endDate });
                 } else {
-                  setFilters({
-                    ...filters,
-                    startDate: undefined,
-                    endDate: undefined,
-                  });
+                  setFilters({ ...filters, startDate: undefined, endDate: undefined });
                 }
               }}
-            />
+            >
+              {timeRangeOptions.map((option) => (
+                <Select.Option key={option.key} value={option.key}>
+                  {option.label}
+                </Select.Option>
+              ))}
+            </Select>
           </Col>
         </Row>
       </Card>
@@ -271,7 +332,7 @@ const RecordList: React.FC = () => {
                   </div>
                   <Space>
                     <Button
-                      type="link"
+                      type="primary"
                       size="small"
                       icon={<LineChartOutlined />}
                       onClick={() =>
@@ -279,12 +340,10 @@ const RecordList: React.FC = () => {
                           `/records/trend?memberId=${record.memberId}&recordType=${record.recordType}`,
                         )
                       }
-                      style={{ paddingLeft: 0 }}
                     >
                       趋势
                     </Button>
                     <Button
-                      type="link"
                       size="small"
                       danger
                       icon={<DeleteOutlined />}

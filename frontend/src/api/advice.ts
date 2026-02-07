@@ -26,4 +26,9 @@ export const adviceApi = {
   getById: async (id: string): Promise<HealthAdvice> => {
     return apiClient.get(`/advice/${id}`);
   },
+
+  // 删除建议
+  delete: async (id: string): Promise<{ message: string }> => {
+    return apiClient.delete(`/advice/${id}`);
+  },
 };

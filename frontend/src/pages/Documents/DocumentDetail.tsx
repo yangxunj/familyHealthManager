@@ -14,6 +14,9 @@ import {
   Input,
   Alert,
   Grid,
+  Form,
+  DatePicker,
+  Steps,
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -30,6 +33,8 @@ import {
   LeftOutlined,
   RightOutlined,
   EyeOutlined,
+  CheckCircleOutlined,
+  LoadingOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -42,6 +47,12 @@ import dayjs from 'dayjs';
 
 const { TextArea } = Input;
 const { useBreakpoint } = Grid;
+
+interface EditFormValues {
+  name: string;
+  checkDate: dayjs.Dayjs;
+  institution: string;
+}
 
 const DocumentDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -68,6 +79,10 @@ const DocumentDetail: React.FC = () => {
   // OCR 文本编辑状态
   const [isEditingOcr, setIsEditingOcr] = useState(false);
   const [editedOcrText, setEditedOcrText] = useState('');
+
+  // 文档信息编辑状态
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editForm] = Form.useForm<EditFormValues>();
 
   const { data: document, isLoading } = useQuery({
     queryKey: ['document', id],
@@ -99,6 +114,25 @@ const DocumentDetail: React.FC = () => {
     },
     onError: (error: Error) => {
       message.error(error.message || '保存失败');
+    },
+  });
+
+  // 更新文档信息
+  const updateDocumentMutation = useMutation({
+    mutationFn: (values: EditFormValues) =>
+      documentsApi.update(id!, {
+        name: values.name,
+        checkDate: values.checkDate.format('YYYY-MM-DD'),
+        institution: values.institution,
+      }),
+    onSuccess: () => {
+      message.success('文档信息已更新');
+      setEditModalOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['document', id] });
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
+    },
+    onError: (error: Error) => {
+      message.error(error.message || '更新失败');
     },
   });
 
@@ -236,6 +270,25 @@ const DocumentDetail: React.FC = () => {
     }
   };
 
+  // 打开编辑文档信息模态框
+  const handleOpenEditModal = useCallback(() => {
+    if (document) {
+      editForm.setFieldsValue({
+        name: document.name,
+        checkDate: dayjs(document.checkDate),
+        institution: document.institution || '',
+      });
+      setEditModalOpen(true);
+    }
+  }, [document, editForm]);
+
+  // 保存文档信息
+  const handleSaveDocumentInfo = useCallback(() => {
+    editForm.validateFields().then((values) => {
+      updateDocumentMutation.mutate(values);
+    });
+  }, [editForm, updateDocumentMutation]);
+
   const getFileIcon = (mimeType?: string) => {
     if (mimeType === 'application/pdf') {
       return <FilePdfOutlined style={{ fontSize: 48, color: '#ff4d4f' }} />;
@@ -285,8 +338,12 @@ const DocumentDetail: React.FC = () => {
   }
 
   const hasOcrText = !!document.ocrText;
+  // OCR 完成：状态为 completed，或者有 ocrText（兼容历史数据）
+  const isOcrCompleted = document.ocrStatus === 'completed' || hasOcrText;
   const parsedData = document.parsedData as { type?: string; content?: string } | null;
   const hasParsedData = !!parsedData;
+  // AI 规整完成：状态为 completed，或者有 parsedData（兼容历史数据）
+  const isAnalyzeCompleted = document.analyzeStatus === 'completed' || hasParsedData;
   const parsedMarkdown = parsedData?.type === 'markdown' ? parsedData.content || '' : '';
 
   return (
@@ -307,25 +364,25 @@ const DocumentDetail: React.FC = () => {
             </Button>
           ) : (
             <Button
-              type="primary"
+              type={isOcrCompleted ? 'default' : 'primary'}
               icon={<ScanOutlined />}
               onClick={handleStartOcr}
               disabled={!document.files || document.files.length === 0}
             >
-              OCR 识别
+              {isOcrCompleted ? '重新 OCR' : 'OCR 识别'}
             </Button>
           )}
 
           {/* AI 规整按钮 */}
           <Button
-            type="default"
+            type={isAnalyzeCompleted ? 'default' : hasOcrText ? 'primary' : 'default'}
             icon={<RobotOutlined />}
             onClick={handleStartAnalyze}
             loading={isAnalyzing}
             disabled={!hasOcrText || isOcrRunning || isAnalyzing}
             title={!hasOcrText ? '请先进行 OCR 识别' : ''}
           >
-            {isAnalyzing ? 'AI 规整中...' : 'AI 规整'}
+            {isAnalyzing ? 'AI 规整中...' : isAnalyzeCompleted ? '重新规整' : 'AI 规整'}
           </Button>
 
           <Button
@@ -358,7 +415,46 @@ const DocumentDetail: React.FC = () => {
         </Card>
       )}
 
-      <Card title="文档信息" style={{ marginBottom: 24 }}>
+      {/* 处理进度指示器 */}
+      <Card style={{ marginBottom: 24 }}>
+        <Steps
+          size="small"
+          items={[
+            {
+              title: 'OCR 识别',
+              status: isOcrRunning
+                ? 'process'
+                : isOcrCompleted
+                  ? 'finish'
+                  : 'wait',
+              icon: isOcrRunning ? <LoadingOutlined /> : isOcrCompleted ? <CheckCircleOutlined /> : undefined,
+            },
+            {
+              title: 'AI 规整',
+              status: isAnalyzing
+                ? 'process'
+                : isAnalyzeCompleted
+                  ? 'finish'
+                  : 'wait',
+              icon: isAnalyzing ? <LoadingOutlined /> : isAnalyzeCompleted ? <CheckCircleOutlined /> : undefined,
+            },
+          ]}
+        />
+      </Card>
+
+      <Card
+        title="文档信息"
+        style={{ marginBottom: 24 }}
+        extra={
+          <Button
+            type="link"
+            icon={<EditOutlined />}
+            onClick={handleOpenEditModal}
+          >
+            编辑
+          </Button>
+        }
+      >
         <Descriptions column={{ xs: 1, sm: 2 }}>
           <Descriptions.Item label="文档名称">{document.name}</Descriptions.Item>
           <Descriptions.Item label="文档类型">
@@ -630,6 +726,44 @@ const DocumentDetail: React.FC = () => {
         okButtonProps={{ danger: true }}
       >
         <p>确定要删除该文档吗？删除后相关文件也将被删除，此操作不可恢复。</p>
+      </Modal>
+
+      {/* 编辑文档信息模态框 */}
+      <Modal
+        title="编辑文档信息"
+        open={editModalOpen}
+        onOk={handleSaveDocumentInfo}
+        onCancel={() => setEditModalOpen(false)}
+        confirmLoading={updateDocumentMutation.isPending}
+        okText="保存"
+        cancelText="取消"
+      >
+        <Form
+          form={editForm}
+          layout="vertical"
+          style={{ marginTop: 16 }}
+        >
+          <Form.Item
+            name="name"
+            label="文档名称"
+            rules={[{ required: true, message: '请输入文档名称' }]}
+          >
+            <Input placeholder="请输入文档名称" maxLength={200} />
+          </Form.Item>
+          <Form.Item
+            name="checkDate"
+            label="检查日期"
+            rules={[{ required: true, message: '请选择检查日期' }]}
+          >
+            <DatePicker style={{ width: '100%' }} placeholder="请选择检查日期" />
+          </Form.Item>
+          <Form.Item
+            name="institution"
+            label="检查机构"
+          >
+            <Input placeholder="请输入检查机构（选填）" maxLength={200} />
+          </Form.Item>
+        </Form>
       </Modal>
 
       {/* 对比检查模态框 */}

@@ -148,6 +148,8 @@ export class AiService implements OnModuleInit {
       model?: string;
       temperature?: number;
       maxTokens?: number;
+      jsonMode?: boolean; // 启用 JSON mode，强制返回有效 JSON
+      jsonSchema?: object; // 可选：指定 JSON Schema 约束输出结构
     },
   ): Promise<AiCompletionResult> {
     if (!this.googleApiKey) {
@@ -156,8 +158,32 @@ export class AiService implements OnModuleInit {
 
     const model = options?.model || this.geminiModel;
 
+    // 构建请求体
+    const requestBody: Record<string, unknown> = {
+      model,
+      messages,
+      temperature: options?.temperature ?? 0.7,
+      max_tokens: options?.maxTokens ?? 2000,
+    };
+
+    // 添加 JSON mode 或 JSON Schema 约束
+    if (options?.jsonSchema) {
+      // 结构化输出：使用 JSON Schema 严格约束返回格式
+      requestBody.response_format = {
+        type: 'json_schema',
+        json_schema: {
+          name: 'response',
+          strict: true,
+          schema: options.jsonSchema,
+        },
+      };
+    } else if (options?.jsonMode) {
+      // 基本 JSON mode：确保返回有效 JSON
+      requestBody.response_format = { type: 'json_object' };
+    }
+
     try {
-      this.logger.log(`Gemini chat: model=${model}, messages=${messages.length}, maxTokens=${options?.maxTokens ?? 2000}`);
+      this.logger.log(`Gemini chat: model=${model}, messages=${messages.length}, maxTokens=${options?.maxTokens ?? 2000}, jsonMode=${!!options?.jsonMode || !!options?.jsonSchema}`);
 
       const response = await undiciFetch(`${this.googleBaseUrl}/chat/completions`, {
         method: 'POST',
@@ -165,12 +191,7 @@ export class AiService implements OnModuleInit {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${this.googleApiKey}`,
         },
-        body: JSON.stringify({
-          model,
-          messages,
-          temperature: options?.temperature ?? 0.7,
-          max_tokens: options?.maxTokens ?? 2000,
-        }),
+        body: JSON.stringify(requestBody),
         signal: AbortSignal.timeout(600_000), // 10 分钟超时（大文本 AI 规整可能较慢）
         ...(this.proxyAgent ? { dispatcher: this.proxyAgent } : {}),
       });
@@ -357,7 +378,8 @@ export class AiService implements OnModuleInit {
 2. concerns按严重程度排序，critical > warning > info
 3. suggestions要具体可执行，不要泛泛而谈
 4. actionItems控制在3-5项，优先级高的放前面
-5. 所有建议仅供参考，不能替代专业医疗诊断`;
+5. 所有建议仅供参考，不能替代专业医疗诊断
+6. 【重要】字段名必须严格按照上述JSON格式，不可更改：concerns用description字段，suggestions用content字段，不要混淆`;
 
     const userPrompt = `请分析以下健康数据并生成建议报告：
 
@@ -384,10 +406,96 @@ ${healthData.documentContent ? `## 健康文档详细内容\n${healthData.docume
 
 请根据以上数据生成健康建议报告。`;
 
-    return this.chat([
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt },
-    ]);
+    // 定义健康建议的 JSON Schema，强制 AI 按此结构返回
+    const healthAdviceSchema = {
+      type: 'object',
+      properties: {
+        healthScore: {
+          type: 'integer',
+          description: '0-100的整数，代表整体健康评分',
+        },
+        summary: {
+          type: 'string',
+          description: '200字以内的健康状况总结',
+        },
+        concerns: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              level: {
+                type: 'string',
+                enum: ['critical', 'warning', 'info'],
+                description: '关注级别',
+              },
+              title: {
+                type: 'string',
+                description: '关注事项标题',
+              },
+              description: {
+                type: 'string',
+                description: '详细描述',
+              },
+            },
+            required: ['level', 'title', 'description'],
+            additionalProperties: false,
+          },
+        },
+        suggestions: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              category: {
+                type: 'string',
+                description: '建议分类：饮食/运动/作息/用药/检查/其他',
+              },
+              title: {
+                type: 'string',
+                description: '建议标题',
+              },
+              content: {
+                type: 'string',
+                description: '具体建议内容',
+              },
+            },
+            required: ['category', 'title', 'content'],
+            additionalProperties: false,
+          },
+        },
+        actionItems: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              text: {
+                type: 'string',
+                description: '具体行动项',
+              },
+              priority: {
+                type: 'string',
+                enum: ['high', 'medium', 'low'],
+                description: '优先级',
+              },
+            },
+            required: ['text', 'priority'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['healthScore', 'summary', 'concerns', 'suggestions', 'actionItems'],
+      additionalProperties: false,
+    };
+
+    return this.chat(
+      [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      {
+        jsonSchema: healthAdviceSchema,
+      },
+    );
   }
 
   // 解析 AI 返回的 JSON
@@ -423,11 +531,20 @@ ${healthData.documentContent ? `## 健康文档详细内容\n${healthData.docume
         throw new Error('Invalid advice format');
       }
 
+      // 标准化 suggestions 字段：AI 有时返回 description 而不是 content
+      const normalizedSuggestions = Array.isArray(parsed.suggestions)
+        ? parsed.suggestions.map((s: { category?: string; title?: string; content?: string; description?: string }) => ({
+            category: s.category || '',
+            title: s.title || '',
+            content: s.content || s.description || '', // 兼容 description 字段
+          }))
+        : [];
+
       return {
         healthScore: Math.min(100, Math.max(0, parsed.healthScore)),
         summary: parsed.summary,
         concerns: Array.isArray(parsed.concerns) ? parsed.concerns : [],
-        suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions : [],
+        suggestions: normalizedSuggestions,
         actionItems: Array.isArray(parsed.actionItems) ? parsed.actionItems : [],
       };
     } catch (error) {

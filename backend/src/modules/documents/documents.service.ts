@@ -66,6 +66,9 @@ export class DocumentsService {
         notes: true,
         ocrStatus: true,
         ocrProgress: true,
+        ocrText: true,
+        analyzeStatus: true,
+        parsedData: true,
         createdAt: true,
         member: {
           select: {

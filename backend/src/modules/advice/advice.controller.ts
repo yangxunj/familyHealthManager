@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   Body,
   Param,
   Query,
@@ -64,5 +65,15 @@ export class AdviceController {
   ) {
     const familyId = this.requireFamily(user);
     return this.adviceService.findOne(familyId, id);
+  }
+
+  // 删除建议
+  @Delete(':id')
+  remove(
+    @CurrentUser() user: CurrentUserData,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    const familyId = this.requireFamily(user);
+    return this.adviceService.remove(familyId, id);
   }
 }

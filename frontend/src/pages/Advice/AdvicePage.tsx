@@ -16,6 +16,7 @@ import {
   Row,
   Col,
   message,
+  Popconfirm,
 } from 'antd';
 import {
   RobotOutlined,
@@ -27,6 +28,7 @@ import {
   CheckCircleOutlined,
   FileTextOutlined,
   DatabaseOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adviceApi, membersApi } from '../../api';
@@ -80,6 +82,25 @@ const AdvicePage: React.FC = () => {
     onError: (error: unknown) => {
       const err = error as { response?: { data?: { message?: string } } };
       message.error(err.response?.data?.message || '生成失败，请稍后重试');
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: adviceApi.delete,
+    onSuccess: () => {
+      message.success('删除成功');
+      queryClient.invalidateQueries({ queryKey: ['advice'] });
+      queryClient.invalidateQueries({ queryKey: ['advice-check', selectedMemberId] });
+      // 如果删除的是当前选中的建议，清空选中
+      if (selectedAdvice && adviceList && adviceList.length > 1) {
+        const remaining = adviceList.filter((a) => a.id !== selectedAdvice.id);
+        setSelectedAdvice(remaining[0] || null);
+      } else {
+        setSelectedAdvice(null);
+      }
+    },
+    onError: () => {
+      message.error('删除失败');
     },
   });
 
@@ -406,46 +427,70 @@ const AdvicePage: React.FC = () => {
           <List
             itemLayout="horizontal"
             dataSource={adviceList}
-            renderItem={(item) => (
-              <List.Item
-                actions={[
-                  <Button
-                    key="view"
-                    type="link"
-                    onClick={() => {
-                      setSelectedAdvice(item);
-                      setShowHistory(false);
-                    }}
-                  >
-                    查看详情
-                  </Button>,
-                ]}
-              >
-                <List.Item.Meta
-                  avatar={
-                    <Progress
-                      type="circle"
-                      percent={item.healthScore || 0}
-                      size={50}
-                      strokeColor={
-                        (item.healthScore || 0) >= 80
-                          ? '#13ec5b'
-                          : (item.healthScore || 0) >= 60
-                            ? '#faad14'
-                            : '#ff4d4f'
-                      }
-                    />
-                  }
-                  title={
+            renderItem={(item) => {
+              const score = item.healthScore || 0;
+              const scoreColor = score >= 80 ? '#13ec5b' : score >= 60 ? '#faad14' : '#ff4d4f';
+              return (
+                <List.Item>
+                  <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: 16 }}>
+                    <div
+                      style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: '50%',
+                        border: `3px solid ${scoreColor}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 'bold',
+                        fontSize: 16,
+                        color: scoreColor,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {score}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 500 }}>{dayjs(item.generatedAt).format('YYYY-MM-DD')}</div>
+                      <div style={{ fontSize: 13, color: 'var(--color-text-tertiary)' }}>
+                        健康评分 {score} 分
+                      </div>
+                    </div>
                     <Space>
-                      <Tag>{dayjs(item.generatedAt).format('YYYY-MM-DD HH:mm')}</Tag>
-                      <span>健康评分 {item.healthScore}</span>
+                      <Button
+                        type="primary"
+                        size="small"
+                        onClick={() => {
+                          setSelectedAdvice(item);
+                          setShowHistory(false);
+                        }}
+                      >
+                        查看
+                      </Button>
+                      <Popconfirm
+                        title="确定要删除这条健康建议吗？"
+                        onConfirm={(e) => {
+                          e?.stopPropagation();
+                          deleteMutation.mutate(item.id);
+                        }}
+                        onCancel={(e) => e?.stopPropagation()}
+                        okText="删除"
+                        cancelText="取消"
+                      >
+                        <Button
+                          size="small"
+                          danger
+                          loading={deleteMutation.isPending}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          删除
+                        </Button>
+                      </Popconfirm>
                     </Space>
-                  }
-                  description={item.summary?.substring(0, 100) + '...'}
-                />
-              </List.Item>
-            )}
+                  </div>
+                </List.Item>
+              );
+            }}
           />
         ) : (
           <Empty description="暂无历史建议" />

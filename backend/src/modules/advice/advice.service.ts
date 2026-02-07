@@ -322,6 +322,34 @@ export class AdviceService {
     return this.formatAdvice(advice);
   }
 
+  // 删除建议
+  async remove(familyId: string, id: string) {
+    const advice = await this.prisma.healthAdvice.findUnique({
+      where: { id },
+      include: {
+        member: {
+          select: {
+            familyId: true,
+          },
+        },
+      },
+    });
+
+    if (!advice) {
+      throw new NotFoundException('建议不存在');
+    }
+
+    if (advice.member.familyId !== familyId) {
+      throw new ForbiddenException('无权删除此建议');
+    }
+
+    await this.prisma.healthAdvice.delete({
+      where: { id },
+    });
+
+    return { message: '删除成功' };
+  }
+
   // 格式化建议输出
   private formatAdvice(
     advice: {
@@ -340,9 +368,18 @@ export class AdviceService {
       healthScore: number;
       summary: string;
       concerns: { level: string; title: string; description: string }[];
-      suggestions: { category: string; title: string; content: string }[];
+      suggestions: { category: string; title: string; content?: string; description?: string }[];
       actionItems: { text: string; priority: string }[];
     };
+
+    // 标准化 suggestions 字段：AI 有时返回 description 而不是 content
+    const normalizedSuggestions = Array.isArray(content.suggestions)
+      ? content.suggestions.map((s) => ({
+          category: s.category || '',
+          title: s.title || '',
+          content: s.content || s.description || '', // 兼容 description 字段
+        }))
+      : [];
 
     return {
       id: advice.id,
@@ -351,7 +388,7 @@ export class AdviceService {
       healthScore: advice.healthScore,
       summary: content.summary,
       concerns: content.concerns,
-      suggestions: content.suggestions,
+      suggestions: normalizedSuggestions,
       actionItems: content.actionItems,
       modelUsed: advice.modelUsed,
       tokensUsed: advice.tokensUsed,

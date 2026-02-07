@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Card,
   Table,
@@ -8,27 +8,56 @@ import {
   Modal,
   message,
   Select,
-  DatePicker,
   Row,
   Col,
   Grid,
   List,
+  Tooltip,
 } from 'antd';
 import {
   PlusOutlined,
   EyeOutlined,
   DeleteOutlined,
   FileTextOutlined,
+  CheckCircleFilled,
+  ClockCircleOutlined,
+  MinusCircleOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { documentsApi, membersApi } from '../../api';
+import { documentsApi } from '../../api';
 import type { HealthDocument, DocumentType, QueryDocumentParams } from '../../types';
 import { DocumentTypeLabels, DocumentTypeColors } from '../../types';
 import dayjs from 'dayjs';
 
-const { RangePicker } = DatePicker;
 const { useBreakpoint } = Grid;
+
+// 获取文档处理状态
+const getProcessStatus = (doc: HealthDocument) => {
+  // 兼容历史数据：有 ocrText 也算 OCR 完成，有 parsedData 也算规整完成
+  const ocrDone = doc.ocrStatus === 'completed' || !!doc.ocrText;
+  const analyzeDone = doc.analyzeStatus === 'completed' || !!doc.parsedData;
+
+  if (ocrDone && analyzeDone) {
+    return {
+      icon: <CheckCircleFilled style={{ color: '#52c41a' }} />,
+      text: '已完成',
+      color: '#52c41a',
+    };
+  }
+  if (ocrDone) {
+    return {
+      icon: <ClockCircleOutlined style={{ color: '#1890ff' }} />,
+      text: 'OCR 已完成',
+      color: '#1890ff',
+    };
+  }
+  return {
+    icon: <MinusCircleOutlined style={{ color: '#d9d9d9' }} />,
+    text: '待处理',
+    color: '#d9d9d9',
+  };
+};
 
 const DocumentList: React.FC = () => {
   const navigate = useNavigate();
@@ -42,15 +71,52 @@ const DocumentList: React.FC = () => {
     memberId: searchParams.get('memberId') || undefined,
   });
 
-  const { data: members } = useQuery({
-    queryKey: ['members'],
-    queryFn: membersApi.getAll,
+  // 查询所有文档（不带筛选），用于提取筛选器选项
+  const { data: allDocuments } = useQuery({
+    queryKey: ['documents', 'all'],
+    queryFn: () => documentsApi.getAll({}),
   });
 
   const { data: documents, isLoading } = useQuery({
     queryKey: ['documents', filters],
     queryFn: () => documentsApi.getAll(filters),
   });
+
+  // 从所有文档中提取可用的家庭成员
+  const availableMembers = useMemo(() => {
+    if (!allDocuments || allDocuments.length === 0) return [];
+    const membersMap = new Map<string, { id: string; name: string }>();
+    allDocuments.forEach((doc) => {
+      if (doc.member && !membersMap.has(doc.member.id)) {
+        membersMap.set(doc.member.id, { id: doc.member.id, name: doc.member.name });
+      }
+    });
+    return Array.from(membersMap.values()).sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
+  }, [allDocuments]);
+
+  // 从所有文档中提取可用的文档类型
+  const availableTypes = useMemo(() => {
+    if (!allDocuments || allDocuments.length === 0) return [];
+    const typesSet = new Set<DocumentType>();
+    allDocuments.forEach((doc) => {
+      if (doc.type) {
+        typesSet.add(doc.type);
+      }
+    });
+    return Array.from(typesSet);
+  }, [allDocuments]);
+
+  // 从所有文档中提取可用年份
+  const availableYears = useMemo(() => {
+    if (!allDocuments || allDocuments.length === 0) return [];
+    const yearsSet = new Set<number>();
+    allDocuments.forEach((doc) => {
+      if (doc.checkDate) {
+        yearsSet.add(dayjs(doc.checkDate).year());
+      }
+    });
+    return Array.from(yearsSet).sort((a, b) => b - a); // 降序排列
+  }, [allDocuments]);
 
   const deleteMutation = useMutation({
     mutationFn: documentsApi.delete,
@@ -112,6 +178,21 @@ const DocumentList: React.FC = () => {
       render: (files: unknown[]) => `${files?.length || 0} 个`,
     },
     {
+      title: '处理状态',
+      key: 'processStatus',
+      render: (_: unknown, record: HealthDocument) => {
+        const status = getProcessStatus(record);
+        return (
+          <Tooltip title={status.text}>
+            <Space>
+              {status.icon}
+              <span style={{ color: status.color }}>{status.text}</span>
+            </Space>
+          </Tooltip>
+        );
+      },
+    },
+    {
       title: '上传时间',
       dataIndex: 'createdAt',
       key: 'createdAt',
@@ -164,8 +245,9 @@ const DocumentList: React.FC = () => {
               style={{ width: '100%' }}
               value={filters.memberId}
               onChange={(value) => setFilters({ ...filters, memberId: value })}
+              notFoundContent="暂无文档"
             >
-              {members?.map((member) => (
+              {availableMembers.map((member) => (
                 <Select.Option key={member.id} value={member.id}>
                   {member.name}
                 </Select.Option>
@@ -179,23 +261,27 @@ const DocumentList: React.FC = () => {
               style={{ width: '100%' }}
               value={filters.type}
               onChange={(value) => setFilters({ ...filters, type: value })}
+              notFoundContent="暂无文档"
             >
-              {(Object.keys(DocumentTypeLabels) as DocumentType[]).map((key) => (
-                <Select.Option key={key} value={key}>
-                  {DocumentTypeLabels[key]}
+              {availableTypes.map((type) => (
+                <Select.Option key={type} value={type}>
+                  {DocumentTypeLabels[type]}
                 </Select.Option>
               ))}
             </Select>
           </Col>
           <Col xs={24} sm={8}>
-            <RangePicker
+            <Select
+              placeholder="选择年份"
+              allowClear
               style={{ width: '100%' }}
-              onChange={(dates) => {
-                if (dates) {
+              value={filters.startDate ? dayjs(filters.startDate).year() : undefined}
+              onChange={(year) => {
+                if (year) {
                   setFilters({
                     ...filters,
-                    startDate: dates[0]?.format('YYYY-MM-DD'),
-                    endDate: dates[1]?.format('YYYY-MM-DD'),
+                    startDate: `${year}-01-01`,
+                    endDate: `${year}-12-31`,
                   });
                 } else {
                   setFilters({
@@ -205,7 +291,14 @@ const DocumentList: React.FC = () => {
                   });
                 }
               }}
-            />
+              notFoundContent="暂无文档"
+            >
+              {availableYears.map((year) => (
+                <Select.Option key={year} value={year}>
+                  {year} 年
+                </Select.Option>
+              ))}
+            </Select>
           </Col>
         </Row>
       </Card>
@@ -241,20 +334,21 @@ const DocumentList: React.FC = () => {
                     <Space split={<span style={{ color: 'var(--color-border-secondary)' }}>|</span>}>
                       <span>{doc.institution || '-'}</span>
                       <span>{doc.files?.length || 0} 个文件</span>
+                      <span style={{ color: getProcessStatus(doc).color }}>
+                        {getProcessStatus(doc).icon} {getProcessStatus(doc).text}
+                      </span>
                     </Space>
                   </div>
                   <Space>
                     <Button
-                      type="link"
+                      type="primary"
                       size="small"
                       icon={<EyeOutlined />}
                       onClick={() => navigate(`/documents/${doc.id}`)}
-                      style={{ paddingLeft: 0 }}
                     >
                       查看
                     </Button>
                     <Button
-                      type="link"
                       size="small"
                       danger
                       icon={<DeleteOutlined />}
