@@ -284,7 +284,7 @@ const AdvicePage: React.FC = () => {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '12px 16px',
-                backgroundColor: 'var(--color-bg-container-secondary, #fafafa)',
+                backgroundColor: 'var(--color-bg-hover)',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
