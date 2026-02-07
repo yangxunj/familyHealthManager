@@ -232,26 +232,30 @@ const AdvicePage: React.FC = () => {
 
     return (
       <List
-        itemLayout="horizontal"
+        itemLayout="vertical"
         dataSource={concerns}
         renderItem={(item) => (
           <List.Item
             style={clickableItemStyle}
             className="advice-clickable-item"
-            actions={[renderAskButton('concern', item.title, item.description)]}
           >
-            <List.Item.Meta
-              avatar={getIcon(item.level)}
-              title={
-                <Space>
-                  <span>{item.title}</span>
-                  <Tag color={ConcernLevelConfig[item.level as keyof typeof ConcernLevelConfig]?.color}>
-                    {ConcernLevelConfig[item.level as keyof typeof ConcernLevelConfig]?.label}
-                  </Tag>
-                </Space>
-              }
-              description={item.description}
-            />
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+              <div style={{ paddingTop: 2 }}>{getIcon(item.level)}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <Space>
+                    <span style={{ fontWeight: 500 }}>{item.title}</span>
+                    <Tag color={ConcernLevelConfig[item.level as keyof typeof ConcernLevelConfig]?.color}>
+                      {ConcernLevelConfig[item.level as keyof typeof ConcernLevelConfig]?.label}
+                    </Tag>
+                  </Space>
+                  {renderAskButton('concern', item.title, item.description)}
+                </div>
+                <div style={{ color: 'var(--color-text-secondary)', fontSize: 14 }}>
+                  {item.description}
+                </div>
+              </div>
+            </div>
           </List.Item>
         )}
       />
@@ -297,34 +301,33 @@ const AdvicePage: React.FC = () => {
           <List.Item
             style={clickableItemStyle}
             className="advice-clickable-item"
-            actions={[renderAskButton('action', item.text, '')]}
           >
-            <List.Item.Meta
-              avatar={
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    width: 24,
-                    height: 24,
-                    borderRadius: '50%',
-                    backgroundColor: 'var(--color-bg-hover)',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 12,
-                  }}
-                >
-                  {index + 1}
-                </span>
-              }
-              title={
-                <Space>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%' }}>
+              <span
+                style={{
+                  display: 'inline-flex',
+                  width: 24,
+                  height: 24,
+                  borderRadius: '50%',
+                  backgroundColor: 'var(--color-bg-hover)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 12,
+                  flexShrink: 0,
+                }}
+              >
+                {index + 1}
+              </span>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Space wrap>
                   <span>{item.text}</span>
                   <Tag color={ActionPriorityConfig[item.priority as keyof typeof ActionPriorityConfig]?.color}>
                     {ActionPriorityConfig[item.priority as keyof typeof ActionPriorityConfig]?.label}优先级
                   </Tag>
                 </Space>
-              }
-            />
+                {renderAskButton('action', item.text, '')}
+              </div>
+            </div>
           </List.Item>
         )}
       />
