@@ -27,6 +27,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { chatApi, membersApi } from '../../api';
 import type {
   ChatSession,
@@ -299,7 +300,7 @@ const ChatPage: React.FC = () => {
             {isUser ? (
               <span style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</span>
             ) : (
-              <Markdown>{msg.content}</Markdown>
+              <Markdown remarkPlugins={[remarkGfm]}>{msg.content}</Markdown>
             )}
           </div>
         </div>
@@ -357,7 +358,7 @@ const ChatPage: React.FC = () => {
             }}
             className="markdown-content"
           >
-            {streamingContent ? <Markdown>{streamingContent}</Markdown> : <Spin size="small" />}
+            {streamingContent ? <Markdown remarkPlugins={[remarkGfm]}>{streamingContent}</Markdown> : <Spin size="small" />}
           </div>
         </div>
       </div>
