@@ -9,7 +9,6 @@ import {
   Progress,
   List,
   Tag,
-  Collapse,
   Alert,
   Divider,
   Modal,
@@ -269,25 +268,38 @@ const AdvicePage: React.FC = () => {
     }
 
     return (
-      <Collapse
-        defaultActiveKey={suggestions.map((_, i) => i.toString())}
-        items={suggestions.map((item, index) => ({
-          key: index.toString(),
-          label: (
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              <span>{SuggestionCategoryIcons[item.category] || '📝'}</span>
-              <Tag>{item.category}</Tag>
-              <span>{item.title}</span>
-            </div>
-          ),
-          extra: (
-            <div onClick={(e) => e.stopPropagation()}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {suggestions.map((item, index) => (
+          <div
+            key={index}
+            style={{
+              border: '1px solid var(--color-border, #d9d9d9)',
+              borderRadius: 8,
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px 16px',
+                backgroundColor: 'var(--color-bg-container-secondary, #fafafa)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span>{SuggestionCategoryIcons[item.category] || '📝'}</span>
+                <Tag>{item.category}</Tag>
+                <span style={{ fontWeight: 500 }}>{item.title}</span>
+              </div>
               {renderAskButton('suggestion', item.title, item.content)}
             </div>
-          ),
-          children: <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{item.content}</p>,
-        }))}
-      />
+            <div style={{ padding: '12px 16px' }}>
+              <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{item.content}</p>
+            </div>
+          </div>
+        ))}
+      </div>
     );
   };
 
