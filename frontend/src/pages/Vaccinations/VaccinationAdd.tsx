@@ -13,6 +13,7 @@ import {
   Space,
   Switch,
   message,
+  Grid,
 } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -22,12 +23,15 @@ import type { CreateVaccineRecordRequest } from '../../types/vaccination';
 import styles from './Vaccinations.module.css';
 
 const { Title } = Typography;
+const { useBreakpoint } = Grid;
 
 export default function VaccinationAdd() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [form] = Form.useForm();
   const [isCustom, setIsCustom] = useState(false);
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
 
   // 获取家庭成员列表
   const { data: members = [] } = useQuery({
@@ -142,7 +146,7 @@ export default function VaccinationAdd() {
             >
               <Select
                 placeholder="请选择疫苗"
-                showSearch
+                showSearch={!isMobile}
                 optionFilterProp="label"
                 onChange={handleVaccineSelect}
                 options={[
