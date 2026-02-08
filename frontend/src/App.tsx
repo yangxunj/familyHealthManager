@@ -12,6 +12,9 @@ import { RecordList, RecordAdd, RecordTrend } from './pages/Records';
 import { AdvicePage } from './pages/Advice';
 import { ChatPage } from './pages/Chat';
 import FamilyPage from './pages/Family';
+import VaccinationsPage from './pages/Vaccinations';
+import VaccinationList from './pages/Vaccinations/VaccinationList';
+import VaccinationAdd from './pages/Vaccinations/VaccinationAdd';
 import { useAuthStore } from './store';
 
 function RequireFamily({ children }: { children: React.ReactNode }) {
@@ -76,6 +79,10 @@ function App() {
           </Route>
           <Route path="advice" element={<AdvicePage />} />
           <Route path="chat" element={<ChatPage />} />
+          <Route path="vaccinations" element={<VaccinationsPage />}>
+            <Route index element={<VaccinationList />} />
+            <Route path="add" element={<VaccinationAdd />} />
+          </Route>
           <Route path="family" element={<FamilyPage />} />
           <Route path="settings" element={<div>设置（待开发）</div>} />
         </Route>

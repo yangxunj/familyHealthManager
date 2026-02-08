@@ -173,6 +173,7 @@ model FamilyMember {
   records       HealthRecord[]
   advices       HealthAdvice[]
   chatSessions  ChatSession[]
+  vaccineRecords VaccineRecord[]
 
   @@index([familyId])
   @@index([familyId, deletedAt])
@@ -380,4 +381,36 @@ model AllowedEmail {
 
   @@index([email])
   @@map("allowed_emails")
+}
+
+/// 疫苗接种记录表
+model VaccineRecord {
+  id            String       @id @default(uuid())
+  memberId      String       @map("member_id")
+
+  // 疫苗信息
+  vaccineCode   String?      @map("vaccine_code") @db.VarChar(50)   // 关联预定义疫苗（可选）
+  vaccineName   String       @map("vaccine_name") @db.VarChar(100)  // 疫苗名称（支持自定义）
+  doseNumber    Int          @default(1) @map("dose_number")        // 第几剂
+  totalDoses    Int?         @map("total_doses")                    // 总剂次（自定义时填写）
+
+  // 接种信息
+  vaccinatedAt  DateTime     @map("vaccinated_at") @db.Date         // 接种日期
+  location      String?      @db.VarChar(200)                       // 接种地点
+  manufacturer  String?      @db.VarChar(100)                       // 疫苗厂商
+  batchNumber   String?      @map("batch_number") @db.VarChar(50)   // 批号
+
+  // 备注
+  notes         String?      @db.Text
+
+  // 时间戳
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  // 关系
+  member        FamilyMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, vaccineName, doseNumber])  // 同一成员同一疫苗同一剂次唯一
+  @@index([memberId])
+  @@map("vaccine_records")
 }

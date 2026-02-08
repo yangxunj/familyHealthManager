@@ -21,6 +21,7 @@ import {
   SunOutlined,
   MoonOutlined,
   BulbOutlined,
+  MedicineBoxOutlined,
 } from '@ant-design/icons';
 import { useAuthStore, useThemeStore } from '../../store';
 import { whitelistApi } from '../../api/whitelist';
@@ -84,6 +85,11 @@ const MainLayout: React.FC = () => {
       key: '/records',
       icon: <LineChartOutlined />,
       label: '健康记录',
+    },
+    {
+      key: '/vaccinations',
+      icon: <MedicineBoxOutlined />,
+      label: '疫苗接种',
     },
     {
       key: 'ai',
@@ -163,6 +169,7 @@ const MainLayout: React.FC = () => {
     if (path.startsWith('/members')) return ['/members'];
     if (path.startsWith('/documents')) return ['/documents'];
     if (path.startsWith('/records')) return ['/records'];
+    if (path.startsWith('/vaccinations')) return ['/vaccinations'];
     if (path.startsWith('/advice')) return ['/advice'];
     if (path.startsWith('/chat')) return ['/chat'];
     if (path.startsWith('/family')) return ['/family'];

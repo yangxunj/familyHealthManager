@@ -4,3 +4,4 @@ export * from './document';
 export * from './record';
 export * from './advice';
 export * from './chat';
+export * from './vaccination';

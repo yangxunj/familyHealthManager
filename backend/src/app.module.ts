@@ -20,6 +20,7 @@ import { AdviceModule } from './modules/advice/advice.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { WhitelistModule } from './modules/whitelist/whitelist.module';
 import { FamilyModule } from './modules/family/family.module';
+import { VaccinationModule } from './modules/vaccination/vaccination.module';
 import { SupabaseAuthGuard } from './modules/auth/guards/supabase-auth.guard';
 
 @Module({
@@ -69,6 +70,7 @@ import { SupabaseAuthGuard } from './modules/auth/guards/supabase-auth.guard';
     ChatModule,
     WhitelistModule,
     FamilyModule,
+    VaccinationModule,
   ],
   controllers: [AppController],
   providers: [
