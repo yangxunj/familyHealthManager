@@ -98,18 +98,21 @@
   border-radius: 12px;
   background: var(--bg-primary);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  border: 1px solid var(--border-color);
 }
 
 .pendingCardOverdue {
+  border-top: 1.5px solid rgba(255, 77, 79, 0.5);
+  border-right: 1.5px solid rgba(255, 77, 79, 0.5);
+  border-bottom: 1.5px solid rgba(255, 77, 79, 0.5);
   border-left: 4px solid #ff4d4f;
-  border-color: rgba(255, 77, 79, 0.3);
   background: linear-gradient(to right, rgba(255, 77, 79, 0.08), var(--bg-primary));
 }
 
 .pendingCardPending {
+  border-top: 1.5px solid rgba(250, 173, 20, 0.6);
+  border-right: 1.5px solid rgba(250, 173, 20, 0.6);
+  border-bottom: 1.5px solid rgba(250, 173, 20, 0.6);
   border-left: 4px solid #faad14;
-  border-color: rgba(250, 173, 20, 0.4);
   background: linear-gradient(to right, rgba(250, 173, 20, 0.08), var(--bg-primary));
 }
 
