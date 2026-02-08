@@ -16,6 +16,7 @@ import {
   Popconfirm,
   message,
   Progress,
+  Grid,
 } from 'antd';
 import {
   PlusOutlined,
@@ -29,6 +30,7 @@ import type { VaccineSchedule, RecommendedVaccine } from '../../types/vaccinatio
 import styles from './Vaccinations.module.css';
 
 const { Title, Text } = Typography;
+const { useBreakpoint } = Grid;
 
 // 状态标签组件
 function StatusTag({ status }: { status: string }) {
@@ -138,6 +140,8 @@ export default function VaccinationList() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [selectedMemberId, setSelectedMemberId] = useState<string>('');
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
 
   // 获取家庭成员列表
   const { data: members = [], isLoading: loadingMembers } = useQuery({
@@ -229,17 +233,40 @@ export default function VaccinationList() {
                       size="small"
                       dataSource={summary.pendingList}
                       renderItem={(item) => (
-                        <List.Item>
-                          <Space>
-                            <Tag color={item.status === 'overdue' ? 'error' : 'warning'}>
-                              {item.status === 'overdue' ? '逾期' : '待接种'}
-                            </Tag>
-                            <Text strong>{item.memberName}</Text>
-                            <Text>{item.vaccineName}</Text>
-                            {item.description && (
-                              <Text type="secondary">- {item.description}</Text>
-                            )}
-                          </Space>
+                        <List.Item className={styles.pendingItem}>
+                          {isMobile ? (
+                            // 移动端：垂直卡片布局
+                            <div className={styles.pendingCardMobile}>
+                              <div className={styles.pendingCardHeader}>
+                                <Tag color={item.status === 'overdue' ? 'error' : 'warning'}>
+                                  {item.status === 'overdue' ? '逾期' : '待接种'}
+                                </Tag>
+                                <Text strong>{item.memberName}</Text>
+                              </div>
+                              <div className={styles.pendingCardBody}>
+                                <Text>{item.vaccineName}</Text>
+                              </div>
+                              {item.description && (
+                                <div className={styles.pendingCardDesc}>
+                                  <Text type="secondary" style={{ fontSize: 12 }}>
+                                    {item.description}
+                                  </Text>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            // 桌面端：水平布局
+                            <Space>
+                              <Tag color={item.status === 'overdue' ? 'error' : 'warning'}>
+                                {item.status === 'overdue' ? '逾期' : '待接种'}
+                              </Tag>
+                              <Text strong>{item.memberName}</Text>
+                              <Text>{item.vaccineName}</Text>
+                              {item.description && (
+                                <Text type="secondary">- {item.description}</Text>
+                              )}
+                            </Space>
+                          )}
                         </List.Item>
                       )}
                     />

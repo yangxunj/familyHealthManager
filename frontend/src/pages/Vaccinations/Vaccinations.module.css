@@ -66,6 +66,37 @@
   border-bottom: none;
 }
 
+/* 待接种提醒列表项 */
+.pendingItem {
+  padding: 8px 0 !important;
+}
+
+/* 移动端待接种卡片 */
+.pendingCardMobile {
+  width: 100%;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.pendingCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.pendingCardBody {
+  margin-bottom: 4px;
+}
+
+.pendingCardDesc {
+  padding-top: 4px;
+  border-top: 1px dashed var(--border-color);
+  margin-top: 8px;
+}
+
 /* 添加记录页面 */
 .formContainer {
   padding: 24px;
