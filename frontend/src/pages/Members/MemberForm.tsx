@@ -11,6 +11,7 @@ import {
   Col,
   Spin,
   message,
+  Grid,
 } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -20,6 +21,7 @@ import { RelationshipLabels, GenderLabels, BloodTypeLabels } from '../../types';
 import dayjs from 'dayjs';
 
 const { TextArea } = Input;
+const { useBreakpoint } = Grid;
 
 interface MemberFormProps {
   mode: 'add' | 'edit';
@@ -30,6 +32,8 @@ const MemberForm: React.FC<MemberFormProps> = ({ mode }) => {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
   const [form] = Form.useForm();
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
 
   const { data: member, isLoading: isLoadingMember } = useQuery({
     queryKey: ['member', id],
@@ -171,6 +175,7 @@ const MemberForm: React.FC<MemberFormProps> = ({ mode }) => {
                 <DatePicker
                   style={{ width: '100%' }}
                   placeholder="请选择出生日期"
+                  inputReadOnly={isMobile}
                   disabledDate={(current) => current && current > dayjs().endOf('day')}
                 />
               </Form.Item>

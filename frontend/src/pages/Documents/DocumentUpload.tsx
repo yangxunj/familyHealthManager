@@ -9,6 +9,7 @@ import {
   Upload,
   message,
   Space,
+  Grid,
 } from 'antd';
 import { InboxOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import type { UploadFile, UploadProps } from 'antd';
@@ -21,6 +22,7 @@ import dayjs from 'dayjs';
 
 const { TextArea } = Input;
 const { Dragger } = Upload;
+const { useBreakpoint } = Grid;
 
 const DocumentUpload: React.FC = () => {
   const navigate = useNavigate();
@@ -29,6 +31,8 @@ const DocumentUpload: React.FC = () => {
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<FileInfo[]>([]);
   const [uploading, setUploading] = useState(false);
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
 
   const { data: members } = useQuery({
     queryKey: ['members'],
@@ -174,6 +178,7 @@ const DocumentUpload: React.FC = () => {
           >
             <DatePicker
               style={{ width: '100%' }}
+              inputReadOnly={isMobile}
               disabledDate={(current) => current && current > dayjs().endOf('day')}
             />
           </Form.Item>

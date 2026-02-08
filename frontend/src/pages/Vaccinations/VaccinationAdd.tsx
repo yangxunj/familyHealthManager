@@ -220,6 +220,7 @@ export default function VaccinationAdd() {
           >
             <DatePicker
               style={{ width: '100%' }}
+              inputReadOnly={isMobile}
               disabledDate={(current) => current && current > dayjs().endOf('day')}
             />
           </Form.Item>

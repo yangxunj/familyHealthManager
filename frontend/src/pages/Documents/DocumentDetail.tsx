@@ -755,7 +755,7 @@ const DocumentDetail: React.FC = () => {
             label="检查日期"
             rules={[{ required: true, message: '请选择检查日期' }]}
           >
-            <DatePicker style={{ width: '100%' }} placeholder="请选择检查日期" />
+            <DatePicker style={{ width: '100%' }} placeholder="请选择检查日期" inputReadOnly={isMobile} />
           </Form.Item>
           <Form.Item
             name="institution"

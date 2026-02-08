@@ -10,6 +10,7 @@ import {
   Space,
   Divider,
   Radio,
+  Grid,
 } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
@@ -25,11 +26,15 @@ import dayjs from 'dayjs';
 
 type RecordMode = 'single' | 'bloodPressure' | 'bloodSugar' | 'bloodLipid';
 
+const { useBreakpoint } = Grid;
+
 const RecordAdd: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [form] = Form.useForm();
   const [recordMode, setRecordMode] = useState<RecordMode>('single');
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
 
   const { data: members } = useQuery({
     queryKey: ['members'],
@@ -341,6 +346,7 @@ const RecordAdd: React.FC = () => {
             <DatePicker
               showTime
               style={{ width: '100%' }}
+              inputReadOnly={isMobile}
               disabledDate={(current) => current && current > dayjs().endOf('day')}
             />
           </Form.Item>
