@@ -146,7 +146,7 @@ export default function VaccinationList() {
   // 获取家庭成员列表
   const { data: members = [], isLoading: loadingMembers } = useQuery({
     queryKey: ['members'],
-    queryFn: membersApi.getMembers,
+    queryFn: membersApi.getAll,
   });
 
   // 获取接种概览
