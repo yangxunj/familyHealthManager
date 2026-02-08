@@ -24,6 +24,8 @@ import {
   CheckCircleOutlined,
   ClockCircleOutlined,
   DeleteOutlined,
+  DownOutlined,
+  UpOutlined,
 } from '@ant-design/icons';
 import { vaccinationsApi, membersApi } from '../../api';
 import type { VaccineSchedule, RecommendedVaccine } from '../../types/vaccination';
@@ -140,6 +142,7 @@ export default function VaccinationList() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [selectedMemberId, setSelectedMemberId] = useState<string>('');
+  const [pendingExpanded, setPendingExpanded] = useState(false);
   const screens = useBreakpoint();
   const isMobile = !screens.md;
 
@@ -208,9 +211,13 @@ export default function VaccinationList() {
           {/* 待接种提醒 */}
           {summary && (summary.pendingCount > 0 || summary.overdueCount > 0) && (
             isMobile ? (
-              // 移动端：独立卡片式设计
+              // 移动端：独立卡片式设计（可展开/收起）
               <div className={styles.pendingSection}>
-                <div className={styles.pendingSectionHeader}>
+                <div
+                  className={styles.pendingSectionHeader}
+                  onClick={() => setPendingExpanded(!pendingExpanded)}
+                  style={{ cursor: 'pointer' }}
+                >
                   <ExclamationCircleOutlined
                     style={{
                       color: summary.overdueCount > 0 ? '#ff4d4f' : '#faad14',
@@ -226,35 +233,40 @@ export default function VaccinationList() {
                       <Tag color="warning" size="small">{summary.pendingCount}项待接种</Tag>
                     )}
                   </div>
+                  <div className={styles.pendingExpandIcon}>
+                    {pendingExpanded ? <UpOutlined /> : <DownOutlined />}
+                  </div>
                 </div>
-                <div className={styles.pendingCardList}>
-                  {summary.pendingList.map((item, index) => (
-                    <div
-                      key={index}
-                      className={`${styles.pendingCard} ${item.status === 'overdue' ? styles.pendingCardOverdue : styles.pendingCardPending}`}
-                    >
-                      <div className={styles.pendingCardTop}>
-                        <Tag
-                          color={item.status === 'overdue' ? 'error' : 'warning'}
-                          style={{ margin: 0 }}
-                        >
-                          {item.status === 'overdue' ? '逾期' : '待接种'}
-                        </Tag>
-                        <Text strong className={styles.pendingCardMember}>
-                          {item.memberName}
-                        </Text>
-                      </div>
-                      <div className={styles.pendingCardVaccine}>
-                        {item.vaccineName}
-                      </div>
-                      {item.description && (
-                        <div className={styles.pendingCardNote}>
-                          {item.description}
+                {pendingExpanded && (
+                  <div className={styles.pendingCardList}>
+                    {summary.pendingList.map((item, index) => (
+                      <div
+                        key={index}
+                        className={`${styles.pendingCard} ${item.status === 'overdue' ? styles.pendingCardOverdue : styles.pendingCardPending}`}
+                      >
+                        <div className={styles.pendingCardTop}>
+                          <Tag
+                            color={item.status === 'overdue' ? 'error' : 'warning'}
+                            style={{ margin: 0 }}
+                          >
+                            {item.status === 'overdue' ? '逾期' : '待接种'}
+                          </Tag>
+                          <Text strong className={styles.pendingCardMember}>
+                            {item.memberName}
+                          </Text>
                         </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                        <div className={styles.pendingCardVaccine}>
+                          {item.vaccineName}
+                        </div>
+                        {item.description && (
+                          <div className={styles.pendingCardNote}>
+                            {item.description}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
               // 桌面端：保持原有 Alert + Collapse 设计
