@@ -258,6 +258,37 @@ export class VaccinationService {
       }
     }
 
+    // 获取流感季节的起止日期
+    // 流感季节：每年9月15日 - 次年9月14日
+    const getFluSeasonRange = (date: Date): { start: Date; end: Date; label: string } => {
+      const year = date.getFullYear();
+      const month = date.getMonth(); // 0-11
+      const day = date.getDate();
+
+      // 9月15日之前属于上一个流感季（去年9月15日 - 今年9月14日）
+      // 9月15日及之后属于当前流感季（今年9月15日 - 明年9月14日）
+      if (month < 8 || (month === 8 && day < 15)) {
+        // 属于上一个流感季
+        return {
+          start: new Date(year - 1, 8, 15), // 去年9月15日
+          end: new Date(year, 8, 14),       // 今年9月14日
+          label: `${year - 1}-${year}`,
+        };
+      } else {
+        // 属于当前流感季
+        return {
+          start: new Date(year, 8, 15),     // 今年9月15日
+          end: new Date(year + 1, 8, 14),   // 明年9月14日
+          label: `${year}-${year + 1}`,
+        };
+      }
+    };
+
+    // 检查日期是否在指定范围内
+    const isDateInRange = (date: Date, start: Date, end: Date): boolean => {
+      return date >= start && date <= end;
+    };
+
     // 计算各类疫苗的接种状态
     const calculateVaccineStatus = (
       vaccines: VaccineDefinition[],
@@ -276,20 +307,19 @@ export class VaccinationService {
 
         if (ageYears < minAge || ageYears > maxAge) {
           status = 'not_applicable';
-        } else if (completedDoses >= vaccine.totalDoses) {
-          // 对于年度疫苗，检查今年是否已接种
-          if (vaccine.frequency === 'YEARLY') {
-            const currentYear = now.getFullYear();
-            const hasThisYear = vaccineRecords.some(
-              (r) => new Date(r.vaccinatedAt).getFullYear() === currentYear,
-            );
-            status = hasThisYear ? 'completed' : 'pending';
-            if (!hasThisYear) {
-              nextDoseNumber = 1;
-            }
-          } else {
-            status = 'completed';
+        } else if (vaccine.frequency === 'YEARLY') {
+          // 周期性疫苗（如流感）：检查当前季节是否已接种
+          const currentSeason = getFluSeasonRange(now);
+          const hasCurrentSeason = vaccineRecords.some((r) =>
+            isDateInRange(new Date(r.vaccinatedAt), currentSeason.start, currentSeason.end),
+          );
+          status = hasCurrentSeason ? 'completed' : 'pending';
+          if (!hasCurrentSeason) {
+            nextDoseNumber = 1;
           }
+        } else if (completedDoses >= vaccine.totalDoses) {
+          // 终身疫苗：完成所有剂次后标记为完成
+          status = 'completed';
         } else {
           // 检查是否逾期（简化逻辑：儿童疫苗超过推荐月龄12个月视为逾期）
           if (vaccine.scheduleMonths && vaccine.category === 'CHILD') {

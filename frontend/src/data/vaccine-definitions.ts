@@ -123,7 +123,7 @@ export const ADULT_VACCINES: VaccineDefinition[] = [
     frequency: 'YEARLY',
     totalDoses: 1,
     minAgeYears: 6,
-    description: '每年接种1剂，建议秋冬季节前接种',
+    description: '每个流感季(9月15日-次年9月14日)接种1剂',
   },
   {
     code: 'COVID',
