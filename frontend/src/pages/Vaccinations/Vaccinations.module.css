@@ -91,12 +91,31 @@
   margin-left: 8px;
   color: var(--text-secondary);
   font-size: 12px;
+  transition: transform 0.3s ease;
+}
+
+.pendingExpandIconRotated {
+  transform: rotate(180deg);
 }
 
 .pendingCardList {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.3s ease, margin-top 0.3s ease;
+}
+
+.pendingCardListCollapsed {
+  max-height: 0;
+  opacity: 0;
+  margin-top: 0;
+}
+
+.pendingCardListExpanded {
+  max-height: 2000px;
+  opacity: 1;
+  margin-top: 12px;
 }
 
 .pendingCard {
