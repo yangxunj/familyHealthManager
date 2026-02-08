@@ -207,55 +207,84 @@ export default function VaccinationList() {
         <>
           {/* 待接种提醒 */}
           {summary && (summary.pendingCount > 0 || summary.overdueCount > 0) && (
-            <Alert
-              type={summary.overdueCount > 0 ? 'error' : 'warning'}
-              showIcon
-              icon={<ExclamationCircleOutlined />}
-              message={
-                <span>
-                  待接种提醒：
-                  {summary.overdueCount > 0 && (
-                    <Text type="danger" strong style={{ marginLeft: 8 }}>
-                      {summary.overdueCount} 项逾期
-                    </Text>
-                  )}
-                  {summary.pendingCount > 0 && (
-                    <Text type="warning" strong style={{ marginLeft: 8 }}>
-                      {summary.pendingCount} 项待接种
-                    </Text>
-                  )}
-                </span>
-              }
-              description={
-                <Collapse ghost size="small">
-                  <Collapse.Panel header="查看详情" key="1">
-                    <List
-                      size="small"
-                      dataSource={summary.pendingList}
-                      renderItem={(item) => (
-                        <List.Item className={styles.pendingItem}>
-                          {isMobile ? (
-                            // 移动端：垂直卡片布局
-                            <div className={styles.pendingCardMobile}>
-                              <div className={styles.pendingCardHeader}>
-                                <Tag color={item.status === 'overdue' ? 'error' : 'warning'}>
-                                  {item.status === 'overdue' ? '逾期' : '待接种'}
-                                </Tag>
-                                <Text strong>{item.memberName}</Text>
-                              </div>
-                              <div className={styles.pendingCardBody}>
-                                <Text>{item.vaccineName}</Text>
-                              </div>
-                              {item.description && (
-                                <div className={styles.pendingCardDesc}>
-                                  <Text type="secondary" style={{ fontSize: 12 }}>
-                                    {item.description}
-                                  </Text>
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            // 桌面端：水平布局
+            isMobile ? (
+              // 移动端：独立卡片式设计
+              <div className={styles.pendingSection}>
+                <div className={styles.pendingSectionHeader}>
+                  <ExclamationCircleOutlined
+                    style={{
+                      color: summary.overdueCount > 0 ? '#ff4d4f' : '#faad14',
+                      fontSize: 18
+                    }}
+                  />
+                  <Text strong style={{ marginLeft: 8 }}>待接种提醒</Text>
+                  <div className={styles.pendingBadges}>
+                    {summary.overdueCount > 0 && (
+                      <Tag color="error" size="small">{summary.overdueCount}项逾期</Tag>
+                    )}
+                    {summary.pendingCount > 0 && (
+                      <Tag color="warning" size="small">{summary.pendingCount}项待接种</Tag>
+                    )}
+                  </div>
+                </div>
+                <div className={styles.pendingCardList}>
+                  {summary.pendingList.map((item, index) => (
+                    <div
+                      key={index}
+                      className={`${styles.pendingCard} ${item.status === 'overdue' ? styles.pendingCardOverdue : styles.pendingCardPending}`}
+                    >
+                      <div className={styles.pendingCardTop}>
+                        <Tag
+                          color={item.status === 'overdue' ? 'error' : 'warning'}
+                          style={{ margin: 0 }}
+                        >
+                          {item.status === 'overdue' ? '逾期' : '待接种'}
+                        </Tag>
+                        <Text strong className={styles.pendingCardMember}>
+                          {item.memberName}
+                        </Text>
+                      </div>
+                      <div className={styles.pendingCardVaccine}>
+                        {item.vaccineName}
+                      </div>
+                      {item.description && (
+                        <div className={styles.pendingCardNote}>
+                          {item.description}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              // 桌面端：保持原有 Alert + Collapse 设计
+              <Alert
+                type={summary.overdueCount > 0 ? 'error' : 'warning'}
+                showIcon
+                icon={<ExclamationCircleOutlined />}
+                message={
+                  <span>
+                    待接种提醒：
+                    {summary.overdueCount > 0 && (
+                      <Text type="danger" strong style={{ marginLeft: 8 }}>
+                        {summary.overdueCount} 项逾期
+                      </Text>
+                    )}
+                    {summary.pendingCount > 0 && (
+                      <Text type="warning" strong style={{ marginLeft: 8 }}>
+                        {summary.pendingCount} 项待接种
+                      </Text>
+                    )}
+                  </span>
+                }
+                description={
+                  <Collapse ghost size="small">
+                    <Collapse.Panel header="查看详情" key="1">
+                      <List
+                        size="small"
+                        dataSource={summary.pendingList}
+                        renderItem={(item) => (
+                          <List.Item>
                             <Space>
                               <Tag color={item.status === 'overdue' ? 'error' : 'warning'}>
                                 {item.status === 'overdue' ? '逾期' : '待接种'}
@@ -266,15 +295,15 @@ export default function VaccinationList() {
                                 <Text type="secondary">- {item.description}</Text>
                               )}
                             </Space>
-                          )}
-                        </List.Item>
-                      )}
-                    />
-                  </Collapse.Panel>
-                </Collapse>
-              }
-              className={styles.alert}
-            />
+                          </List.Item>
+                        )}
+                      />
+                    </Collapse.Panel>
+                  </Collapse>
+                }
+                className={styles.alert}
+              />
+            )
           )}
 
           {/* 成员选择 */}

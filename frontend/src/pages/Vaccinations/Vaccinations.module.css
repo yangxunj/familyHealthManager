@@ -66,35 +66,73 @@
   border-bottom: none;
 }
 
-/* 待接种提醒列表项 */
-.pendingItem {
-  padding: 8px 0 !important;
+/* 移动端待接种提醒区域 */
+.pendingSection {
+  margin-bottom: 20px;
 }
 
-/* 移动端待接种卡片 */
-.pendingCardMobile {
-  width: 100%;
-  padding: 12px;
-  background: var(--bg-secondary);
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-}
-
-.pendingCardHeader {
+.pendingSectionHeader {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
 }
 
-.pendingCardBody {
-  margin-bottom: 4px;
+.pendingBadges {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
 }
 
-.pendingCardDesc {
-  padding-top: 4px;
+.pendingCardList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pendingCard {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--bg-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.pendingCardOverdue {
+  border-left: 4px solid #ff4d4f;
+  background: linear-gradient(to right, rgba(255, 77, 79, 0.05), var(--bg-primary));
+}
+
+.pendingCardPending {
+  border-left: 4px solid #faad14;
+  background: linear-gradient(to right, rgba(250, 173, 20, 0.05), var(--bg-primary));
+}
+
+.pendingCardTop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.pendingCardMember {
+  font-size: 15px;
+}
+
+.pendingCardVaccine {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.pendingCardNote {
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding-top: 8px;
   border-top: 1px dashed var(--border-color);
-  margin-top: 8px;
 }
 
 /* 添加记录页面 */
