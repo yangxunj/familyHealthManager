@@ -409,6 +409,24 @@ ${adviceSection}
     return sessions.map((s) => this.formatSession(s));
   }
 
+  // 获取有会话记录的成员列表
+  async getMembersWithSessions(familyId: string) {
+    const members = await this.prisma.chatSession.findMany({
+      where: { familyId },
+      select: {
+        member: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      distinct: ['memberId'],
+    });
+
+    return members.map((m) => m.member);
+  }
+
   // 获取会话详情及消息
   async findSessionWithMessages(familyId: string, sessionId: string) {
     const session = await this.prisma.chatSession.findFirst({
@@ -527,12 +545,12 @@ ${adviceSection}
       });
 
       // 更新会话标题（如果是第一条消息，用 AI 生成简短标题）
+      // 同步等待标题生成完成，确保前端刷新时能看到新标题
+      console.log(`[ChatService] historyMessages.length = ${historyMessages.length}, 是否生成标题: ${historyMessages.length <= 1}`);
       if (historyMessages.length <= 1) {
-        // 异步生成标题，不阻塞主流程
-        this.generateSessionTitle(sessionId, dto.content, fullContent).catch((err) => {
-          // 标题生成失败不影响主流程，使用用户问题前几个字作为备用
-          console.error('生成会话标题失败:', err);
-        });
+        console.log(`[ChatService] 开始生成会话标题, sessionId=${sessionId}`);
+        await this.generateSessionTitle(sessionId, dto.content, fullContent);
+        console.log(`[ChatService] 标题生成完成`);
       }
 
       // 更新会话时间
@@ -551,29 +569,51 @@ ${adviceSection}
     userQuestion: string,
     aiResponse: string,
   ): Promise<void> {
+    console.log(`[generateSessionTitle] 开始调用 AI 生成标题...`);
     try {
       const result = await this.aiService.chat(
         [
           {
-            role: 'system',
-            content: '你是一个标题生成助手。根据用户的问题和AI的回答，生成一个简短的对话标题（不超过15个字）。只输出标题本身，不要有任何额外的解释或标点符号。',
-          },
-          {
             role: 'user',
-            content: `用户问题：${userQuestion.substring(0, 200)}\n\nAI回答：${aiResponse.substring(0, 300)}\n\n请生成一个简短的标题：`,
+            content: `根据下面的健康咨询对话，生成一个简短的中文标题。
+
+用户问题：${userQuestion.substring(0, 200)}
+
+AI回答摘要：${aiResponse.substring(0, 500)}
+
+请生成一个8-15个字的标题，概括这次健康咨询的主题。例如："血压偏高的饮食建议"、"糖尿病日常注意事项"、"体检报告异常指标分析"。
+
+直接输出标题内容：`,
           },
         ],
-        { maxTokens: 30 },
+        { maxTokens: 400, temperature: 0.3 },
       );
 
-      const title = result.content.trim().substring(0, 30);
-      if (title) {
-        await this.prisma.chatSession.update({
-          where: { id: sessionId },
-          data: { title },
-        });
+      // 清理标题：去除可能的引号、标点和多余空白
+      let title = result.content.trim()
+        .replace(/^["'"「『【]/, '')  // 去除开头引号
+        .replace(/["'"」』】]$/, '')  // 去除结尾引号
+        .replace(/^标题[：:]\s*/, '') // 去除可能的"标题："前缀
+        .trim()
+        .substring(0, 30);
+
+      console.log(`[generateSessionTitle] AI 返回原始内容: "${result.content}", 处理后标题: "${title}"`);
+
+      // 如果标题太短或为空，使用备用方案
+      if (!title || title.length < 2) {
+        title = userQuestion.length > 20
+          ? userQuestion.substring(0, 20) + '...'
+          : userQuestion;
+        console.log(`[generateSessionTitle] 标题太短，使用备用: "${title}"`);
       }
+
+      await this.prisma.chatSession.update({
+        where: { id: sessionId },
+        data: { title },
+      });
+      console.log(`[generateSessionTitle] 标题已更新到数据库`);
     } catch (error) {
+      console.error(`[generateSessionTitle] AI 调用失败:`, error);
       // 生成失败时使用用户问题前几个字作为备用
       const fallbackTitle = userQuestion.length > 20
         ? userQuestion.substring(0, 20) + '...'
@@ -582,6 +622,7 @@ ${adviceSection}
         where: { id: sessionId },
         data: { title: fallbackTitle },
       });
+      console.log(`[generateSessionTitle] 使用备用标题: "${fallbackTitle}"`);
     }
   }
 

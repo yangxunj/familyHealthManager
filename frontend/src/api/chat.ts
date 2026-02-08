@@ -24,6 +24,11 @@ export const chatApi = {
     return apiClient.get('/chat/sessions', { params });
   },
 
+  // 获取有会话记录的成员列表
+  getMembersWithSessions: async (): Promise<{ id: string; name: string }[]> => {
+    return apiClient.get('/chat/sessions/members');
+  },
+
   // 获取会话详情及消息
   getSession: async (sessionId: string): Promise<ChatSessionWithMessages> => {
     return apiClient.get(`/chat/sessions/${sessionId}`);
@@ -59,6 +64,10 @@ export const chatApi = {
     const token = session?.data?.session?.access_token;
     const baseUrl = apiClient.defaults.baseURL || '';
 
+    console.log('[chatApi.sendMessage] sessionId:', sessionId);
+    console.log('[chatApi.sendMessage] baseUrl:', baseUrl);
+    console.log('[chatApi.sendMessage] hasToken:', !!token);
+
     const response = await fetch(`${baseUrl}/chat/sessions/${sessionId}/messages`, {
       method: 'POST',
       headers: {
@@ -68,8 +77,11 @@ export const chatApi = {
       body: JSON.stringify({ content }),
     });
 
+    console.log('[chatApi.sendMessage] response status:', response.status);
+
     if (!response.ok) {
       const errorText = await response.text();
+      console.error('[chatApi.sendMessage] error response:', errorText);
       throw new Error(errorText || `HTTP error ${response.status}`);
     }
 

@@ -48,6 +48,13 @@ export class ChatController {
     return this.chatService.findAllSessions(familyId, query);
   }
 
+  // 获取有会话记录的成员列表
+  @Get('sessions/members')
+  getMembersWithSessions(@CurrentUser() user: CurrentUserData) {
+    const familyId = this.requireFamily(user);
+    return this.chatService.getMembersWithSessions(familyId);
+  }
+
   // 获取会话详情及消息
   @Get('sessions/:id')
   findSession(

@@ -276,3 +276,27 @@ body {
   box-shadow: 0 6px 20px rgba(19, 109, 236, 0.12) !important;
   transform: translateY(-2px);
 }
+
+/* 悬停显示滚动条 */
+.hover-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.3s ease;
+}
+
+.hover-scrollbar:hover {
+  scrollbar-color: var(--color-scrollbar) transparent;
+}
+
+.hover-scrollbar::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  transition: background-color 0.3s ease;
+}
+
+.hover-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: var(--color-scrollbar);
+}
+
+.hover-scrollbar:hover::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-scrollbar-hover);
+}
