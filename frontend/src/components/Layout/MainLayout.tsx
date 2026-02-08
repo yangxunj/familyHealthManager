@@ -22,6 +22,7 @@ import {
   MoonOutlined,
   BulbOutlined,
   MedicineBoxOutlined,
+  ScheduleOutlined,
 } from '@ant-design/icons';
 import { useAuthStore, useThemeStore } from '../../store';
 import { whitelistApi } from '../../api/whitelist';
@@ -90,6 +91,11 @@ const MainLayout: React.FC = () => {
       key: '/vaccinations',
       icon: <MedicineBoxOutlined />,
       label: '疫苗接种',
+    },
+    {
+      key: '/checkups',
+      icon: <ScheduleOutlined />,
+      label: '定期检查',
     },
     {
       key: 'ai',
@@ -170,6 +176,7 @@ const MainLayout: React.FC = () => {
     if (path.startsWith('/documents')) return ['/documents'];
     if (path.startsWith('/records')) return ['/records'];
     if (path.startsWith('/vaccinations')) return ['/vaccinations'];
+    if (path.startsWith('/checkups')) return ['/checkups'];
     if (path.startsWith('/advice')) return ['/advice'];
     if (path.startsWith('/chat')) return ['/chat'];
     if (path.startsWith('/family')) return ['/family'];

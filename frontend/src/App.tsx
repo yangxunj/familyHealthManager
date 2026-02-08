@@ -15,6 +15,8 @@ import FamilyPage from './pages/Family';
 import VaccinationsPage from './pages/Vaccinations';
 import VaccinationList from './pages/Vaccinations/VaccinationList';
 import VaccinationAdd from './pages/Vaccinations/VaccinationAdd';
+import CheckupsPage from './pages/Checkups';
+import CheckupList from './pages/Checkups/CheckupList';
 import { useAuthStore } from './store';
 
 function RequireFamily({ children }: { children: React.ReactNode }) {
@@ -82,6 +84,9 @@ function App() {
           <Route path="vaccinations" element={<VaccinationsPage />}>
             <Route index element={<VaccinationList />} />
             <Route path="add" element={<VaccinationAdd />} />
+          </Route>
+          <Route path="checkups" element={<CheckupsPage />}>
+            <Route index element={<CheckupList />} />
           </Route>
           <Route path="family" element={<FamilyPage />} />
           <Route path="settings" element={<div>设置（待开发）</div>} />

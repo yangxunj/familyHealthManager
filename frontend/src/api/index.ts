@@ -7,3 +7,4 @@ export * from './advice';
 export * from './chat';
 export * from './family';
 export * from './vaccinations';
+export * from './checkups';

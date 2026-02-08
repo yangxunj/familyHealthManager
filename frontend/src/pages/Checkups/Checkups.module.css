@@ -1,0 +1,209 @@
+.container {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 48px;
+}
+
+/* 成员选择按钮组 */
+.memberButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border-radius: 12px;
+}
+
+.memberButton {
+  border-radius: 20px;
+  padding: 4px 16px;
+  height: 36px;
+  font-size: 14px;
+}
+
+.itemsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 状态分组 */
+.statusGroup {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.statusGroup:last-child {
+  border-bottom: none;
+}
+
+.statusGroupHeader {
+  padding: 10px 16px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+}
+
+.statusGroupHeader:hover {
+  background: var(--bg-secondary);
+}
+
+.statusGroupContent {
+  display: grid;
+  transition: grid-template-rows 0.3s ease, opacity 0.3s ease;
+}
+
+.statusGroupContentCollapsed {
+  grid-template-rows: 0fr;
+  opacity: 0;
+}
+
+.statusGroupContentExpanded {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.statusGroupContentInner {
+  overflow: hidden;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  padding: 4px 14px 14px;
+  background: var(--bg-secondary);
+}
+
+@media (max-width: 1200px) {
+  .statusGroupContentInner {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .statusGroupContentInner {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 576px) {
+  .statusGroupContentInner {
+    grid-template-columns: 1fr;
+  }
+}
+
+.statusGroupContentCollapsed .statusGroupContentInner {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* 单个检查卡片 */
+.checkCard {
+  padding: 14px 16px;
+  background: var(--bg-primary);
+  border: 1.5px solid var(--border-color);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+:global([data-theme='dark']) .checkCard {
+  border: 1.5px solid #555;
+  box-shadow: none;
+}
+
+.checkCardHeader {
+  margin-bottom: 6px;
+}
+
+.checkCardDesc {
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+.checkCardInfo {
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
+
+.checkCardActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-color);
+}
+
+.checkCardActions:empty {
+  display: none;
+}
+
+.categoryCard {
+  margin-bottom: 0;
+}
+
+.categoryCard :global(.ant-card-head) {
+  min-height: auto;
+  padding: 12px 16px;
+}
+
+.categoryCard :global(.ant-card-body) {
+  padding: 0;
+}
+
+/* 模板列表 */
+.templateList {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 576px) {
+  .templateList {
+    grid-template-columns: 1fr;
+  }
+}
+
+.templateItem {
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.templateItem:hover {
+  border-color: #136dec;
+  background: rgba(19, 109, 236, 0.04);
+}
+
+.templateItemSelected {
+  border-color: #136dec;
+  background: rgba(19, 109, 236, 0.08);
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}
