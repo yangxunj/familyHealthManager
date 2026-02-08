@@ -174,6 +174,7 @@ model FamilyMember {
   advices       HealthAdvice[]
   chatSessions  ChatSession[]
   vaccineRecords VaccineRecord[]
+  vaccineSkips  VaccineSkip[]
 
   @@index([familyId])
   @@index([familyId, deletedAt])
@@ -413,4 +414,27 @@ model VaccineRecord {
   @@unique([memberId, vaccineName, doseNumber])  // 同一成员同一疫苗同一剂次唯一
   @@index([memberId])
   @@map("vaccine_records")
+}
+
+/// 疫苗跳过记录表（用于记录用户主动跳过的疫苗）
+model VaccineSkip {
+  id          String   @id @default(uuid())
+  memberId    String   @map("member_id")
+
+  // 疫苗信息
+  vaccineCode String   @map("vaccine_code") @db.VarChar(50)   // 疫苗代码
+  seasonLabel String   @map("season_label") @db.VarChar(20)   // 季节标签，如 "2024-2025" 或 "lifetime"
+
+  // 跳过原因
+  reason      String?  @db.Text
+
+  // 时间戳
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // 关系
+  member      FamilyMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, vaccineCode, seasonLabel])  // 同一成员同一疫苗同一季节只能跳过一次
+  @@index([memberId])
+  @@map("vaccine_skips")
 }

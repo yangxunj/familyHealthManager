@@ -18,7 +18,7 @@ export interface VaccineDefinition {
 }
 
 // 接种状态
-export type VaccineStatus = 'completed' | 'pending' | 'overdue' | 'not_applicable';
+export type VaccineStatus = 'completed' | 'pending' | 'overdue' | 'skipped' | 'not_applicable';
 
 // 接种记录
 export interface VaccineRecord {
@@ -53,6 +53,9 @@ export interface RecommendedVaccine {
     doseNumber: number;
     vaccinatedAt: string;
   }>;
+  // 跳过相关
+  skipId?: string;         // 跳过记录ID（用于取消跳过）
+  seasonLabel?: string;    // 当前季节标签（用于跳过周期性疫苗）
 }
 
 // 成员接种计划
@@ -121,4 +124,12 @@ export interface VaccineDefinitionsResponse {
   adult: VaccineDefinition[];
   elderly: VaccineDefinition[];
   all: VaccineDefinition[];
+}
+
+// 跳过疫苗请求
+export interface SkipVaccineRequest {
+  memberId: string;
+  vaccineCode: string;
+  seasonLabel: string;
+  reason?: string;
 }

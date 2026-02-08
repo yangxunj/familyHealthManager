@@ -15,6 +15,7 @@ import {
   CreateVaccineRecordDto,
   UpdateVaccineRecordDto,
   QueryVaccineRecordDto,
+  SkipVaccineDto,
 } from './dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { CurrentUserData } from '../auth/decorators/current-user.decorator';
@@ -102,5 +103,25 @@ export class VaccinationController {
   ) {
     const familyId = this.requireFamily(user);
     return this.vaccinationService.remove(familyId, id);
+  }
+
+  // 跳过疫苗
+  @Post('skip')
+  skipVaccine(
+    @CurrentUser() user: CurrentUserData,
+    @Body() dto: SkipVaccineDto,
+  ) {
+    const familyId = this.requireFamily(user);
+    return this.vaccinationService.skipVaccine(familyId, dto);
+  }
+
+  // 取消跳过疫苗
+  @Delete('skip/:id')
+  unskipVaccine(
+    @CurrentUser() user: CurrentUserData,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    const familyId = this.requireFamily(user);
+    return this.vaccinationService.unskipVaccine(familyId, id);
   }
 }

@@ -4,18 +4,20 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Card,
   Button,
-  Select,
   Tag,
   Space,
-  Collapse,
   List,
   Typography,
-  Alert,
   Empty,
   Spin,
   Popconfirm,
   message,
   Progress,
+  Badge,
+  Modal,
+  Form,
+  DatePicker,
+  Input,
   Grid,
 } from 'antd';
 import {
@@ -24,10 +26,14 @@ import {
   CheckCircleOutlined,
   ClockCircleOutlined,
   DeleteOutlined,
+  StopOutlined,
+  UndoOutlined,
   DownOutlined,
+  RightOutlined,
 } from '@ant-design/icons';
+import dayjs from 'dayjs';
 import { vaccinationsApi, membersApi } from '../../api';
-import type { VaccineSchedule, RecommendedVaccine } from '../../types/vaccination';
+import type { RecommendedVaccine } from '../../types/vaccination';
 import styles from './Vaccinations.module.css';
 
 const { Title, Text } = Typography;
@@ -37,30 +43,332 @@ const { useBreakpoint } = Grid;
 function StatusTag({ status }: { status: string }) {
   switch (status) {
     case 'completed':
-      return <Tag color="success" icon={<CheckCircleOutlined />}>已完成</Tag>;
+      return <Tag color="success" icon={<CheckCircleOutlined />}>已接种</Tag>;
     case 'pending':
       return <Tag color="warning" icon={<ClockCircleOutlined />}>待接种</Tag>;
     case 'overdue':
       return <Tag color="error" icon={<ExclamationCircleOutlined />}>逾期</Tag>;
+    case 'skipped':
+      return <Tag color="default" icon={<StopOutlined />}>已跳过</Tag>;
     default:
       return <Tag>不适用</Tag>;
   }
+}
+
+// 快捷添加 Modal
+interface QuickAddModalProps {
+  open: boolean;
+  memberId: string;
+  memberName: string;
+  vaccine: RecommendedVaccine | null;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+function QuickAddModal({ open, memberId, memberName, vaccine, onClose, onSuccess }: QuickAddModalProps) {
+  const [form] = Form.useForm();
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
+
+  const createMutation = useMutation({
+    mutationFn: vaccinationsApi.createRecord,
+    onSuccess: () => {
+      message.success('添加成功');
+      form.resetFields();
+      onSuccess();
+      onClose();
+    },
+    onError: () => {
+      message.error('添加失败');
+    },
+  });
+
+  const handleSubmit = async () => {
+    if (!vaccine) return;
+    const values = await form.validateFields();
+    createMutation.mutate({
+      memberId,
+      vaccineCode: vaccine.vaccine.code,
+      vaccineName: vaccine.vaccine.name,
+      doseNumber: vaccine.nextDoseNumber || 1,
+      vaccinatedAt: values.vaccinatedAt.format('YYYY-MM-DD'),
+      location: values.location,
+      manufacturer: values.manufacturer,
+      batchNumber: values.batchNumber,
+    });
+  };
+
+  return (
+    <Modal
+      title="添加接种记录"
+      open={open}
+      onCancel={onClose}
+      onOk={handleSubmit}
+      okText="保存"
+      cancelText="取消"
+      confirmLoading={createMutation.isPending}
+      destroyOnClose
+    >
+      {vaccine && (
+        <Form form={form} layout="vertical" initialValues={{ vaccinatedAt: dayjs() }}>
+          <div style={{ marginBottom: 16, padding: '12px 16px', background: 'var(--bg-secondary)', borderRadius: 8 }}>
+            <Text type="secondary">成员：</Text>
+            <Text strong style={{ marginLeft: 8 }}>{memberName}</Text>
+            <br />
+            <Text type="secondary">疫苗：</Text>
+            <Text strong style={{ marginLeft: 8 }}>
+              {vaccine.vaccine.name}
+              {vaccine.vaccine.totalDoses > 1 && ` (第${vaccine.nextDoseNumber}剂)`}
+            </Text>
+          </div>
+
+          <Form.Item
+            name="vaccinatedAt"
+            label="接种日期"
+            rules={[{ required: true, message: '请选择接种日期' }]}
+          >
+            <DatePicker
+              style={{ width: '100%' }}
+              disabledDate={(current) => current && current > dayjs().endOf('day')}
+              inputReadOnly={isMobile}
+            />
+          </Form.Item>
+
+          <Form.Item name="location" label="接种地点">
+            <Input placeholder="如：社区卫生服务中心" />
+          </Form.Item>
+
+          <Form.Item name="manufacturer" label="疫苗厂商">
+            <Input placeholder="可选" />
+          </Form.Item>
+
+          <Form.Item name="batchNumber" label="疫苗批号">
+            <Input placeholder="可选" />
+          </Form.Item>
+        </Form>
+      )}
+    </Modal>
+  );
+}
+
+// 跳过确认 Modal
+interface SkipModalProps {
+  open: boolean;
+  memberId: string;
+  vaccine: RecommendedVaccine | null;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+function SkipModal({ open, memberId, vaccine, onClose, onSuccess }: SkipModalProps) {
+  const [form] = Form.useForm();
+
+  const skipMutation = useMutation({
+    mutationFn: vaccinationsApi.skipVaccine,
+    onSuccess: () => {
+      message.success('已跳过');
+      form.resetFields();
+      onSuccess();
+      onClose();
+    },
+    onError: () => {
+      message.error('操作失败');
+    },
+  });
+
+  const handleSubmit = async () => {
+    if (!vaccine) return;
+    const values = await form.validateFields();
+    skipMutation.mutate({
+      memberId,
+      vaccineCode: vaccine.vaccine.code,
+      seasonLabel: vaccine.seasonLabel || 'lifetime',
+      reason: values.reason,
+    });
+  };
+
+  const getSeasonDisplay = () => {
+    if (!vaccine?.seasonLabel || vaccine.seasonLabel === 'lifetime') {
+      return '';
+    }
+    return ` (${vaccine.seasonLabel} 季)`;
+  };
+
+  return (
+    <Modal
+      title="跳过接种"
+      open={open}
+      onCancel={onClose}
+      onOk={handleSubmit}
+      okText="确定跳过"
+      cancelText="取消"
+      confirmLoading={skipMutation.isPending}
+      destroyOnClose
+    >
+      {vaccine && (
+        <Form form={form} layout="vertical">
+          <div style={{ marginBottom: 16 }}>
+            <Text>
+              确定跳过 <Text strong>{vaccine.vaccine.name}</Text>{getSeasonDisplay()} 的接种吗？
+            </Text>
+            <br />
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              跳过后可随时取消跳过状态。
+            </Text>
+          </div>
+
+          <Form.Item name="reason" label="跳过原因（可选）">
+            <Input.TextArea rows={2} placeholder="如：已过接种期" />
+          </Form.Item>
+        </Form>
+      )}
+    </Modal>
+  );
+}
+
+// 单个疫苗卡片
+function VaccineCardItem({
+  item,
+  onDelete,
+  onQuickAdd,
+  onSkip,
+  onUnskip,
+}: {
+  item: RecommendedVaccine;
+  onDelete: (id: string) => void;
+  onQuickAdd: (vaccine: RecommendedVaccine) => void;
+  onSkip: (vaccine: RecommendedVaccine) => void;
+  onUnskip: (skipId: string) => void;
+}) {
+  return (
+    <div className={styles.vaccineCard}>
+      <div className={styles.vaccineCardHeader}>
+        <Space wrap size={[8, 4]}>
+          <Text strong>{item.vaccine.name}</Text>
+          {item.vaccine.frequency === 'YEARLY' && item.seasonLabel && (
+            <Tag color="blue" style={{ fontSize: 11 }}>{item.seasonLabel}</Tag>
+          )}
+          <StatusTag status={item.status} />
+          {item.vaccine.totalDoses > 1 && (
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              ({item.completedDoses}/{item.vaccine.totalDoses}剂)
+            </Text>
+          )}
+        </Space>
+      </div>
+
+      {item.vaccine.description && (
+        <div className={styles.vaccineCardDesc}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            {item.vaccine.description}
+          </Text>
+        </div>
+      )}
+
+      {item.records.length > 0 && (
+        <div className={styles.vaccineCardRecords}>
+          <Text type="secondary" style={{ fontSize: 12 }}>接种记录：</Text>
+          {item.records.map((r) => (
+            <Tag key={r.id} style={{ marginLeft: 4, fontSize: 11 }}>
+              第{r.doseNumber}剂 {new Date(r.vaccinatedAt).toLocaleDateString()}
+            </Tag>
+          ))}
+        </div>
+      )}
+
+      <div className={styles.vaccineCardActions}>
+        {(item.status === 'pending' || item.status === 'overdue') && (
+          <>
+            <Button type="primary" size="small" icon={<PlusOutlined />} onClick={() => onQuickAdd(item)}>
+              添加记录
+            </Button>
+            <Button size="small" icon={<StopOutlined />} onClick={() => onSkip(item)}>
+              错过接种
+            </Button>
+          </>
+        )}
+        {item.status === 'skipped' && item.skipId && (
+          <Popconfirm title="确定取消跳过吗？" onConfirm={() => onUnskip(item.skipId!)}>
+            <Button size="small" icon={<UndoOutlined />}>取消跳过</Button>
+          </Popconfirm>
+        )}
+        {item.status === 'completed' && item.records.length > 0 && (
+          <Popconfirm title="确定删除最近一次接种记录吗？" onConfirm={() => onDelete(item.records[item.records.length - 1].id)}>
+            <Button size="small" danger icon={<DeleteOutlined />}>删除记录</Button>
+          </Popconfirm>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// 可折叠分组
+function StatusGroup({
+  label,
+  icon,
+  count,
+  defaultExpanded,
+  children,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  count: number;
+  defaultExpanded: boolean;
+  children: React.ReactNode;
+}) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
+
+  if (count === 0) return null;
+
+  return (
+    <div className={styles.statusGroup}>
+      <div className={styles.statusGroupHeader} onClick={() => setExpanded(!expanded)}>
+        <Space>
+          {expanded ? <DownOutlined style={{ fontSize: 11 }} /> : <RightOutlined style={{ fontSize: 11 }} />}
+          {icon}
+          <Text strong>{label}</Text>
+          <Text type="secondary">({count})</Text>
+        </Space>
+      </div>
+      <div className={`${styles.statusGroupContent} ${expanded ? styles.statusGroupContentExpanded : styles.statusGroupContentCollapsed}`}>
+        <div className={styles.statusGroupContentInner}>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // 疫苗分类组件
 function VaccineCategory({
   title,
   vaccines,
+  memberId,
+  memberName,
   onDelete,
+  onQuickAdd,
+  onSkip,
+  onUnskip,
 }: {
   title: string;
   vaccines: RecommendedVaccine[];
+  memberId: string;
+  memberName: string;
   onDelete: (id: string) => void;
+  onQuickAdd: (vaccine: RecommendedVaccine) => void;
+  onSkip: (vaccine: RecommendedVaccine) => void;
+  onUnskip: (skipId: string) => void;
 }) {
   if (vaccines.length === 0) return null;
 
-  const completedCount = vaccines.filter((v) => v.status === 'completed').length;
+  const pendingVaccines = vaccines.filter((v) => v.status === 'pending' || v.status === 'overdue');
+  const completedVaccines = vaccines.filter((v) => v.status === 'completed');
+  const skippedVaccines = vaccines.filter((v) => v.status === 'skipped');
+
+  const completedCount = completedVaccines.length;
   const totalCount = vaccines.length;
+
+  const cardProps = { onDelete, onQuickAdd, onSkip, onUnskip };
 
   return (
     <Card
@@ -78,61 +386,41 @@ function VaccineCategory({
       }
       className={styles.categoryCard}
     >
-      <List
-        size="small"
-        dataSource={vaccines}
-        renderItem={(item) => (
-          <List.Item
-            className={styles.vaccineItem}
-            actions={
-              item.records.length > 0
-                ? [
-                    <Popconfirm
-                      key="delete"
-                      title="确定删除最近一次接种记录吗？"
-                      onConfirm={() => onDelete(item.records[item.records.length - 1].id)}
-                    >
-                      <Button type="text" size="small" danger icon={<DeleteOutlined />} />
-                    </Popconfirm>,
-                  ]
-                : undefined
-            }
-          >
-            <List.Item.Meta
-              title={
-                <Space>
-                  <Text strong>{item.vaccine.name}</Text>
-                  <StatusTag status={item.status} />
-                  {item.vaccine.totalDoses > 1 && (
-                    <Text type="secondary">
-                      ({item.completedDoses}/{item.vaccine.totalDoses}剂)
-                    </Text>
-                  )}
-                </Space>
-              }
-              description={
-                <Space direction="vertical" size={0}>
-                  {item.vaccine.description && (
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                      {item.vaccine.description}
-                    </Text>
-                  )}
-                  {item.records.length > 0 && (
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                      接种记录：
-                      {item.records.map((r) => (
-                        <Tag key={r.id} size="small" style={{ marginLeft: 4 }}>
-                          第{r.doseNumber}剂 {new Date(r.vaccinatedAt).toLocaleDateString()}
-                        </Tag>
-                      ))}
-                    </Text>
-                  )}
-                </Space>
-              }
-            />
-          </List.Item>
-        )}
-      />
+      {/* 待接种 - 默认展开，排在最前 */}
+      <StatusGroup
+        label="待接种"
+        icon={<ClockCircleOutlined style={{ color: '#faad14' }} />}
+        count={pendingVaccines.length}
+        defaultExpanded={true}
+      >
+        {pendingVaccines.map((item) => (
+          <VaccineCardItem key={item.vaccine.code} item={item} {...cardProps} />
+        ))}
+      </StatusGroup>
+
+      {/* 已接种 - 默认折叠 */}
+      <StatusGroup
+        label="已接种"
+        icon={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
+        count={completedVaccines.length}
+        defaultExpanded={false}
+      >
+        {completedVaccines.map((item) => (
+          <VaccineCardItem key={item.vaccine.code} item={item} {...cardProps} />
+        ))}
+      </StatusGroup>
+
+      {/* 已跳过 - 默认折叠 */}
+      <StatusGroup
+        label="已跳过"
+        icon={<StopOutlined style={{ color: '#999' }} />}
+        count={skippedVaccines.length}
+        defaultExpanded={false}
+      >
+        {skippedVaccines.map((item) => (
+          <VaccineCardItem key={item.vaccine.code} item={item} {...cardProps} />
+        ))}
+      </StatusGroup>
     </Card>
   );
 }
@@ -141,9 +429,11 @@ export default function VaccinationList() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [selectedMemberId, setSelectedMemberId] = useState<string>('');
-  const [pendingExpanded, setPendingExpanded] = useState(false);
-  const screens = useBreakpoint();
-  const isMobile = !screens.md;
+
+  // Modal 状态
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [skipOpen, setSkipOpen] = useState(false);
+  const [selectedVaccine, setSelectedVaccine] = useState<RecommendedVaccine | null>(null);
 
   // 获取家庭成员列表
   const { data: members = [], isLoading: loadingMembers } = useQuery({
@@ -177,8 +467,40 @@ export default function VaccinationList() {
     },
   });
 
+  // 取消跳过
+  const unskipMutation = useMutation({
+    mutationFn: vaccinationsApi.unskipVaccine,
+    onSuccess: () => {
+      message.success('已取消跳过');
+      queryClient.invalidateQueries({ queryKey: ['vaccination-schedule'] });
+      queryClient.invalidateQueries({ queryKey: ['vaccination-summary'] });
+    },
+    onError: () => {
+      message.error('操作失败');
+    },
+  });
+
   const handleDelete = (id: string) => {
     deleteMutation.mutate(id);
+  };
+
+  const handleQuickAdd = (vaccine: RecommendedVaccine) => {
+    setSelectedVaccine(vaccine);
+    setQuickAddOpen(true);
+  };
+
+  const handleSkip = (vaccine: RecommendedVaccine) => {
+    setSelectedVaccine(vaccine);
+    setSkipOpen(true);
+  };
+
+  const handleUnskip = (skipId: string) => {
+    unskipMutation.mutate(skipId);
+  };
+
+  const handleModalSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ['vaccination-schedule'] });
+    queryClient.invalidateQueries({ queryKey: ['vaccination-summary'] });
   };
 
   // 默认选中第一个成员
@@ -187,6 +509,7 @@ export default function VaccinationList() {
   }
 
   const isLoading = loadingMembers || loadingSummary;
+  const selectedMember = members.find((m) => m.id === selectedMemberId);
 
   return (
     <div className={styles.container}>
@@ -207,124 +530,26 @@ export default function VaccinationList() {
         </div>
       ) : (
         <>
-          {/* 待接种提醒 */}
-          {summary && (summary.pendingCount > 0 || summary.overdueCount > 0) && (
-            isMobile ? (
-              // 移动端：独立卡片式设计（可展开/收起）
-              <div className={styles.pendingSection}>
-                <div
-                  className={styles.pendingSectionHeader}
-                  onClick={() => setPendingExpanded(!pendingExpanded)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <ExclamationCircleOutlined
-                    style={{
-                      color: summary.overdueCount > 0 ? '#ff4d4f' : '#faad14',
-                      fontSize: 18
-                    }}
-                  />
-                  <Text strong style={{ marginLeft: 8 }}>待接种提醒</Text>
-                  <div className={styles.pendingBadges}>
-                    {summary.overdueCount > 0 && (
-                      <Tag color="error" size="small">{summary.overdueCount}项逾期</Tag>
-                    )}
-                    {summary.pendingCount > 0 && (
-                      <Tag color="warning" size="small">{summary.pendingCount}项待接种</Tag>
-                    )}
-                  </div>
-                  <div className={`${styles.pendingExpandIcon} ${pendingExpanded ? styles.pendingExpandIconRotated : ''}`}>
-                    <DownOutlined />
-                  </div>
-                </div>
-                <div className={`${styles.pendingCardList} ${pendingExpanded ? styles.pendingCardListExpanded : styles.pendingCardListCollapsed}`}>
-                  {summary.pendingList.map((item, index) => (
-                    <div
-                      key={index}
-                      className={`${styles.pendingCard} ${item.status === 'overdue' ? styles.pendingCardOverdue : styles.pendingCardPending}`}
-                    >
-                      <div className={styles.pendingCardTop}>
-                        <Tag
-                          color={item.status === 'overdue' ? 'error' : 'warning'}
-                          style={{ margin: 0 }}
-                        >
-                          {item.status === 'overdue' ? '逾期' : '待接种'}
-                        </Tag>
-                        <Text strong className={styles.pendingCardMember}>
-                          {item.memberName}
-                        </Text>
-                      </div>
-                      <div className={styles.pendingCardVaccine}>
-                        {item.vaccineName}
-                      </div>
-                      {item.description && (
-                        <div className={styles.pendingCardNote}>
-                          {item.description}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              // 桌面端：保持原有 Alert + Collapse 设计
-              <Alert
-                type={summary.overdueCount > 0 ? 'error' : 'warning'}
-                showIcon
-                icon={<ExclamationCircleOutlined />}
-                message={
-                  <span>
-                    待接种提醒：
-                    {summary.overdueCount > 0 && (
-                      <Text type="danger" strong style={{ marginLeft: 8 }}>
-                        {summary.overdueCount} 项逾期
-                      </Text>
-                    )}
-                    {summary.pendingCount > 0 && (
-                      <Text type="warning" strong style={{ marginLeft: 8 }}>
-                        {summary.pendingCount} 项待接种
-                      </Text>
-                    )}
-                  </span>
-                }
-                description={
-                  <Collapse ghost size="small">
-                    <Collapse.Panel header="查看详情" key="1">
-                      <List
-                        size="small"
-                        dataSource={summary.pendingList}
-                        renderItem={(item) => (
-                          <List.Item>
-                            <Space>
-                              <Tag color={item.status === 'overdue' ? 'error' : 'warning'}>
-                                {item.status === 'overdue' ? '逾期' : '待接种'}
-                              </Tag>
-                              <Text strong>{item.memberName}</Text>
-                              <Text>{item.vaccineName}</Text>
-                              {item.description && (
-                                <Text type="secondary">- {item.description}</Text>
-                              )}
-                            </Space>
-                          </List.Item>
-                        )}
-                      />
-                    </Collapse.Panel>
-                  </Collapse>
-                }
-                className={styles.alert}
-              />
-            )
-          )}
+          {/* 成员选择按钮 */}
+          <div className={styles.memberButtons}>
+            {members.map((member) => {
+              // 计算该成员的待完成任务数
+              const pendingCount = summary?.pendingList.filter(
+                (p) => p.memberId === member.id
+              ).length || 0;
 
-          {/* 成员选择 */}
-          <div className={styles.memberSelect}>
-            <Text strong>选择成员：</Text>
-            <Select
-              value={selectedMemberId}
-              onChange={setSelectedMemberId}
-              style={{ width: 200, marginLeft: 12 }}
-              options={members.map((m) => ({ label: m.name, value: m.id }))}
-              placeholder="请选择家庭成员"
-            />
+              return (
+                <Badge key={member.id} count={pendingCount} size="small" offset={[-5, 5]}>
+                  <Button
+                    type={selectedMemberId === member.id ? 'primary' : 'default'}
+                    className={styles.memberButton}
+                    onClick={() => setSelectedMemberId(member.id)}
+                  >
+                    {member.name}
+                  </Button>
+                </Badge>
+              );
+            })}
           </div>
 
           {/* 接种计划 */}
@@ -345,21 +570,36 @@ export default function VaccinationList() {
               <VaccineCategory
                 title="儿童计划免疫"
                 vaccines={schedule.childVaccines}
+                memberId={selectedMemberId}
+                memberName={schedule.memberName}
                 onDelete={handleDelete}
+                onQuickAdd={handleQuickAdd}
+                onSkip={handleSkip}
+                onUnskip={handleUnskip}
               />
 
               {/* 成人疫苗 */}
               <VaccineCategory
                 title="成人疫苗"
                 vaccines={schedule.adultVaccines}
+                memberId={selectedMemberId}
+                memberName={schedule.memberName}
                 onDelete={handleDelete}
+                onQuickAdd={handleQuickAdd}
+                onSkip={handleSkip}
+                onUnskip={handleUnskip}
               />
 
               {/* 老年人疫苗 */}
               <VaccineCategory
                 title="老年人疫苗"
                 vaccines={schedule.elderlyVaccines}
+                memberId={selectedMemberId}
+                memberName={schedule.memberName}
                 onDelete={handleDelete}
+                onQuickAdd={handleQuickAdd}
+                onSkip={handleSkip}
+                onUnskip={handleUnskip}
               />
 
               {/* 自定义疫苗记录 */}
@@ -417,6 +657,31 @@ export default function VaccinationList() {
           )}
         </>
       )}
+
+      {/* 快捷添加 Modal */}
+      <QuickAddModal
+        open={quickAddOpen}
+        memberId={selectedMemberId}
+        memberName={selectedMember?.name || ''}
+        vaccine={selectedVaccine}
+        onClose={() => {
+          setQuickAddOpen(false);
+          setSelectedVaccine(null);
+        }}
+        onSuccess={handleModalSuccess}
+      />
+
+      {/* 跳过确认 Modal */}
+      <SkipModal
+        open={skipOpen}
+        memberId={selectedMemberId}
+        vaccine={selectedVaccine}
+        onClose={() => {
+          setSkipOpen(false);
+          setSelectedVaccine(null);
+        }}
+        onSuccess={handleModalSuccess}
+      />
     </div>
   );
 }

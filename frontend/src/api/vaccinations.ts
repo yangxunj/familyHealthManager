@@ -6,6 +6,7 @@ import type {
   VaccineDefinitionsResponse,
   CreateVaccineRecordRequest,
   UpdateVaccineRecordRequest,
+  SkipVaccineRequest,
 } from '../types/vaccination';
 
 export const vaccinationsApi = {
@@ -48,5 +49,15 @@ export const vaccinationsApi = {
   // 删除接种记录
   deleteRecord: async (id: string): Promise<{ success: boolean }> => {
     return apiClient.delete(`/vaccinations/${id}`);
+  },
+
+  // 跳过疫苗
+  skipVaccine: async (data: SkipVaccineRequest): Promise<{ id: string }> => {
+    return apiClient.post('/vaccinations/skip', data);
+  },
+
+  // 取消跳过疫苗
+  unskipVaccine: async (id: string): Promise<{ success: boolean }> => {
+    return apiClient.delete(`/vaccinations/skip/${id}`);
   },
 };

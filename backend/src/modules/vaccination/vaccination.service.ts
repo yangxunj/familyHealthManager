@@ -9,6 +9,7 @@ import {
   CreateVaccineRecordDto,
   UpdateVaccineRecordDto,
   QueryVaccineRecordDto,
+  SkipVaccineDto,
 } from './dto';
 import {
   ALL_VACCINES,
@@ -20,7 +21,7 @@ import {
 } from './vaccine-definitions';
 
 // 接种状态
-export type VaccineStatus = 'completed' | 'pending' | 'overdue' | 'not_applicable';
+export type VaccineStatus = 'completed' | 'pending' | 'overdue' | 'skipped' | 'not_applicable';
 
 // 推荐疫苗条目
 export interface RecommendedVaccine {
@@ -34,6 +35,9 @@ export interface RecommendedVaccine {
     doseNumber: number;
     vaccinatedAt: Date;
   }>;
+  // 跳过相关
+  skipId?: string;         // 跳过记录ID（用于取消跳过）
+  seasonLabel?: string;    // 当前季节标签（用于跳过周期性疫苗）
 }
 
 // 接种计划
@@ -231,6 +235,16 @@ export class VaccinationService {
       orderBy: { vaccinatedAt: 'asc' },
     });
 
+    // 获取该成员所有跳过记录
+    const skipRecords = await this.prisma.vaccineSkip.findMany({
+      where: { memberId },
+    });
+    const skipsByVaccine = new Map<string, typeof skipRecords[0]>();
+    for (const skip of skipRecords) {
+      // 使用 vaccineCode + seasonLabel 作为 key
+      skipsByVaccine.set(`${skip.vaccineCode}:${skip.seasonLabel}`, skip);
+    }
+
     // 按疫苗代码/名称分组
     const recordsByVaccine = new Map<string, typeof records>();
     const customRecords: VaccineSchedule['customRecords'] = [];
@@ -300,6 +314,8 @@ export class VaccinationService {
 
         let status: VaccineStatus;
         let nextDoseNumber: number | undefined;
+        let skipId: string | undefined;
+        let seasonLabel: string | undefined;
 
         // 检查年龄是否适用
         const minAge = vaccine.minAgeYears ?? 0;
@@ -310,30 +326,53 @@ export class VaccinationService {
         } else if (vaccine.frequency === 'YEARLY') {
           // 周期性疫苗（如流感）：检查当前季节是否已接种
           const currentSeason = getFluSeasonRange(now);
+          seasonLabel = currentSeason.label;
           const hasCurrentSeason = vaccineRecords.some((r) =>
             isDateInRange(new Date(r.vaccinatedAt), currentSeason.start, currentSeason.end),
           );
-          status = hasCurrentSeason ? 'completed' : 'pending';
-          if (!hasCurrentSeason) {
+
+          // 检查是否有跳过记录
+          const skipKey = `${vaccine.code}:${currentSeason.label}`;
+          const skipRecord = skipsByVaccine.get(skipKey);
+
+          if (hasCurrentSeason) {
+            status = 'completed';
+          } else if (skipRecord) {
+            status = 'skipped';
+            skipId = skipRecord.id;
+          } else {
+            status = 'pending';
             nextDoseNumber = 1;
           }
         } else if (completedDoses >= vaccine.totalDoses) {
           // 终身疫苗：完成所有剂次后标记为完成
           status = 'completed';
         } else {
-          // 检查是否逾期（简化逻辑：儿童疫苗超过推荐月龄12个月视为逾期）
-          if (vaccine.scheduleMonths && vaccine.category === 'CHILD') {
-            const nextScheduleMonth =
-              vaccine.scheduleMonths[completedDoses] ?? 0;
-            if (ageMonths > nextScheduleMonth + 12) {
-              status = 'overdue';
+          // 非周期性疫苗使用 "lifetime" 作为 seasonLabel
+          seasonLabel = 'lifetime';
+
+          // 检查是否有跳过记录
+          const skipKey = `${vaccine.code}:lifetime`;
+          const skipRecord = skipsByVaccine.get(skipKey);
+
+          if (skipRecord) {
+            status = 'skipped';
+            skipId = skipRecord.id;
+          } else {
+            // 检查是否逾期（简化逻辑：儿童疫苗超过推荐月龄12个月视为逾期）
+            if (vaccine.scheduleMonths && vaccine.category === 'CHILD') {
+              const nextScheduleMonth =
+                vaccine.scheduleMonths[completedDoses] ?? 0;
+              if (ageMonths > nextScheduleMonth + 12) {
+                status = 'overdue';
+              } else {
+                status = 'pending';
+              }
             } else {
               status = 'pending';
             }
-          } else {
-            status = 'pending';
+            nextDoseNumber = completedDoses + 1;
           }
-          nextDoseNumber = completedDoses + 1;
         }
 
         return {
@@ -347,6 +386,8 @@ export class VaccinationService {
             doseNumber: r.doseNumber,
             vaccinatedAt: r.vaccinatedAt,
           })),
+          skipId,
+          seasonLabel,
         };
       });
     };
@@ -432,5 +473,65 @@ export class VaccinationService {
       elderly: ELDERLY_VACCINES,
       all: ALL_VACCINES,
     };
+  }
+
+  // 跳过疫苗
+  async skipVaccine(familyId: string, dto: SkipVaccineDto) {
+    // 验证成员属于该家庭
+    const member = await this.prisma.familyMember.findFirst({
+      where: { id: dto.memberId, familyId, deletedAt: null },
+    });
+
+    if (!member) {
+      throw new NotFoundException('家庭成员不存在');
+    }
+
+    // 验证疫苗代码存在
+    const vaccine = getVaccineByCode(dto.vaccineCode);
+    if (!vaccine) {
+      throw new NotFoundException('疫苗不存在');
+    }
+
+    try {
+      return await this.prisma.vaccineSkip.create({
+        data: {
+          memberId: dto.memberId,
+          vaccineCode: dto.vaccineCode,
+          seasonLabel: dto.seasonLabel,
+          reason: dto.reason,
+        },
+      });
+    } catch (error: unknown) {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'code' in error &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException('该疫苗已被跳过');
+      }
+      throw error;
+    }
+  }
+
+  // 取消跳过疫苗
+  async unskipVaccine(familyId: string, id: string) {
+    // 查找跳过记录
+    const skipRecord = await this.prisma.vaccineSkip.findFirst({
+      where: {
+        id,
+        member: { familyId, deletedAt: null },
+      },
+    });
+
+    if (!skipRecord) {
+      throw new NotFoundException('跳过记录不存在');
+    }
+
+    await this.prisma.vaccineSkip.delete({
+      where: { id },
+    });
+
+    return { success: true };
   }
 }

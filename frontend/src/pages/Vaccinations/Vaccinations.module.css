@@ -31,6 +31,24 @@
   border-radius: 8px;
 }
 
+/* 成员选择按钮组 */
+.memberButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border-radius: 12px;
+}
+
+.memberButton {
+  border-radius: 20px;
+  padding: 4px 16px;
+  height: 36px;
+  font-size: 14px;
+}
+
 .scheduleContainer {
   display: flex;
   flex-direction: column;
@@ -64,6 +82,119 @@
 
 .vaccineItem:last-child {
   border-bottom: none;
+}
+
+/* 状态分组 */
+.statusGroup {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.statusGroup:last-child {
+  border-bottom: none;
+}
+
+.statusGroupHeader {
+  padding: 10px 16px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+}
+
+.statusGroupHeader:hover {
+  background: var(--bg-secondary);
+}
+
+.statusGroupContent {
+  display: grid;
+  transition: grid-template-rows 0.3s ease, opacity 0.3s ease;
+}
+
+.statusGroupContentCollapsed {
+  grid-template-rows: 0fr;
+  opacity: 0;
+}
+
+.statusGroupContentExpanded {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.statusGroupContentInner {
+  overflow: hidden;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  padding: 4px 14px 14px;
+  background: var(--bg-secondary);
+}
+
+@media (max-width: 1200px) {
+  .statusGroupContentInner {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .statusGroupContentInner {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 576px) {
+  .statusGroupContentInner {
+    grid-template-columns: 1fr;
+  }
+}
+
+.statusGroupContentCollapsed .statusGroupContentInner {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* 单个疫苗卡片 */
+.vaccineCard {
+  padding: 14px 16px;
+  background: var(--bg-primary);
+  border: 1.5px solid var(--border-color);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* 深色模式下使用明显的边框颜色 */
+:global([data-theme='dark']) .vaccineCard {
+  border: 1.5px solid #555;
+  box-shadow: none;
+}
+
+/* 疫苗卡片头部：名称 + 状态 + 剂量 */
+.vaccineCardHeader {
+  margin-bottom: 6px;
+}
+
+/* 疫苗描述 */
+.vaccineCardDesc {
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+/* 接种记录 */
+.vaccineCardRecords {
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
+
+/* 操作按钮区域 */
+.vaccineCardActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-color);
+}
+
+.vaccineCardActions:empty {
+  display: none;
 }
 
 /* 移动端待接种提醒区域 */
