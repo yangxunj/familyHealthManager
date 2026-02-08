@@ -175,6 +175,7 @@ model FamilyMember {
   chatSessions  ChatSession[]
   vaccineRecords VaccineRecord[]
   vaccineSkips  VaccineSkip[]
+  periodicCheckItems PeriodicCheckItem[]
 
   @@index([familyId])
   @@index([familyId, deletedAt])
@@ -437,4 +438,48 @@ model VaccineSkip {
   @@unique([memberId, vaccineCode, seasonLabel])  // 同一成员同一疫苗同一季节只能跳过一次
   @@index([memberId])
   @@map("vaccine_skips")
+}
+
+/// 定期检查项目表（每个成员自定义）
+model PeriodicCheckItem {
+  id              String    @id @default(uuid())
+  memberId        String    @map("member_id")
+
+  name            String    @db.VarChar(100)            // 检查名称
+  intervalMonths  Int       @map("interval_months")     // 间隔月数
+  description     String?   @db.Text                    // 说明
+  isActive        Boolean   @default(true) @map("is_active")
+  skippedUntil    DateTime? @map("skipped_until") @db.Date  // 跳过到何时
+
+  // 时间戳
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // 关系
+  member          FamilyMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  records         PeriodicCheckRecord[]
+
+  @@index([memberId])
+  @@map("periodic_check_items")
+}
+
+/// 定期检查完成记录表
+model PeriodicCheckRecord {
+  id          String   @id @default(uuid())
+  itemId      String   @map("item_id")
+
+  checkDate   DateTime @map("check_date") @db.Date     // 检查日期
+  location    String?  @db.VarChar(200)                 // 地点
+  doctor      String?  @db.VarChar(100)                 // 医生
+  findings    String?  @db.Text                         // 检查结果
+  notes       String?  @db.Text                         // 备注
+
+  // 时间戳
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // 关系
+  item        PeriodicCheckItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId])
+  @@map("periodic_check_records")
 }
