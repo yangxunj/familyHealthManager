@@ -329,7 +329,7 @@ const AdvicePage: React.FC = () => {
         renderItem={(item, index) => (
           <List.Item style={itemStyle}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-              <div style={{ fontSize: 16, marginTop: 3 }}>{getIcon(item.level)}</div>
+              <div style={{ fontSize: 16, marginTop: 5.5 }}>{getIcon(item.level)}</div>
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                   <Space>
