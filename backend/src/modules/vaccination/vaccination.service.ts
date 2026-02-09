@@ -10,6 +10,7 @@ import {
   UpdateVaccineRecordDto,
   QueryVaccineRecordDto,
   SkipVaccineDto,
+  CreateCustomVaccineDto,
 } from './dto';
 import {
   ALL_VACCINES,
@@ -49,6 +50,7 @@ export interface VaccineSchedule {
   childVaccines: RecommendedVaccine[];
   adultVaccines: RecommendedVaccine[];
   elderlyVaccines: RecommendedVaccine[];
+  customVaccines: RecommendedVaccine[];
   customRecords: Array<{
     id: string;
     vaccineName: string;
@@ -76,9 +78,20 @@ export class VaccinationService {
     // 如果提供了疫苗代码，验证并自动填充信息
     let totalDoses = dto.totalDoses;
     if (dto.vaccineCode) {
-      const vaccine = getVaccineByCode(dto.vaccineCode);
-      if (vaccine) {
-        totalDoses = vaccine.totalDoses;
+      if (dto.vaccineCode.startsWith('custom_')) {
+        // 自定义疫苗：从 CustomVaccine 表查询
+        const customId = dto.vaccineCode.replace('custom_', '');
+        const customVaccine = await this.prisma.customVaccine.findFirst({
+          where: { id: customId, familyId },
+        });
+        if (customVaccine) {
+          totalDoses = customVaccine.totalDoses;
+        }
+      } else {
+        const vaccine = getVaccineByCode(dto.vaccineCode);
+        if (vaccine) {
+          totalDoses = vaccine.totalDoses;
+        }
       }
     }
 
@@ -400,6 +413,23 @@ export class VaccinationService {
     const elderlyVaccines =
       ageYears >= 50 ? calculateVaccineStatus(ELDERLY_VACCINES) : [];
 
+    // 加载家庭自定义疫苗类型
+    const dbCustomVaccines = await this.prisma.customVaccine.findMany({
+      where: { familyId },
+    });
+
+    // 将自定义疫苗转换为 VaccineDefinition 格式
+    const customVaccineDefs: VaccineDefinition[] = dbCustomVaccines.map((cv) => ({
+      code: `custom_${cv.id}`,
+      name: cv.name,
+      category: 'ADULT' as const, // 不影响显示，仅用于类型兼容
+      frequency: cv.frequency as 'ONCE' | 'YEARLY' | 'MULTI_DOSE',
+      totalDoses: cv.totalDoses,
+      description: cv.description ?? undefined,
+    }));
+
+    const customVaccinesList = calculateVaccineStatus(customVaccineDefs);
+
     return {
       memberId: member.id,
       memberName: member.name,
@@ -408,6 +438,7 @@ export class VaccinationService {
       childVaccines,
       adultVaccines,
       elderlyVaccines,
+      customVaccines: customVaccinesList,
       customRecords,
     };
   }
@@ -441,6 +472,7 @@ export class VaccinationService {
         ...schedule.childVaccines,
         ...schedule.adultVaccines,
         ...schedule.elderlyVaccines,
+        ...schedule.customVaccines,
       ];
 
       for (const item of allVaccines) {
@@ -475,6 +507,69 @@ export class VaccinationService {
     };
   }
 
+  // ==================== 自定义疫苗类型 ====================
+
+  // 创建自定义疫苗类型
+  async createCustomVaccine(familyId: string, dto: CreateCustomVaccineDto) {
+    try {
+      return await this.prisma.customVaccine.create({
+        data: {
+          familyId,
+          name: dto.name,
+          frequency: dto.frequency,
+          totalDoses: dto.totalDoses ?? 1,
+          description: dto.description,
+        },
+      });
+    } catch (error: unknown) {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'code' in error &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(`疫苗类型"${dto.name}"已存在`);
+      }
+      throw error;
+    }
+  }
+
+  // 获取家庭的所有自定义疫苗类型
+  async findAllCustomVaccines(familyId: string) {
+    return this.prisma.customVaccine.findMany({
+      where: { familyId },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  // 删除自定义疫苗类型（同时清理关联的接种记录和跳过记录）
+  async removeCustomVaccine(familyId: string, id: string) {
+    const customVaccine = await this.prisma.customVaccine.findFirst({
+      where: { id, familyId },
+    });
+
+    if (!customVaccine) {
+      throw new NotFoundException('自定义疫苗类型不存在');
+    }
+
+    const vaccineCode = `custom_${id}`;
+
+    // 删除关联的接种记录和跳过记录
+    await this.prisma.$transaction([
+      this.prisma.vaccineRecord.deleteMany({
+        where: { vaccineCode },
+      }),
+      this.prisma.vaccineSkip.deleteMany({
+        where: { vaccineCode },
+      }),
+      this.prisma.customVaccine.delete({
+        where: { id },
+      }),
+    ]);
+
+    return { success: true };
+  }
+
   // 跳过疫苗
   async skipVaccine(familyId: string, dto: SkipVaccineDto) {
     // 验证成员属于该家庭
@@ -487,9 +582,19 @@ export class VaccinationService {
     }
 
     // 验证疫苗代码存在
-    const vaccine = getVaccineByCode(dto.vaccineCode);
-    if (!vaccine) {
-      throw new NotFoundException('疫苗不存在');
+    if (dto.vaccineCode.startsWith('custom_')) {
+      const customId = dto.vaccineCode.replace('custom_', '');
+      const customVaccine = await this.prisma.customVaccine.findFirst({
+        where: { id: customId, familyId },
+      });
+      if (!customVaccine) {
+        throw new NotFoundException('自定义疫苗不存在');
+      }
+    } else {
+      const vaccine = getVaccineByCode(dto.vaccineCode);
+      if (!vaccine) {
+        throw new NotFoundException('疫苗不存在');
+      }
     }
 
     try {

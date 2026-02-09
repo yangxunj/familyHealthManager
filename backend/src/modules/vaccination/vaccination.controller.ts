@@ -16,6 +16,7 @@ import {
   UpdateVaccineRecordDto,
   QueryVaccineRecordDto,
   SkipVaccineDto,
+  CreateCustomVaccineDto,
 } from './dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { CurrentUserData } from '../auth/decorators/current-user.decorator';
@@ -35,6 +36,33 @@ export class VaccinationController {
   @Get('definitions')
   getDefinitions() {
     return this.vaccinationService.getVaccineDefinitions();
+  }
+
+  // 创建自定义疫苗类型
+  @Post('custom')
+  createCustomVaccine(
+    @CurrentUser() user: CurrentUserData,
+    @Body() dto: CreateCustomVaccineDto,
+  ) {
+    const familyId = this.requireFamily(user);
+    return this.vaccinationService.createCustomVaccine(familyId, dto);
+  }
+
+  // 获取自定义疫苗类型列表
+  @Get('custom')
+  getCustomVaccines(@CurrentUser() user: CurrentUserData) {
+    const familyId = this.requireFamily(user);
+    return this.vaccinationService.findAllCustomVaccines(familyId);
+  }
+
+  // 删除自定义疫苗类型
+  @Delete('custom/:id')
+  removeCustomVaccine(
+    @CurrentUser() user: CurrentUserData,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    const familyId = this.requireFamily(user);
+    return this.vaccinationService.removeCustomVaccine(familyId, id);
   }
 
   // 获取家庭疫苗接种概览
