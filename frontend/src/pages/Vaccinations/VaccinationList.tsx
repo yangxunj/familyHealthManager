@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Card,
@@ -18,6 +17,8 @@ import {
   Form,
   DatePicker,
   Input,
+  InputNumber,
+  Radio,
   Grid,
 } from 'antd';
 import {
@@ -233,12 +234,14 @@ function VaccineCardItem({
   onQuickAdd,
   onSkip,
   onUnskip,
+  onDeleteType,
 }: {
   item: RecommendedVaccine;
   onDelete: (id: string) => void;
   onQuickAdd: (vaccine: RecommendedVaccine) => void;
   onSkip: (vaccine: RecommendedVaccine) => void;
   onUnskip: (skipId: string) => void;
+  onDeleteType?: (vaccine: RecommendedVaccine) => void;
 }) {
   return (
     <div className={styles.vaccineCard}>
@@ -297,6 +300,11 @@ function VaccineCardItem({
             <Button size="small" danger icon={<DeleteOutlined />}>删除记录</Button>
           </Popconfirm>
         )}
+        {onDeleteType && (
+          <Popconfirm title="删除此疫苗类型？关联的所有接种记录也将被删除。" onConfirm={() => onDeleteType(item)}>
+            <Button size="small" danger type="text" icon={<DeleteOutlined />}>删除类型</Button>
+          </Popconfirm>
+        )}
       </div>
     </div>
   );
@@ -347,6 +355,7 @@ function VaccineCategory({
   onQuickAdd,
   onSkip,
   onUnskip,
+  onDeleteType,
 }: {
   title: string;
   vaccines: RecommendedVaccine[];
@@ -354,6 +363,7 @@ function VaccineCategory({
   onQuickAdd: (vaccine: RecommendedVaccine) => void;
   onSkip: (vaccine: RecommendedVaccine) => void;
   onUnskip: (skipId: string) => void;
+  onDeleteType?: (vaccine: RecommendedVaccine) => void;
 }) {
   if (vaccines.length === 0) return null;
 
@@ -364,7 +374,7 @@ function VaccineCategory({
   const completedCount = completedVaccines.length;
   const totalCount = vaccines.length;
 
-  const cardProps = { onDelete, onQuickAdd, onSkip, onUnskip };
+  const cardProps = { onDelete, onQuickAdd, onSkip, onUnskip, onDeleteType };
 
   return (
     <Card
@@ -421,14 +431,102 @@ function VaccineCategory({
   );
 }
 
+// 添加疫苗类型 Modal
+function AddVaccineTypeModal({
+  open,
+  onClose,
+  onSuccess,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [form] = Form.useForm();
+  const [frequency, setFrequency] = useState<string>('ONCE');
+
+  const createMutation = useMutation({
+    mutationFn: vaccinationsApi.createCustomVaccine,
+    onSuccess: () => {
+      message.success('疫苗类型添加成功');
+      form.resetFields();
+      setFrequency('ONCE');
+      onSuccess();
+      onClose();
+    },
+    onError: (error: Error) => {
+      message.error(error.message || '添加失败');
+    },
+  });
+
+  const handleSubmit = async () => {
+    const values = await form.validateFields();
+    createMutation.mutate({
+      name: values.name,
+      frequency,
+      totalDoses: frequency === 'MULTI_DOSE' ? values.totalDoses : 1,
+      description: values.description,
+    });
+  };
+
+  return (
+    <Modal
+      title="添加疫苗类型"
+      open={open}
+      onCancel={onClose}
+      onOk={handleSubmit}
+      okText="添加"
+      cancelText="取消"
+      confirmLoading={createMutation.isPending}
+      destroyOnClose
+    >
+      <Form form={form} layout="vertical" preserve={false} initialValues={{ totalDoses: 2 }}>
+        <Form.Item
+          name="name"
+          label="疫苗名称"
+          rules={[{ required: true, message: '请输入疫苗名称' }]}
+        >
+          <Input placeholder="如：水痘疫苗" />
+        </Form.Item>
+
+        <Form.Item label="接种方式" required>
+          <Radio.Group
+            value={frequency}
+            onChange={(e) => setFrequency(e.target.value)}
+            optionType="button"
+            buttonStyle="solid"
+          >
+            <Radio.Button value="ONCE">一次性单剂</Radio.Button>
+            <Radio.Button value="MULTI_DOSE">多剂接种</Radio.Button>
+            <Radio.Button value="YEARLY">每年接种</Radio.Button>
+          </Radio.Group>
+        </Form.Item>
+
+        {frequency === 'MULTI_DOSE' && (
+          <Form.Item
+            name="totalDoses"
+            label="总剂次"
+            rules={[{ required: true, message: '请输入总剂次' }]}
+          >
+            <InputNumber min={2} max={10} style={{ width: '100%' }} />
+          </Form.Item>
+        )}
+
+        <Form.Item name="description" label="说明">
+          <Input.TextArea rows={2} placeholder="可选，如接种说明" />
+        </Form.Item>
+      </Form>
+    </Modal>
+  );
+}
+
 export default function VaccinationList() {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [selectedMemberId, setSelectedMemberId] = useState<string>('');
 
   // Modal 状态
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [skipOpen, setSkipOpen] = useState(false);
+  const [addTypeOpen, setAddTypeOpen] = useState(false);
   const [selectedVaccine, setSelectedVaccine] = useState<RecommendedVaccine | null>(null);
 
   // 获取家庭成员列表
@@ -476,6 +574,19 @@ export default function VaccinationList() {
     },
   });
 
+  // 删除自定义疫苗类型
+  const deleteTypeMutation = useMutation({
+    mutationFn: vaccinationsApi.deleteCustomVaccine,
+    onSuccess: () => {
+      message.success('疫苗类型已删除');
+      queryClient.invalidateQueries({ queryKey: ['vaccination-schedule'] });
+      queryClient.invalidateQueries({ queryKey: ['vaccination-summary'] });
+    },
+    onError: () => {
+      message.error('删除失败');
+    },
+  });
+
   const handleDelete = (id: string) => {
     deleteMutation.mutate(id);
   };
@@ -492,6 +603,12 @@ export default function VaccinationList() {
 
   const handleUnskip = (skipId: string) => {
     unskipMutation.mutate(skipId);
+  };
+
+  const handleDeleteType = (vaccine: RecommendedVaccine) => {
+    // Extract custom vaccine ID from code (format: custom_<id>)
+    const customId = vaccine.vaccine.code.replace('custom_', '');
+    deleteTypeMutation.mutate(customId);
   };
 
   const handleModalSuccess = () => {
@@ -514,9 +631,9 @@ export default function VaccinationList() {
         <Button
           type="primary"
           icon={<PlusOutlined />}
-          onClick={() => navigate('/health-plan/vaccinations/add')}
+          onClick={() => setAddTypeOpen(true)}
         >
-          添加记录
+          添加疫苗类型
         </Button>
       </div>
 
@@ -595,7 +712,18 @@ export default function VaccinationList() {
                 onUnskip={handleUnskip}
               />
 
-              {/* 自定义疫苗记录 */}
+              {/* 自定义疫苗 */}
+              <VaccineCategory
+                title="自定义疫苗"
+                vaccines={schedule.customVaccines}
+                onDelete={handleDelete}
+                onQuickAdd={handleQuickAdd}
+                onSkip={handleSkip}
+                onUnskip={handleUnskip}
+                onDeleteType={handleDeleteType}
+              />
+
+              {/* 旧版自定义疫苗记录（无类型定义的历史记录） */}
               {schedule.customRecords.length > 0 && (
                 <Card size="small" title="其他疫苗记录" className={styles.categoryCard}>
                   <List
@@ -673,6 +801,13 @@ export default function VaccinationList() {
           setSkipOpen(false);
           setSelectedVaccine(null);
         }}
+        onSuccess={handleModalSuccess}
+      />
+
+      {/* 添加疫苗类型 Modal */}
+      <AddVaccineTypeModal
+        open={addTypeOpen}
+        onClose={() => setAddTypeOpen(false)}
         onSuccess={handleModalSuccess}
       />
     </div>

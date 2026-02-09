@@ -14,7 +14,6 @@ import { ChatPage } from './pages/Chat';
 import FamilyPage from './pages/Family';
 import HealthPlanPage from './pages/HealthPlan';
 import VaccinationList from './pages/Vaccinations/VaccinationList';
-import VaccinationAdd from './pages/Vaccinations/VaccinationAdd';
 import CheckupList from './pages/Checkups/CheckupList';
 import { useAuthStore } from './store';
 
@@ -81,7 +80,6 @@ function App() {
           <Route path="health-plan" element={<HealthPlanPage />}>
             <Route index element={<Navigate to="/health-plan/vaccinations" replace />} />
             <Route path="vaccinations" element={<VaccinationList />} />
-            <Route path="vaccinations/add" element={<VaccinationAdd />} />
             <Route path="checkups" element={<CheckupList />} />
           </Route>
           <Route path="family" element={<FamilyPage />} />
