@@ -109,6 +109,7 @@ model Family {
   users       User[]
   members     FamilyMember[]
   chatSessions ChatSession[]
+  customVaccines CustomVaccine[]
 
   @@map("families")
 }
@@ -438,6 +439,28 @@ model VaccineSkip {
   @@unique([memberId, vaccineCode, seasonLabel])  // 同一成员同一疫苗同一季节只能跳过一次
   @@index([memberId])
   @@map("vaccine_skips")
+}
+
+/// 自定义疫苗类型表（家庭级别，用户可添加系统预设之外的疫苗类型）
+model CustomVaccine {
+  id          String   @id @default(uuid())
+  familyId    String   @map("family_id")
+
+  name        String   @db.VarChar(100)                  // 疫苗名称
+  frequency   String   @db.VarChar(20)                   // ONCE | YEARLY | MULTI_DOSE
+  totalDoses  Int      @default(1) @map("total_doses")   // 总剂次
+  description String?  @db.Text                           // 说明
+
+  // 时间戳
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // 关系
+  family      Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  @@unique([familyId, name])
+  @@index([familyId])
+  @@map("custom_vaccines")
 }
 
 /// 定期检查项目表（每个成员自定义）
