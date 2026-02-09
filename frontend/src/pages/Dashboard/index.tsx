@@ -6,6 +6,7 @@ import {
   LineChartOutlined,
   BulbOutlined,
   UserOutlined,
+  SafetyOutlined,
   ManOutlined,
   WomanOutlined,
 } from '@ant-design/icons';
@@ -84,6 +85,22 @@ const Dashboard: React.FC = () => {
               </Col>
             ))}
           </Row>
+
+          {/* 数据安全提示 */}
+          <div style={{
+            marginTop: 16,
+            padding: '12px 20px',
+            background: 'var(--color-bg-blue-light)',
+            borderRadius: 12,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            fontSize: 13,
+            color: 'var(--color-text-secondary)',
+          }}>
+            <SafetyOutlined style={{ fontSize: 18, color: '#136dec', flexShrink: 0 }} />
+            <span>您的健康数据经过加密存储，仅您和家庭成员可以访问，平台管理员无法查看任何个人健康信息。</span>
+          </div>
 
           {/* 新用户引导 */}
           {!hasSelfMember && (

@@ -491,15 +491,18 @@ const Login: React.FC = () => {
 
           <div style={{
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
-            justifyContent: 'center',
-            gap: 6,
+            gap: 4,
             marginTop: 24,
             color: 'var(--color-text-quaternary)',
             fontSize: 12,
           }}>
-            <LockOutlined style={{ fontSize: 12 }} />
-            <span>安全加密传输</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <LockOutlined style={{ fontSize: 12 }} />
+              <span>安全加密传输</span>
+            </div>
+            <span>您的健康数据经过加密存储，管理员无法查看</span>
           </div>
 
           <p
