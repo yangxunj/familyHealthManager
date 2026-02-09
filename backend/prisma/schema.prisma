@@ -463,6 +463,15 @@ model CustomVaccine {
   @@map("custom_vaccines")
 }
 
+/// 系统配置表（键值对存储，用于 API Key 等运行时配置）
+model SystemConfig {
+  key       String   @id @db.VarChar(100)
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("system_configs")
+}
+
 /// 定期检查项目表（每个成员自定义）
 model PeriodicCheckItem {
   id              String    @id @default(uuid())
