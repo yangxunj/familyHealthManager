@@ -7,7 +7,7 @@ import { AuthCallback } from './components/auth/AuthCallback';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import Dashboard from './pages/Dashboard';
 import Members from './pages/Members';
-import { DocumentList, DocumentUpload, DocumentDetail } from './pages/Documents';
+import { DocumentList, DocumentDetail } from './pages/Documents';
 import { RecordList, RecordAdd, RecordTrend } from './pages/Records';
 import { AdvicePage } from './pages/Advice';
 import { ChatPage } from './pages/Chat';
@@ -70,7 +70,6 @@ function App() {
           <Route path="members/*" element={<Members />} />
           <Route path="documents">
             <Route index element={<DocumentList />} />
-            <Route path="upload" element={<DocumentUpload />} />
             <Route path=":id" element={<DocumentDetail />} />
           </Route>
           <Route path="records">
