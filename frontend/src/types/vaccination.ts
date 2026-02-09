@@ -67,6 +67,7 @@ export interface VaccineSchedule {
   childVaccines: RecommendedVaccine[];
   adultVaccines: RecommendedVaccine[];
   elderlyVaccines: RecommendedVaccine[];
+  customVaccines: RecommendedVaccine[];
   customRecords: Array<{
     id: string;
     vaccineName: string;
@@ -74,6 +75,26 @@ export interface VaccineSchedule {
     totalDoses: number | null;
     vaccinatedAt: string;
   }>;
+}
+
+// 自定义疫苗类型
+export interface CustomVaccine {
+  id: string;
+  familyId: string;
+  name: string;
+  frequency: string;
+  totalDoses: number;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// 创建自定义疫苗请求
+export interface CreateCustomVaccineRequest {
+  name: string;
+  frequency: string;
+  totalDoses?: number;
+  description?: string;
 }
 
 // 家庭接种概览

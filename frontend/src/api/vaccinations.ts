@@ -7,6 +7,8 @@ import type {
   CreateVaccineRecordRequest,
   UpdateVaccineRecordRequest,
   SkipVaccineRequest,
+  CustomVaccine,
+  CreateCustomVaccineRequest,
 } from '../types/vaccination';
 
 export const vaccinationsApi = {
@@ -59,5 +61,20 @@ export const vaccinationsApi = {
   // 取消跳过疫苗
   unskipVaccine: async (id: string): Promise<{ success: boolean }> => {
     return apiClient.delete(`/vaccinations/skip/${id}`);
+  },
+
+  // 创建自定义疫苗类型
+  createCustomVaccine: async (data: CreateCustomVaccineRequest): Promise<CustomVaccine> => {
+    return apiClient.post('/vaccinations/custom', data);
+  },
+
+  // 获取自定义疫苗类型列表
+  getCustomVaccines: async (): Promise<CustomVaccine[]> => {
+    return apiClient.get('/vaccinations/custom');
+  },
+
+  // 删除自定义疫苗类型
+  deleteCustomVaccine: async (id: string): Promise<{ success: boolean }> => {
+    return apiClient.delete(`/vaccinations/custom/${id}`);
   },
 };
