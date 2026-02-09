@@ -28,7 +28,7 @@ services:
       DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-admin}@db:5432/familyHealthManager?schema=public&client_encoding=utf8
       STORAGE_MODE: local
       LOCAL_STORAGE_PATH: ./uploads
-      CORS_ORIGIN: http://localhost:5174,https://health.toycloudhk.online
+      CORS_ORIGIN: http://localhost:5180,https://health.toycloudhk.online
     volumes:
       - uploads:/app/uploads
 
@@ -41,7 +41,7 @@ services:
         VITE_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
     restart: unless-stopped
     ports:
-      - "5174:80"
+      - "5180:80"
     depends_on:
       - backend
 
