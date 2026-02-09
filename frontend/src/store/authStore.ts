@@ -19,6 +19,7 @@ interface AuthState {
 
   initialize: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  signInWithMagicLink: (email: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
   getAccessToken: () => string | null;
   loadFamily: () => Promise<void>;
@@ -114,6 +115,31 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (error) {
       console.error('Sign in error:', error);
       set({ isLoading: false });
+    }
+  },
+
+  signInWithMagicLink: async (email: string) => {
+    if (!supabase) return { success: false, error: 'Auth not enabled' };
+
+    set({ isLoading: true });
+
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: true,
+        },
+      });
+
+      set({ isLoading: false });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+      return { success: true };
+    } catch (error: any) {
+      set({ isLoading: false });
+      return { success: false, error: error.message || 'Failed to send code' };
     }
   },
 
