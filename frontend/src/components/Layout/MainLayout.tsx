@@ -22,10 +22,12 @@ import {
   MoonOutlined,
   BulbOutlined,
   MedicineBoxOutlined,
+  ApiOutlined,
 } from '@ant-design/icons';
 import { useAuthStore, useThemeStore } from '../../store';
 import { whitelistApi } from '../../api/whitelist';
 import { WhitelistManager } from '../WhitelistManager';
+import { ApiConfigManager } from '../ApiConfigManager';
 
 const { Header, Sider, Content } = Layout;
 const { useBreakpoint } = Grid;
@@ -35,6 +37,7 @@ const MainLayout: React.FC = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [whitelistModalOpen, setWhitelistModalOpen] = useState(false);
+  const [apiConfigModalOpen, setApiConfigModalOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, signOut, hasFamily, isFamilyLoaded } = useAuthStore();
@@ -134,6 +137,11 @@ const MainLayout: React.FC = () => {
             icon: <SafetyOutlined />,
             label: '白名单管理',
           },
+          {
+            key: 'api-config',
+            icon: <ApiOutlined />,
+            label: 'API 配置',
+          },
         ]
       : []),
     {
@@ -160,6 +168,8 @@ const MainLayout: React.FC = () => {
       navigate('/settings');
     } else if (e.key === 'whitelist') {
       setWhitelistModalOpen(true);
+    } else if (e.key === 'api-config') {
+      setApiConfigModalOpen(true);
     }
   };
 
@@ -338,6 +348,12 @@ const MainLayout: React.FC = () => {
       <WhitelistManager
         open={whitelistModalOpen}
         onClose={() => setWhitelistModalOpen(false)}
+      />
+
+      {/* API 配置弹窗 */}
+      <ApiConfigManager
+        open={apiConfigModalOpen}
+        onClose={() => setApiConfigModalOpen(false)}
       />
     </Layout>
   );
