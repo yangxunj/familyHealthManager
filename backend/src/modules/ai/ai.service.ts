@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { ProxyAgent, fetch as undiciFetch } from 'undici';
@@ -7,6 +7,7 @@ import * as path from 'path';
 import * as os from 'os';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
+import { SettingsService } from '../settings/settings.service';
 
 const execFileAsync = promisify(execFile);
 
@@ -71,37 +72,29 @@ export interface AiStreamChunk {
 export type AiStreamCallback = (chunk: AiStreamChunk) => void;
 
 @Injectable()
-export class AiService implements OnModuleInit {
+export class AiService {
   private readonly logger = new Logger(AiService.name);
 
   // DashScope 配置（仅 OCR 使用）
-  private readonly dashscopeApiKey: string;
   private readonly dashscopeBaseUrl = 'https://dashscope.aliyuncs.com/compatible-mode/v1';
   private readonly ocrModel = 'qwen-vl-ocr';
   private openaiClient: OpenAI | null = null;
+  private lastDashscopeKey = '';  // 缓存上次使用的 key，用于检测变化
 
-  // Google Gemini 配置（chat/advice/analyze 使用）
-  private readonly googleApiKey: string;
+  // Google Gemini 配置
   private readonly googleBaseUrl: string;
   private readonly geminiModel: string;
   private readonly proxyAgent: ProxyAgent | undefined;
 
-  constructor(private configService: ConfigService) {
-    // DashScope（OCR）
-    this.dashscopeApiKey = this.configService.get<string>('DASHSCOPE_API_KEY') || '';
-    if (!this.dashscopeApiKey) {
-      this.logger.warn('DASHSCOPE_API_KEY is not configured (OCR will be unavailable)');
-    }
-
-    // Google Gemini（chat/advice/analyze）
-    this.googleApiKey = this.configService.get<string>('GOOGLE_API_KEY') || '';
+  constructor(
+    private configService: ConfigService,
+    private settingsService: SettingsService,
+  ) {
+    // Google Gemini 静态配置（base URL、model、proxy 从环境变量读取，不会动态变化）
     this.googleBaseUrl = this.configService.get<string>('GOOGLE_API_BASE')
       || 'https://generativelanguage.googleapis.com/v1beta/openai';
     this.geminiModel = this.configService.get<string>('GEMINI_MODEL')
       || 'gemini-3-flash-preview';
-    if (!this.googleApiKey) {
-      this.logger.warn('GOOGLE_API_KEY is not configured (chat/advice will be unavailable)');
-    }
 
     // HTTP 代理（用于访问 Google API）
     const httpProxy = this.configService.get<string>('GEMINI_PROXY');
@@ -111,37 +104,47 @@ export class AiService implements OnModuleInit {
     }
   }
 
-  onModuleInit() {
-    this.initOpenAIClient();
-  }
-
-  // 初始化 OpenAI 客户端（用于 OCR，连接 DashScope）
-  private initOpenAIClient(): boolean {
-    if (!this.dashscopeApiKey) {
-      this.logger.warn('无法初始化 OCR 客户端：DASHSCOPE_API_KEY 未配置');
-      return false;
+  /**
+   * 获取或重建 OpenAI 客户端（惰性初始化，Key 变化时重建）
+   */
+  private async getOpenAIClient(): Promise<OpenAI | null> {
+    const key = await this.settingsService.getEffectiveDashscopeKey();
+    if (!key) {
+      this.openaiClient = null;
+      this.lastDashscopeKey = '';
+      return null;
     }
-
+    // Key 未变化，复用已有客户端
+    if (this.openaiClient && key === this.lastDashscopeKey) {
+      return this.openaiClient;
+    }
+    // Key 变化了或首次创建
     try {
       this.openaiClient = new OpenAI({
-        apiKey: this.dashscopeApiKey,
+        apiKey: key,
         baseURL: this.dashscopeBaseUrl,
       });
-      this.logger.log('OpenAI 客户端初始化成功');
-      return true;
+      this.lastDashscopeKey = key;
+      this.logger.log('OpenAI 客户端已（重新）初始化');
+      return this.openaiClient;
     } catch (error) {
       this.logger.error('OpenAI 客户端初始化失败', error);
       this.openaiClient = null;
-      return false;
+      this.lastDashscopeKey = '';
+      return null;
     }
   }
 
-  // 检查 AI 服务是否可用（Google Gemini）
-  isConfigured(): boolean {
-    return !!this.googleApiKey;
+  /**
+   * 检查 AI 服务是否可用（至少有一个 API Key）
+   */
+  async isConfigured(): Promise<boolean> {
+    const googleKey = await this.settingsService.getEffectiveGoogleKey();
+    const dashscopeKey = await this.settingsService.getEffectiveDashscopeKey();
+    return !!(googleKey || dashscopeKey);
   }
 
-  // 调用 Google Gemini API（OpenAI 兼容端点）
+  // 调用 AI API（根据配置选择 Google Gemini 或 DashScope）
   async chat(
     messages: ChatMessage[],
     options?: {
@@ -152,10 +155,38 @@ export class AiService implements OnModuleInit {
       jsonSchema?: object; // 可选：指定 JSON Schema 约束输出结构
     },
   ): Promise<AiCompletionResult> {
-    if (!this.googleApiKey) {
-      throw new Error('GOOGLE_API_KEY is not configured');
+    const googleKey = await this.settingsService.getEffectiveGoogleKey();
+    const dashscopeKey = await this.settingsService.getEffectiveDashscopeKey();
+    const aiProvider = await this.settingsService.getAiProvider();
+
+    // 决定使用哪个 provider
+    const useGoogle = aiProvider === 'google'
+      || (aiProvider === 'auto' && !!googleKey)
+      || (aiProvider !== 'alibaba' && !!googleKey);
+
+    if (useGoogle && googleKey) {
+      return this.chatWithGemini(messages, googleKey, options);
     }
 
+    if (dashscopeKey) {
+      return this.chatWithDashscope(messages, dashscopeKey, options);
+    }
+
+    throw new Error('未配置任何 AI 服务的 API Key');
+  }
+
+  // 使用 Google Gemini API
+  private async chatWithGemini(
+    messages: ChatMessage[],
+    apiKey: string,
+    options?: {
+      model?: string;
+      temperature?: number;
+      maxTokens?: number;
+      jsonMode?: boolean;
+      jsonSchema?: object;
+    },
+  ): Promise<AiCompletionResult> {
     const model = options?.model || this.geminiModel;
 
     // 构建请求体
@@ -189,7 +220,7 @@ export class AiService implements OnModuleInit {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.googleApiKey}`,
+          Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify(requestBody),
         signal: AbortSignal.timeout(600_000), // 10 分钟超时（大文本 AI 规整可能较慢）
@@ -222,7 +253,75 @@ export class AiService implements OnModuleInit {
     }
   }
 
-  // 流式调用 Google Gemini API（OpenAI 兼容端点）
+  // 使用 DashScope（通义千问）API 进行对话
+  private async chatWithDashscope(
+    messages: ChatMessage[],
+    apiKey: string,
+    options?: {
+      model?: string;
+      temperature?: number;
+      maxTokens?: number;
+      jsonMode?: boolean;
+      jsonSchema?: object;
+    },
+  ): Promise<AiCompletionResult> {
+    const model = options?.model || 'qwen-plus';
+
+    const requestBody: Record<string, unknown> = {
+      model,
+      messages,
+      temperature: options?.temperature ?? 0.7,
+      max_tokens: options?.maxTokens ?? 2000,
+    };
+
+    if (options?.jsonSchema) {
+      requestBody.response_format = {
+        type: 'json_schema',
+        json_schema: {
+          name: 'response',
+          strict: true,
+          schema: options.jsonSchema,
+        },
+      };
+    } else if (options?.jsonMode) {
+      requestBody.response_format = { type: 'json_object' };
+    }
+
+    try {
+      this.logger.log(`DashScope chat: model=${model}, messages=${messages.length}`);
+
+      const response = await undiciFetch(`${this.dashscopeBaseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(requestBody),
+        signal: AbortSignal.timeout(600_000),
+      });
+
+      this.logger.log(`DashScope chat response: status=${response.status}`);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        this.logger.error(`DashScope API error: ${response.status} - ${errorText}`);
+        throw new Error(`AI service error: ${response.status}`);
+      }
+
+      const data = (await response.json()) as any;
+      const content = data.choices?.[0]?.message?.content || '';
+      const tokensUsed = data.usage?.total_tokens || 0;
+
+      this.logger.log(`DashScope chat completed: contentLen=${content.length}, tokens=${tokensUsed}`);
+
+      return { content, tokensUsed, model };
+    } catch (error) {
+      this.logger.error(`Failed to call DashScope API: ${(error as Error).message}`);
+      throw error;
+    }
+  }
+
+  // 流式调用 AI API（根据配置选择 Google Gemini 或 DashScope）
   async chatStream(
     messages: ChatMessage[],
     onChunk: AiStreamCallback,
@@ -232,20 +331,41 @@ export class AiService implements OnModuleInit {
       maxTokens?: number;
     },
   ): Promise<void> {
-    if (!this.googleApiKey) {
-      throw new Error('GOOGLE_API_KEY is not configured');
+    const googleKey = await this.settingsService.getEffectiveGoogleKey();
+    const dashscopeKey = await this.settingsService.getEffectiveDashscopeKey();
+    const aiProvider = await this.settingsService.getAiProvider();
+
+    const useGoogle = aiProvider === 'google'
+      || (aiProvider === 'auto' && !!googleKey)
+      || (aiProvider !== 'alibaba' && !!googleKey);
+
+    let apiKey: string;
+    let baseUrl: string;
+    let model: string;
+    let dispatcher: ProxyAgent | undefined;
+
+    if (useGoogle && googleKey) {
+      apiKey = googleKey;
+      baseUrl = this.googleBaseUrl;
+      model = options?.model || this.geminiModel;
+      dispatcher = this.proxyAgent;
+    } else if (dashscopeKey) {
+      apiKey = dashscopeKey;
+      baseUrl = this.dashscopeBaseUrl;
+      model = options?.model || 'qwen-plus';
+      dispatcher = undefined;
+    } else {
+      throw new Error('未配置任何 AI 服务的 API Key');
     }
 
-    const model = options?.model || this.geminiModel;
-
     try {
-      this.logger.log(`Gemini stream: model=${model}, messages=${messages.length}`);
+      this.logger.log(`AI stream: baseUrl=${baseUrl}, model=${model}, messages=${messages.length}`);
 
-      const response = await undiciFetch(`${this.googleBaseUrl}/chat/completions`, {
+      const response = await undiciFetch(`${baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.googleApiKey}`,
+          Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
           model,
@@ -254,15 +374,15 @@ export class AiService implements OnModuleInit {
           max_tokens: options?.maxTokens ?? 2000,
           stream: true,
         }),
-        signal: AbortSignal.timeout(180_000), // 3 分钟超时（聊天对话）
-        ...(this.proxyAgent ? { dispatcher: this.proxyAgent } : {}),
+        signal: AbortSignal.timeout(180_000),
+        ...(dispatcher ? { dispatcher } : {}),
       });
 
-      this.logger.log(`Gemini stream response: status=${response.status}`);
+      this.logger.log(`AI stream response: status=${response.status}`);
 
       if (!response.ok) {
         const errorText = await response.text();
-        this.logger.error(`Gemini API error: ${response.status} - ${errorText}`);
+        this.logger.error(`AI API error: ${response.status} - ${errorText}`);
         throw new Error(`AI service error: ${response.status}`);
       }
 
@@ -313,7 +433,7 @@ export class AiService implements OnModuleInit {
       // 确保发送结束信号
       onChunk({ content: '', done: true, tokensUsed: totalTokens });
     } catch (error) {
-      this.logger.error('Failed to call Gemini streaming API', error);
+      this.logger.error('Failed to call AI streaming API', error);
       throw error;
     }
   }
@@ -682,11 +802,12 @@ ${healthData.documentContent ? `## 健康文档详细内容\n${healthData.docume
 
   // OCR 图片识别
   async recognizeImage(imageUrl: string): Promise<OcrResult> {
-    if (!this.openaiClient) {
+    const client = await this.getOpenAIClient();
+    if (!client) {
       return {
         success: false,
         text: '',
-        error: 'OpenAI 客户端未初始化',
+        error: 'DashScope API Key 未配置，OCR 不可用',
       };
     }
 
@@ -697,7 +818,7 @@ ${healthData.documentContent ? `## 健康文档详细内容\n${healthData.docume
       const processedUrl = await this.imagePathToBase64(imageUrl);
       this.logger.log('图片已转换为 base64 格式');
 
-      const response = await this.openaiClient.chat.completions.create({
+      const response = await client.chat.completions.create({
         model: this.ocrModel,
         messages: [
           {

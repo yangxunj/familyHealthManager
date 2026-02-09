@@ -481,7 +481,7 @@ ${adviceSection}
     onChunk: AiStreamCallback,
   ) {
     // 检查 AI 服务是否配置
-    if (!this.aiService.isConfigured()) {
+    if (!(await this.aiService.isConfigured())) {
       throw new BadRequestException('AI 服务未配置，请联系管理员');
     }
 
