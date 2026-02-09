@@ -490,7 +490,9 @@ const DocumentList: React.FC = () => {
         open={uploadOpen}
         onCancel={handleUploadClose}
         footer={null}
-        width={600}
+        width={isMobile ? '100%' : 600}
+        style={isMobile ? { top: 0, margin: 0, maxWidth: '100vw', paddingBottom: 0 } : undefined}
+        styles={isMobile ? { body: { maxHeight: 'calc(100dvh - 55px)', overflowY: 'auto' } } : undefined}
         destroyOnClose
       >
         <Form form={uploadForm} layout="vertical" onFinish={handleUploadSubmit} style={{ marginTop: 16 }}>
