@@ -14,7 +14,7 @@ export function AuthCallback() {
   const navigate = useNavigate();
 
   // Verify whitelist and navigate accordingly
-  const verifyAndNavigate = async (session: NonNullable<Parameters<Parameters<typeof supabase.auth.onAuthStateChange>[0]>[1]>) => {
+  const verifyAndNavigate = async (session: NonNullable<Parameters<Parameters<NonNullable<typeof supabase>['auth']['onAuthStateChange']>[0]>[1]>) => {
     useAuthStore.setState({
       session,
       user: session.user,

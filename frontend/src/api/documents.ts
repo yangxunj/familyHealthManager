@@ -5,7 +5,6 @@ import type {
   UpdateDocumentRequest,
   QueryDocumentParams,
   FileInfo,
-  DocumentParseResult,
   OcrSseEvent,
   AnalyzeStartResult,
   AnalyzeStatusResult,

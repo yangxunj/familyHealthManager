@@ -29,12 +29,11 @@ import {
   DatabaseOutlined,
   MessageOutlined,
   EyeOutlined,
-  DeleteOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { adviceApi, membersApi, chatApi } from '../../api';
-import type { HealthAdvice, Concern, Suggestion, ActionItem, AdviceSessionStats, ChatSession } from '../../types';
+import type { HealthAdvice, Concern, Suggestion, ActionItem } from '../../types';
 import {
   ConcernLevelConfig,
   ActionPriorityConfig,

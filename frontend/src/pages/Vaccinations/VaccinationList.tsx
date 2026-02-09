@@ -343,8 +343,6 @@ function StatusGroup({
 function VaccineCategory({
   title,
   vaccines,
-  memberId,
-  memberName,
   onDelete,
   onQuickAdd,
   onSkip,
@@ -352,8 +350,6 @@ function VaccineCategory({
 }: {
   title: string;
   vaccines: RecommendedVaccine[];
-  memberId: string;
-  memberName: string;
   onDelete: (id: string) => void;
   onQuickAdd: (vaccine: RecommendedVaccine) => void;
   onSkip: (vaccine: RecommendedVaccine) => void;
@@ -570,8 +566,7 @@ export default function VaccinationList() {
               <VaccineCategory
                 title="儿童计划免疫"
                 vaccines={schedule.childVaccines}
-                memberId={selectedMemberId}
-                memberName={schedule.memberName}
+
                 onDelete={handleDelete}
                 onQuickAdd={handleQuickAdd}
                 onSkip={handleSkip}
@@ -582,8 +577,7 @@ export default function VaccinationList() {
               <VaccineCategory
                 title="成人疫苗"
                 vaccines={schedule.adultVaccines}
-                memberId={selectedMemberId}
-                memberName={schedule.memberName}
+
                 onDelete={handleDelete}
                 onQuickAdd={handleQuickAdd}
                 onSkip={handleSkip}
@@ -594,8 +588,7 @@ export default function VaccinationList() {
               <VaccineCategory
                 title="老年人疫苗"
                 vaccines={schedule.elderlyVaccines}
-                memberId={selectedMemberId}
-                memberName={schedule.memberName}
+
                 onDelete={handleDelete}
                 onQuickAdd={handleQuickAdd}
                 onSkip={handleSkip}

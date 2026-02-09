@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { Button, Input, Spin, Grid, message } from 'antd';
+import { Button, Input, Spin, Grid } from 'antd';
 import { GoogleOutlined, HeartOutlined, LockOutlined, MailOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { useAuthStore } from '../../store';
 import { isAuthEnabled, supabase } from '../../lib/supabase';

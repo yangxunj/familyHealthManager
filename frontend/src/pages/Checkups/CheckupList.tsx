@@ -34,7 +34,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { checkupsApi, membersApi } from '../../api';
-import type { CheckItemWithStatus, CheckTemplate, CheckRecord } from '../../types/checkup';
+import type { CheckItemWithStatus, CheckTemplate } from '../../types/checkup';
 import styles from './Checkups.module.css';
 
 const { Title, Text } = Typography;
