@@ -46,7 +46,7 @@ export default function VaccinationAdd() {
       message.success('接种记录添加成功');
       queryClient.invalidateQueries({ queryKey: ['vaccination-schedule'] });
       queryClient.invalidateQueries({ queryKey: ['vaccination-summary'] });
-      navigate('/vaccinations');
+      navigate('/health-plan/vaccinations');
     },
     onError: (error: Error) => {
       message.error(error.message || '添加失败');
@@ -88,7 +88,7 @@ export default function VaccinationAdd() {
         <Button
           type="text"
           icon={<ArrowLeftOutlined />}
-          onClick={() => navigate('/vaccinations')}
+          onClick={() => navigate('/health-plan/vaccinations')}
         >
           返回
         </Button>
@@ -247,7 +247,7 @@ export default function VaccinationAdd() {
 
           {/* 操作按钮 */}
           <div className={styles.formActions}>
-            <Button onClick={() => navigate('/vaccinations')}>
+            <Button onClick={() => navigate('/health-plan/vaccinations')}>
               取消
             </Button>
             <Button

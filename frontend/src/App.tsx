@@ -12,10 +12,9 @@ import { RecordList, RecordAdd, RecordTrend } from './pages/Records';
 import { AdvicePage } from './pages/Advice';
 import { ChatPage } from './pages/Chat';
 import FamilyPage from './pages/Family';
-import VaccinationsPage from './pages/Vaccinations';
+import HealthPlanPage from './pages/HealthPlan';
 import VaccinationList from './pages/Vaccinations/VaccinationList';
 import VaccinationAdd from './pages/Vaccinations/VaccinationAdd';
-import CheckupsPage from './pages/Checkups';
 import CheckupList from './pages/Checkups/CheckupList';
 import { useAuthStore } from './store';
 
@@ -81,12 +80,11 @@ function App() {
           </Route>
           <Route path="advice" element={<AdvicePage />} />
           <Route path="chat" element={<ChatPage />} />
-          <Route path="vaccinations" element={<VaccinationsPage />}>
-            <Route index element={<VaccinationList />} />
-            <Route path="add" element={<VaccinationAdd />} />
-          </Route>
-          <Route path="checkups" element={<CheckupsPage />}>
-            <Route index element={<CheckupList />} />
+          <Route path="health-plan" element={<HealthPlanPage />}>
+            <Route index element={<Navigate to="/health-plan/vaccinations" replace />} />
+            <Route path="vaccinations" element={<VaccinationList />} />
+            <Route path="vaccinations/add" element={<VaccinationAdd />} />
+            <Route path="checkups" element={<CheckupList />} />
           </Route>
           <Route path="family" element={<FamilyPage />} />
           <Route path="settings" element={<div>设置（待开发）</div>} />

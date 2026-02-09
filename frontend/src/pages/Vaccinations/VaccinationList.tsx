@@ -514,7 +514,7 @@ export default function VaccinationList() {
         <Button
           type="primary"
           icon={<PlusOutlined />}
-          onClick={() => navigate('/vaccinations/add')}
+          onClick={() => navigate('/health-plan/vaccinations/add')}
         >
           添加记录
         </Button>
