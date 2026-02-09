@@ -22,6 +22,7 @@ import { WhitelistModule } from './modules/whitelist/whitelist.module';
 import { FamilyModule } from './modules/family/family.module';
 import { VaccinationModule } from './modules/vaccination/vaccination.module';
 import { CheckupsModule } from './modules/checkups/checkups.module';
+import { SettingsModule } from './modules/settings/settings.module';
 import { SupabaseAuthGuard } from './modules/auth/guards/supabase-auth.guard';
 
 @Module({
@@ -73,6 +74,7 @@ import { SupabaseAuthGuard } from './modules/auth/guards/supabase-auth.guard';
     FamilyModule,
     VaccinationModule,
     CheckupsModule,
+    SettingsModule,
   ],
   controllers: [AppController],
   providers: [
