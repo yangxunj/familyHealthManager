@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Button, Input, Spin, Grid, message } from 'antd';
 import { GoogleOutlined, HeartOutlined, LockOutlined, MailOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { useAuthStore } from '../../store';
@@ -11,8 +11,12 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { signInWithGoogle, signInWithMagicLink, isLoading, isAuthenticated, isInitialized } = useAuthStore();
+  const [searchParams] = useSearchParams();
   const screens = useBreakpoint();
   const isMobile = !screens.md;
+
+  // Check for forbidden error from AuthCallback
+  const forbiddenError = searchParams.get('error') === 'forbidden';
 
   // Email OTP state
   const [email, setEmail] = useState('');
@@ -282,6 +286,21 @@ const Login: React.FC = () => {
           }}>
             管理您和家人的健康数据
           </p>
+
+          {/* 白名单拒绝提示 */}
+          {forbiddenError && (
+            <div style={{
+              padding: '10px 16px',
+              marginBottom: 16,
+              background: '#fff2f0',
+              border: '1px solid #ffccc7',
+              borderRadius: 8,
+              color: '#ff4d4f',
+              fontSize: 14,
+            }}>
+              您的账号未被授权访问此系统，请联系管理员添加白名单
+            </div>
+          )}
 
           {/* 错误提示 */}
           {otpError && (

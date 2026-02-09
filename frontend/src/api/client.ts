@@ -107,6 +107,15 @@ apiClient.interceptors.response.use(
 
       switch (status) {
         case 403:
+          // Check if this is a whitelist rejection
+          if (errorMessage.includes('not in the allowed list')) {
+            // Sign out and redirect to login with forbidden error
+            if (supabase) {
+              supabase.auth.signOut().catch(console.error);
+            }
+            window.location.href = '/login?error=forbidden';
+            return Promise.reject(error);
+          }
           message.error('没有权限执行此操作');
           break;
         case 404:
