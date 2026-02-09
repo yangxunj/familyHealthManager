@@ -8,7 +8,7 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import Dashboard from './pages/Dashboard';
 import Members from './pages/Members';
 import { DocumentList, DocumentDetail } from './pages/Documents';
-import { RecordList, RecordAdd, RecordTrend } from './pages/Records';
+import { RecordList, RecordTrend } from './pages/Records';
 import { AdvicePage } from './pages/Advice';
 import { ChatPage } from './pages/Chat';
 import FamilyPage from './pages/Family';
@@ -74,7 +74,6 @@ function App() {
           </Route>
           <Route path="records">
             <Route index element={<RecordList />} />
-            <Route path="add" element={<RecordAdd />} />
             <Route path="trend" element={<RecordTrend />} />
           </Route>
           <Route path="advice" element={<AdvicePage />} />
