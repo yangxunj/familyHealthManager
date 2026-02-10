@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     port: 5174,
     strictPort: true, // 如果端口被占用则报错，而不是自动切换端口
-    allowedHosts: ['health.toycloudhk.online', 'health_dev.toycloudhk.online'],
+    allowedHosts: ['health.toycloudhk.online', 'health-dev.toycloudhk.online'],
     proxy: {
       '/api': {
         target: 'http://localhost:5002',
