@@ -25,11 +25,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private configService: ConfigService,
     private prisma: PrismaService,
   ) {
-    const secret = configService.get<string>('SUPABASE_JWT_SECRET');
-    if (!secret) {
-      throw new Error('SUPABASE_JWT_SECRET is not defined');
+    const secret =
+      configService.get<string>('SUPABASE_JWT_SECRET') || 'lan-mode-unused';
+    const isLanMode = !configService.get<string>('SUPABASE_URL');
+    if (!isLanMode) {
+      console.log('JWT Strategy initialized with secret length:', secret.length);
+    } else {
+      console.log('JWT Strategy: LAN mode, JWT validation disabled');
     }
-    console.log('JWT Strategy initialized with secret length:', secret.length);
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,

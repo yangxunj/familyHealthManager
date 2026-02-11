@@ -112,11 +112,16 @@ const MainLayout: React.FC = () => {
         },
       ],
     },
-    {
-      key: '/family',
-      icon: <UsergroupAddOutlined />,
-      label: '家庭设置',
-    },
+    // 家庭设置仅在公网模式下显示（LAN 模式只有一个本地用户，无需家庭管理）
+    ...(isAuthEnabled
+      ? [
+          {
+            key: '/family',
+            icon: <UsergroupAddOutlined />,
+            label: '家庭设置',
+          },
+        ]
+      : []),
     {
       key: '/settings',
       icon: <SettingOutlined />,
