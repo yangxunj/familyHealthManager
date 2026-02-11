@@ -30,6 +30,7 @@ import {
   CloseCircleOutlined,
   InfoCircleOutlined,
 } from '@ant-design/icons';
+import { isAuthEnabled } from '../../lib/supabase';
 import { whitelistApi, type AllowedEmail } from '../../api/whitelist';
 import { settingsApi, type ApiConfig } from '../../api/settings';
 import dayjs from 'dayjs';
@@ -74,11 +75,16 @@ export default function SettingsPage() {
             label: <span><ApiOutlined style={{ marginRight: 6 }} />API 配置</span>,
             children: <ApiConfigSection />,
           },
-          {
-            key: 'whitelist',
-            label: <span><SafetyOutlined style={{ marginRight: 6 }} />白名单管理</span>,
-            children: <WhitelistSection />,
-          },
+          // 白名单管理仅在公网模式下显示（LAN 模式无账号登录概念）
+          ...(isAuthEnabled
+            ? [
+                {
+                  key: 'whitelist',
+                  label: <span><SafetyOutlined style={{ marginRight: 6 }} />白名单管理</span>,
+                  children: <WhitelistSection />,
+                },
+              ]
+            : []),
         ]}
       />
     </div>
