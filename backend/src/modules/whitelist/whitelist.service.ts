@@ -26,6 +26,11 @@ export class WhitelistService {
    * 检查邮箱是否是管理员（环境变量 OR 数据库 is_admin=true）
    */
   async isAdmin(email: string): Promise<boolean> {
+    // LAN 模式：所有用户都是管理员
+    if (!this.configService.get('SUPABASE_URL')) {
+      return true;
+    }
+
     if (!email) return false;
     const normalized = email.toLowerCase();
 

@@ -1,33 +1,25 @@
-# 管理员自动注册 + is_admin 持久化 - 工作计划
+# LAN 模式（免登录模式）- 工作计划
 
 ## 背景
 
-当前管理员由环境变量 ADMIN_EMAILS 指定，非技术用户难以配置。改为：首个登录用户自动成为管理员并加入白名单。保留环境变量向后兼容。
+支持两种部署模式：局域网模式（免登录）和公网模式（Supabase 认证）。通过是否配置 SUPABASE_URL 自动判断。
 
 ---
 
 ## 实施步骤
 
-### 步骤 1：数据库迁移
-1. [x] AllowedEmail 表增加 is_admin 字段
+### 步骤 1：后端 — SupabaseAuthGuard 支持 LAN 模式
+1. [x] 无 Supabase 时创建默认用户 + 默认家庭，挂载到 request
 
-### 步骤 2：修改 WhitelistService
-2. [x] isAdmin() 异步化（检查环境变量 OR 数据库 is_admin）
-3. [x] 新增 autoRegisterFirstUser()
-4. [x] 新增 syncAdminEmailsFromEnv()
+### 步骤 2：后端 — WhitelistService.isAdmin() 支持 LAN 模式
+2. [x] LAN 模式下 isAdmin() 直接返回 true
 
-### 步骤 3：修改 AdminGuard
-5. [x] canActivate 异步化
+### 步骤 3：前端 — authStore LAN 模式下加载家庭数据
+3. [x] initialize() 中 LAN 模式补充调用 loadFamily()
 
-### 步骤 4：修改 SupabaseAuthGuard
-6. [x] 注入 WhitelistService，首用户自动注册管理员
-
-### 步骤 5：WhitelistModule 启动同步
-7. [x] onModuleInit 调用 syncAdminEmailsFromEnv
-
-### 步骤 6：WhitelistController 适配
-8. [x] checkAdminStatus 中 await isAdmin
+### 步骤 4：前端 — MainLayout 适配 LAN 模式
+4. [x] 隐藏退出登录/白名单菜单，用户名显示"本地用户"
 
 ### 验证
-9. [x] TypeScript 编译零错误
-10. [ ] 功能测试通过
+5. [x] TypeScript 编译零错误
+6. [ ] 功能测试通过

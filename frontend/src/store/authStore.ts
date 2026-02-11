@@ -37,13 +37,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isFamilyLoaded: false,
 
   initialize: async () => {
-    // If auth is not enabled, mark as not authenticated
+    // LAN mode: no auth needed, but still load family data
     if (!isAuthEnabled || !supabase) {
       set({
         isLoading: false,
         isAuthenticated: false,
         isInitialized: true,
       });
+      await get().loadFamily();
       return;
     }
 

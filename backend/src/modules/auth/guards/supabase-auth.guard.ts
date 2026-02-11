@@ -35,6 +35,58 @@ export class SupabaseAuthGuard implements CanActivate {
     }
   }
 
+  private static readonly DEFAULT_USER_ID =
+    '00000000-0000-0000-0000-000000000001';
+  private static readonly DEFAULT_EMAIL = 'local@localhost';
+  private static readonly DEFAULT_NAME = '本地用户';
+
+  /**
+   * LAN 模式：创建默认本地用户和家庭，无需认证
+   */
+  private async handleLanMode(request: any): Promise<boolean> {
+    const { DEFAULT_USER_ID, DEFAULT_EMAIL, DEFAULT_NAME } =
+      SupabaseAuthGuard;
+
+    // Upsert default user
+    let user = await this.prisma.user.upsert({
+      where: { id: DEFAULT_USER_ID },
+      update: {},
+      create: {
+        id: DEFAULT_USER_ID,
+        email: DEFAULT_EMAIL,
+        name: DEFAULT_NAME,
+        passwordHash: '',
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        createdAt: true,
+        familyId: true,
+        isOwner: true,
+      },
+    });
+
+    // Auto-create default family if user has none
+    if (!user.familyId) {
+      const family = await this.prisma.family.create({
+        data: {
+          name: '我的家庭',
+          inviteCode: 'LOCAL001',
+          users: { connect: { id: DEFAULT_USER_ID } },
+        },
+      });
+      await this.prisma.user.update({
+        where: { id: DEFAULT_USER_ID },
+        data: { isOwner: true },
+      });
+      user = { ...user, familyId: family.id, isOwner: true };
+    }
+
+    request.user = user;
+    return true;
+  }
+
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // Check if route is marked as public
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
@@ -46,12 +98,12 @@ export class SupabaseAuthGuard implements CanActivate {
       return true;
     }
 
-    // If Supabase is not configured, deny access
-    if (!this.supabase) {
-      throw new UnauthorizedException('认证服务未配置');
-    }
-
     const request = context.switchToHttp().getRequest();
+
+    // LAN mode: no Supabase configured, create default local user
+    if (!this.supabase) {
+      return this.handleLanMode(request);
+    }
     const authHeader = request.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {

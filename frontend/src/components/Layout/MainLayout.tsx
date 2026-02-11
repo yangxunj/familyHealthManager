@@ -25,6 +25,7 @@ import {
   ApiOutlined,
 } from '@ant-design/icons';
 import { useAuthStore, useThemeStore } from '../../store';
+import { isAuthEnabled } from '../../lib/supabase';
 import { whitelistApi } from '../../api/whitelist';
 import { WhitelistManager } from '../WhitelistManager';
 import { ApiConfigManager } from '../ApiConfigManager';
@@ -132,11 +133,16 @@ const MainLayout: React.FC = () => {
     },
     ...(isAdmin
       ? [
-          {
-            key: 'whitelist',
-            icon: <SafetyOutlined />,
-            label: '白名单管理',
-          },
+          // 白名单管理仅在公网模式下显示（LAN 模式无需认证，白名单无意义）
+          ...(isAuthEnabled
+            ? [
+                {
+                  key: 'whitelist',
+                  icon: <SafetyOutlined />,
+                  label: '白名单管理',
+                },
+              ]
+            : []),
           {
             key: 'api-config',
             icon: <ApiOutlined />,
@@ -144,15 +150,18 @@ const MainLayout: React.FC = () => {
           },
         ]
       : []),
-    {
-      type: 'divider',
-    },
-    {
-      key: 'logout',
-      icon: <LogoutOutlined />,
-      label: '退出登录',
-      danger: true,
-    },
+    // 退出登录仅在公网模式下显示
+    ...(isAuthEnabled
+      ? [
+          { type: 'divider' as const },
+          {
+            key: 'logout',
+            icon: <LogoutOutlined />,
+            label: '退出登录',
+            danger: true,
+          },
+        ]
+      : []),
   ];
 
   const handleMenuClick: MenuProps['onClick'] = (e) => {
@@ -324,7 +333,7 @@ const MainLayout: React.FC = () => {
               onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
               >
                 <Avatar icon={<UserOutlined />} size={isMobile ? 'small' : 'default'} />
-                {!isMobile && <span>{user?.user_metadata?.full_name || user?.email || '用户'}</span>}
+                {!isMobile && <span>{isAuthEnabled ? (user?.user_metadata?.full_name || user?.email || '用户') : '本地用户'}</span>}
               </div>
             </Dropdown>
           </div>
