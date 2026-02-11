@@ -128,25 +128,14 @@ const MainLayout: React.FC = () => {
       : []),
   ];
 
-  // 用户下拉菜单
+  // 用户下拉菜单（仅公网模式使用）
   const userMenuItems: MenuProps['items'] = [
     {
-      key: 'profile',
-      icon: <UserOutlined />,
-      label: '个人信息',
+      key: 'logout',
+      icon: <LogoutOutlined />,
+      label: '退出登录',
+      danger: true,
     },
-    // 退出登录仅在公网模式下显示
-    ...(isAuthEnabled
-      ? [
-          { type: 'divider' as const },
-          {
-            key: 'logout',
-            icon: <LogoutOutlined />,
-            label: '退出登录',
-            danger: true,
-          },
-        ]
-      : []),
   ];
 
   const handleMenuClick: MenuProps['onClick'] = (e) => {
@@ -158,8 +147,6 @@ const MainLayout: React.FC = () => {
       signOut();
       message.success('已退出登录');
       navigate('/login');
-    } else if (e.key === 'profile') {
-      // TODO: 个人信息页
     }
   };
 
@@ -297,26 +284,38 @@ const MainLayout: React.FC = () => {
                 {isDark ? <SunOutlined /> : <MoonOutlined />}
               </div>
             </Tooltip>
-            <Dropdown
-              menu={{ items: userMenuItems, onClick: handleUserMenuClick }}
-              placement="bottomRight"
-            >
+            {isAuthEnabled ? (
+              <Dropdown
+                menu={{ items: userMenuItems, onClick: handleUserMenuClick }}
+                placement="bottomRight"
+              >
+                <div style={{
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '4px 12px',
+                  borderRadius: 8,
+                  transition: 'background 0.2s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <Avatar icon={<UserOutlined />} size={isMobile ? 'small' : 'default'} />
+                  {!isMobile && <span>{user?.user_metadata?.full_name || user?.email || '用户'}</span>}
+                </div>
+              </Dropdown>
+            ) : (
               <div style={{
-                cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 8,
                 padding: '4px 12px',
-                borderRadius: 8,
-                transition: 'background 0.2s',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-              >
+              }}>
                 <Avatar icon={<UserOutlined />} size={isMobile ? 'small' : 'default'} />
-                {!isMobile && <span>{isAuthEnabled ? (user?.user_metadata?.full_name || user?.email || '用户') : '本地用户'}</span>}
+                {!isMobile && <span>本地用户</span>}
               </div>
-            </Dropdown>
+            )}
           </div>
         </Header>
         <Content
