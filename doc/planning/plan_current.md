@@ -1,32 +1,33 @@
-# API 密钥管理功能 - 工作计划
+# 管理员自动注册 + is_admin 持久化 - 工作计划
 
 ## 背景
 
-管理员可在页面上配置 AI 服务的 API Key，保存到数据库，优先读取 DB 配置，回退到环境变量。
+当前管理员由环境变量 ADMIN_EMAILS 指定，非技术用户难以配置。改为：首个登录用户自动成为管理员并加入白名单。保留环境变量向后兼容。
 
 ---
 
 ## 实施步骤
 
 ### 步骤 1：数据库迁移
-1. [x] 新增 SystemConfig 表
-2. [x] 运行迁移
+1. [x] AllowedEmail 表增加 is_admin 字段
 
-### 步骤 2：后端 Settings 模块
-3. [x] 新建 settings 模块（service + controller + dto）
+### 步骤 2：修改 WhitelistService
+2. [x] isAdmin() 异步化（检查环境变量 OR 数据库 is_admin）
+3. [x] 新增 autoRegisterFirstUser()
+4. [x] 新增 syncAdminEmailsFromEnv()
 
-### 步骤 3：修改 AiService
-4. [x] 注入 SettingsService，从 DB 读取 API Key
+### 步骤 3：修改 AdminGuard
+5. [x] canActivate 异步化
 
-### 步骤 4：前端 API 层
-5. [x] 新建 settings API 和类型
+### 步骤 4：修改 SupabaseAuthGuard
+6. [x] 注入 WhitelistService，首用户自动注册管理员
 
-### 步骤 5：前端 API 配置组件
-6. [x] 新建 ApiConfigManager 组件
+### 步骤 5：WhitelistModule 启动同步
+7. [x] onModuleInit 调用 syncAdminEmailsFromEnv
 
-### 步骤 6：集成到 MainLayout
-7. [x] 添加管理员菜单项
+### 步骤 6：WhitelistController 适配
+8. [x] checkAdminStatus 中 await isAdmin
 
 ### 验证
-8. [x] TypeScript 编译零错误
-9. [ ] 功能测试通过
+9. [x] TypeScript 编译零错误
+10. [ ] 功能测试通过
