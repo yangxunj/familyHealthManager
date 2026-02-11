@@ -379,7 +379,8 @@ model AuditLog {
 model AllowedEmail {
   id            Int       @id @default(autoincrement())
   email         String    @unique @db.VarChar(255)
-  addedBy       String?   @map("added_by") @db.VarChar(255)  // 添加此邮箱的管理员
+  isAdmin       Boolean   @default(false) @map("is_admin")    // 是否是管理员
+  addedBy       String?   @map("added_by") @db.VarChar(255)   // 添加此邮箱的管理员
   createdAt     DateTime  @default(now()) @map("created_at")
 
   @@index([email])
