@@ -14,7 +14,6 @@ import {
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
-  SafetyOutlined,
   UsergroupAddOutlined,
   MenuOutlined,
   HeartOutlined,
@@ -22,13 +21,10 @@ import {
   MoonOutlined,
   BulbOutlined,
   MedicineBoxOutlined,
-  ApiOutlined,
 } from '@ant-design/icons';
 import { useAuthStore, useThemeStore } from '../../store';
 import { isAuthEnabled } from '../../lib/supabase';
 import { whitelistApi } from '../../api/whitelist';
-import { WhitelistManager } from '../WhitelistManager';
-import { ApiConfigManager } from '../ApiConfigManager';
 
 const { Header, Sider, Content } = Layout;
 const { useBreakpoint } = Grid;
@@ -37,8 +33,6 @@ const MainLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [whitelistModalOpen, setWhitelistModalOpen] = useState(false);
-  const [apiConfigModalOpen, setApiConfigModalOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, signOut, hasFamily, isFamilyLoaded } = useAuthStore();
@@ -122,11 +116,16 @@ const MainLayout: React.FC = () => {
           },
         ]
       : []),
-    {
-      key: '/settings',
-      icon: <SettingOutlined />,
-      label: '设置',
-    },
+    // 设置页仅管理员可见
+    ...(isAdmin
+      ? [
+          {
+            key: '/settings',
+            icon: <SettingOutlined />,
+            label: '系统设置',
+          },
+        ]
+      : []),
   ];
 
   // 用户下拉菜单
@@ -136,25 +135,6 @@ const MainLayout: React.FC = () => {
       icon: <UserOutlined />,
       label: '个人信息',
     },
-    ...(isAdmin
-      ? [
-          // 白名单管理仅在公网模式下显示（LAN 模式无需认证，白名单无意义）
-          ...(isAuthEnabled
-            ? [
-                {
-                  key: 'whitelist',
-                  icon: <SafetyOutlined />,
-                  label: '白名单管理',
-                },
-              ]
-            : []),
-          {
-            key: 'api-config',
-            icon: <ApiOutlined />,
-            label: 'API 配置',
-          },
-        ]
-      : []),
     // 退出登录仅在公网模式下显示
     ...(isAuthEnabled
       ? [
@@ -179,11 +159,7 @@ const MainLayout: React.FC = () => {
       message.success('已退出登录');
       navigate('/login');
     } else if (e.key === 'profile') {
-      navigate('/settings');
-    } else if (e.key === 'whitelist') {
-      setWhitelistModalOpen(true);
-    } else if (e.key === 'api-config') {
-      setApiConfigModalOpen(true);
+      // TODO: 个人信息页
     }
   };
 
@@ -357,18 +333,6 @@ const MainLayout: React.FC = () => {
           <Outlet />
         </Content>
       </Layout>
-
-      {/* 白名单管理弹窗 */}
-      <WhitelistManager
-        open={whitelistModalOpen}
-        onClose={() => setWhitelistModalOpen(false)}
-      />
-
-      {/* API 配置弹窗 */}
-      <ApiConfigManager
-        open={apiConfigModalOpen}
-        onClose={() => setApiConfigModalOpen(false)}
-      />
     </Layout>
   );
 };

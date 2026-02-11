@@ -15,6 +15,7 @@ import FamilyPage from './pages/Family';
 import HealthPlanPage from './pages/HealthPlan';
 import VaccinationList from './pages/Vaccinations/VaccinationList';
 import CheckupList from './pages/Checkups/CheckupList';
+import SettingsPage from './pages/Settings';
 import { useAuthStore } from './store';
 
 function RequireFamily({ children }: { children: React.ReactNode }) {
@@ -83,7 +84,7 @@ function App() {
             <Route path="checkups" element={<CheckupList />} />
           </Route>
           <Route path="family" element={<FamilyPage />} />
-          <Route path="settings" element={<div>设置（待开发）</div>} />
+          <Route path="settings" element={<SettingsPage />} />
         </Route>
 
         {/* Catch all - redirect to home */}
