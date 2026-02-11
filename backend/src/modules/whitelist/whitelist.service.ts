@@ -1,18 +1,20 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../common/prisma/prisma.service';
 
 @Injectable()
 export class WhitelistService {
+  private readonly logger = new Logger(WhitelistService.name);
+
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService,
   ) {}
 
   /**
-   * 获取管理员邮箱列表
+   * 获取环境变量中配置的管理员邮箱列表
    */
-  getAdminEmails(): string[] {
+  getAdminEmailsFromEnv(): string[] {
     const adminEmails = this.configService.get<string>('ADMIN_EMAILS') || '';
     return adminEmails
       .split(',')
@@ -21,11 +23,24 @@ export class WhitelistService {
   }
 
   /**
-   * 检查邮箱是否是管理员
+   * 检查邮箱是否是管理员（环境变量 OR 数据库 is_admin=true）
    */
-  isAdmin(email: string): boolean {
+  async isAdmin(email: string): Promise<boolean> {
     if (!email) return false;
-    return this.getAdminEmails().includes(email.toLowerCase());
+    const normalized = email.toLowerCase();
+
+    // 1. 检查环境变量
+    if (this.getAdminEmailsFromEnv().includes(normalized)) {
+      return true;
+    }
+
+    // 2. 检查数据库
+    const record = await this.prisma.allowedEmail.findUnique({
+      where: { email: normalized },
+      select: { isAdmin: true },
+    });
+
+    return record?.isAdmin === true;
   }
 
   /**
@@ -91,7 +106,7 @@ export class WhitelistService {
     const normalizedEmail = email.toLowerCase().trim();
 
     // 检查是否是管理员邮箱
-    if (this.isAdmin(normalizedEmail)) {
+    if (await this.isAdmin(normalizedEmail)) {
       throw new ConflictException('不能从白名单中移除管理员邮箱');
     }
 
@@ -109,34 +124,50 @@ export class WhitelistService {
   }
 
   /**
-   * 从环境变量初始化白名单（首次启动时）
+   * 首个用户自动注册为管理员（白名单为空时触发）
    */
-  async initFromEnv() {
+  async autoRegisterFirstUser(email: string): Promise<boolean> {
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // 再次确认白名单为空（防止并发）
     const count = await this.prisma.allowedEmail.count();
-    if (count > 0) return; // 已有数据，不初始化
+    if (count > 0) return false;
 
-    const initialEmails =
-      this.configService.get<string>('INITIAL_WHITELIST_EMAILS') || '';
-    const emails = initialEmails
-      .split(',')
-      .map((e) => e.trim().toLowerCase())
-      .filter((e) => e);
-
-    // 同时添加管理员邮箱
-    const adminEmails = this.getAdminEmails();
-    const allEmails = [...new Set([...emails, ...adminEmails])];
-
-    for (const email of allEmails) {
-      try {
-        await this.prisma.allowedEmail.create({
-          data: {
-            email,
-            addedBy: 'system',
-          },
-        });
-      } catch {
-        // 忽略重复错误
-      }
+    try {
+      await this.prisma.allowedEmail.create({
+        data: {
+          email: normalizedEmail,
+          isAdmin: true,
+          addedBy: 'system:first-user',
+        },
+      });
+      this.logger.log(`首个用户 ${normalizedEmail} 已自动注册为管理员`);
+      return true;
+    } catch {
+      // 可能因并发导致唯一约束冲突，忽略
+      return false;
     }
+  }
+
+  /**
+   * 启动时同步环境变量中的管理员邮箱到白名单
+   */
+  async syncAdminEmailsFromEnv() {
+    const adminEmails = this.getAdminEmailsFromEnv();
+    if (adminEmails.length === 0) return;
+
+    for (const email of adminEmails) {
+      await this.prisma.allowedEmail.upsert({
+        where: { email },
+        update: { isAdmin: true },
+        create: {
+          email,
+          isAdmin: true,
+          addedBy: 'system:env',
+        },
+      });
+    }
+
+    this.logger.log(`已从环境变量同步 ${adminEmails.length} 个管理员邮箱到白名单`);
   }
 }
