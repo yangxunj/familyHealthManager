@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Card,
+  Tabs,
   Form,
   Input,
   Radio,
@@ -34,7 +34,7 @@ import { whitelistApi, type AllowedEmail } from '../../api/whitelist';
 import { settingsApi, type ApiConfig } from '../../api/settings';
 import dayjs from 'dayjs';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 export default function SettingsPage() {
   const navigate = useNavigate();
@@ -67,11 +67,20 @@ export default function SettingsPage() {
 
   return (
     <div style={{ maxWidth: 800, margin: '0 auto' }}>
-      <Title level={4} style={{ marginBottom: 24 }}>系统设置</Title>
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
-        <ApiConfigSection />
-        <WhitelistSection />
-      </Space>
+      <Tabs
+        items={[
+          {
+            key: 'api',
+            label: <span><ApiOutlined style={{ marginRight: 6 }} />API 配置</span>,
+            children: <ApiConfigSection />,
+          },
+          {
+            key: 'whitelist',
+            label: <span><SafetyOutlined style={{ marginRight: 6 }} />白名单管理</span>,
+            children: <WhitelistSection />,
+          },
+        ]}
+      />
     </div>
   );
 }
@@ -153,11 +162,16 @@ function ApiConfigSection() {
     return <Tag icon={<CheckCircleOutlined />} color="blue">已配置（环境变量）</Tag>;
   };
 
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
+        <Spin />
+      </div>
+    );
+  }
+
   return (
-    <Card
-      title={<Space><ApiOutlined />API 配置</Space>}
-      loading={loading}
-    >
+    <div>
       <Alert
         message="配置 AI 服务的 API Key，保存后立即生效。数据库配置优先于环境变量。"
         type="info"
@@ -243,7 +257,7 @@ function ApiConfigSection() {
           <Button type="primary" onClick={handleSave} loading={saving}>保存</Button>
         </div>
       </Form>
-    </Card>
+    </div>
   );
 }
 
@@ -369,9 +383,7 @@ function WhitelistSection() {
   ];
 
   return (
-    <Card
-      title={<Space><SafetyOutlined />白名单管理</Space>}
-    >
+    <div>
       <Alert
         message="只有在白名单中的邮箱才能登录系统。如果白名单为空，则允许所有认证用户登录。"
         type="info"
@@ -412,6 +424,6 @@ function WhitelistSection() {
       <div style={{ marginTop: 16, textAlign: 'center', color: 'var(--color-text-quaternary)', fontSize: 12 }}>
         共 {emails.length} 个邮箱
       </div>
-    </Card>
+    </div>
   );
 }
