@@ -10,7 +10,7 @@ import { WhitelistService } from '../whitelist.service';
 export class AdminGuard implements CanActivate {
   constructor(private whitelistService: WhitelistService) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const user = request.user;
 
@@ -18,7 +18,7 @@ export class AdminGuard implements CanActivate {
       throw new ForbiddenException('需要管理员权限');
     }
 
-    if (!this.whitelistService.isAdmin(user.email)) {
+    if (!(await this.whitelistService.isAdmin(user.email))) {
       throw new ForbiddenException('需要管理员权限');
     }
 

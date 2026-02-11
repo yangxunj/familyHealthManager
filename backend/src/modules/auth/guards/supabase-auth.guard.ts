@@ -9,6 +9,7 @@ import { Reflector } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { PrismaService } from '../../../common/prisma/prisma.service';
+import { WhitelistService } from '../../whitelist/whitelist.service';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
 @Injectable()
@@ -19,6 +20,7 @@ export class SupabaseAuthGuard implements CanActivate {
     private reflector: Reflector,
     private configService: ConfigService,
     private prisma: PrismaService,
+    private whitelistService: WhitelistService,
   ) {
     const url = this.configService.get<string>('SUPABASE_URL');
     const serviceKey = this.configService.get<string>('SUPABASE_SERVICE_KEY');
@@ -74,8 +76,11 @@ export class SupabaseAuthGuard implements CanActivate {
       const userEmail = (supabaseUser.email || '').toLowerCase();
       const whitelistCount = await this.prisma.allowedEmail.count();
 
-      // If whitelist has entries, check if user's email is allowed
-      if (whitelistCount > 0) {
+      if (whitelistCount === 0) {
+        // 白名单为空：首个用户自动注册为管理员
+        await this.whitelistService.autoRegisterFirstUser(userEmail);
+      } else {
+        // 白名单非空：检查用户是否在白名单中
         const isAllowed = await this.prisma.allowedEmail.findUnique({
           where: { email: userEmail },
         });
