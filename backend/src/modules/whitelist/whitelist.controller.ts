@@ -59,7 +59,7 @@ export class WhitelistController {
   @Get('check-admin')
   async checkAdminStatus(@CurrentUser() user: CurrentUserData) {
     return {
-      isAdmin: this.whitelistService.isAdmin(user.email),
+      isAdmin: await this.whitelistService.isAdmin(user.email),
     };
   }
 }

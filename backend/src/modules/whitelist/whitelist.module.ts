@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, OnModuleInit } from '@nestjs/common';
 import { WhitelistController } from './whitelist.controller';
 import { WhitelistService } from './whitelist.service';
 import { AdminGuard } from './guards/admin.guard';
@@ -8,4 +8,10 @@ import { AdminGuard } from './guards/admin.guard';
   providers: [WhitelistService, AdminGuard],
   exports: [WhitelistService],
 })
-export class WhitelistModule {}
+export class WhitelistModule implements OnModuleInit {
+  constructor(private whitelistService: WhitelistService) {}
+
+  async onModuleInit() {
+    await this.whitelistService.syncAdminEmailsFromEnv();
+  }
+}
