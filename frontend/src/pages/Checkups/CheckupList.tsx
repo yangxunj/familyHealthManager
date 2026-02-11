@@ -507,7 +507,7 @@ function CheckCardItem({
         {item.status === 'pending' && (
           <>
             <Button type="primary" size="small" icon={<PlusOutlined />} onClick={() => onAddRecord(item)}>
-              完成检查
+              完成
             </Button>
             <Button size="small" icon={<StopOutlined />} onClick={() => onSkip(item)}>
               跳过
