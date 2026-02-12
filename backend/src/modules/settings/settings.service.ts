@@ -30,7 +30,7 @@ export class SettingsService {
   async getApiConfig() {
     const dashscopeKey = await this.getConfigValue(CONFIG_KEYS.DASHSCOPE_API_KEY);
     const googleKey = await this.getConfigValue(CONFIG_KEYS.GOOGLE_API_KEY);
-    const aiProvider = await this.getConfigValue(CONFIG_KEYS.AI_PROVIDER) || 'auto';
+    const aiProvider = await this.getConfigValue(CONFIG_KEYS.AI_PROVIDER) || 'google';
 
     const envDashscope = this.configService.get<string>('DASHSCOPE_API_KEY') || '';
     const envGoogle = this.configService.get<string>('GOOGLE_API_KEY') || '';
@@ -126,7 +126,7 @@ export class SettingsService {
    */
   async getAiProvider(): Promise<string> {
     const provider = await this.getConfigValue(CONFIG_KEYS.AI_PROVIDER);
-    return provider || 'auto';
+    return provider || 'google';
   }
 
   /**

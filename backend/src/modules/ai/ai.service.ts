@@ -160,11 +160,9 @@ export class AiService {
     const aiProvider = await this.settingsService.getAiProvider();
 
     // 决定使用哪个 provider
-    const useGoogle = aiProvider === 'google'
-      || (aiProvider === 'auto' && !!googleKey)
-      || (aiProvider !== 'alibaba' && !!googleKey);
+    const useGoogle = aiProvider === 'google' && !!googleKey;
 
-    if (useGoogle && googleKey) {
+    if (useGoogle) {
       // 如果调用方未指定模型，使用用户配置的模型
       if (!options?.model) {
         const effectiveModel = await this.settingsService.getEffectiveGeminiModel();
@@ -344,16 +342,14 @@ export class AiService {
     const dashscopeKey = await this.settingsService.getEffectiveDashscopeKey();
     const aiProvider = await this.settingsService.getAiProvider();
 
-    const useGoogle = aiProvider === 'google'
-      || (aiProvider === 'auto' && !!googleKey)
-      || (aiProvider !== 'alibaba' && !!googleKey);
+    const useGoogle = aiProvider === 'google' && !!googleKey;
 
     let apiKey: string;
     let baseUrl: string;
     let model: string;
     let dispatcher: ProxyAgent | undefined;
 
-    if (useGoogle && googleKey) {
+    if (useGoogle) {
       apiKey = googleKey;
       baseUrl = this.googleBaseUrl;
       model = options?.model || await this.settingsService.getEffectiveGeminiModel();

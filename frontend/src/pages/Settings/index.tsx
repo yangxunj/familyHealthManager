@@ -315,9 +315,8 @@ function ApiConfigSection() {
             >
               <Radio.Group>
                 <Space direction="vertical">
-                  <Radio value="auto">自动（优先使用 Google）</Radio>
-                  <Radio value="google">始终使用 Google Gemini</Radio>
-                  <Radio value="alibaba">始终使用阿里云（通义千问）</Radio>
+                  <Radio value="google">Google Gemini</Radio>
+                  <Radio value="alibaba">阿里云 DashScope</Radio>
                 </Space>
               </Radio.Group>
             </Form.Item>

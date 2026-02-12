@@ -11,7 +11,7 @@ export class UpdateApiConfigDto {
 
   @IsOptional()
   @IsString()
-  @IsIn(['auto', 'alibaba', 'google'])
+  @IsIn(['alibaba', 'google'])
   aiProvider?: string;
 
   @IsOptional()
