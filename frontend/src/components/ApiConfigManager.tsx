@@ -155,7 +155,7 @@ export const ApiConfigManager: React.FC<ApiConfigManagerProps> = ({
 
       <Form form={form} layout="vertical">
         {/* 阿里云 DashScope */}
-        <Divider orientation="left" plain>
+        <Divider titlePlacement="left" plain>
           <Space>
             <CloudOutlined />
             阿里云 DashScope
@@ -197,7 +197,7 @@ export const ApiConfigManager: React.FC<ApiConfigManagerProps> = ({
         </Form.Item>
 
         {/* Google Gemini */}
-        <Divider orientation="left" plain>
+        <Divider titlePlacement="left" plain>
           <Space>
             <GoogleOutlined />
             Google Gemini
@@ -241,7 +241,7 @@ export const ApiConfigManager: React.FC<ApiConfigManagerProps> = ({
         {/* AI 服务偏好 - 仅当两个都有时显示 */}
         {config?.hasDashscope && config?.hasGoogle && (
           <>
-            <Divider orientation="left" plain>
+            <Divider titlePlacement="left" plain>
               AI 服务偏好
             </Divider>
             <Form.Item

@@ -218,7 +218,7 @@ function ApiConfigSection() {
       />
 
       <Form form={form} layout="vertical">
-        <Divider orientation="left" plain>
+        <Divider titlePlacement="left" plain>
           <Space><CloudOutlined />阿里云 DashScope</Space>
         </Divider>
 
@@ -263,7 +263,7 @@ function ApiConfigSection() {
           </Form.Item>
         )}
 
-        <Divider orientation="left" plain>
+        <Divider titlePlacement="left" plain>
           <Space><GoogleOutlined />Google Gemini</Space>
         </Divider>
 
@@ -308,7 +308,7 @@ function ApiConfigSection() {
 
         {config?.hasDashscope && config?.hasGoogle && (
           <>
-            <Divider orientation="left" plain>AI 服务偏好</Divider>
+            <Divider titlePlacement="left" plain>AI 服务偏好</Divider>
             <Form.Item
               name="aiProvider"
               label="非 OCR 的 AI 服务（健康建议、健康咨询、AI 规整）使用哪个提供商？"
