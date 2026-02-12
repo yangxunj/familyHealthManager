@@ -311,7 +311,7 @@ function ApiConfigSection() {
             <Divider orientation="left" plain>AI 服务偏好</Divider>
             <Form.Item
               name="aiProvider"
-              label="非 OCR 的 AI 服务（健康建议、健康咨询）使用哪个提供商？"
+              label="非 OCR 的 AI 服务（健康建议、健康咨询、AI 规整）使用哪个提供商？"
             >
               <Radio.Group>
                 <Space direction="vertical">
