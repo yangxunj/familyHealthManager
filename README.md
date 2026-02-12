@@ -33,7 +33,64 @@ A full-stack family health management platform with AI-powered health insights, 
 | Auth | Supabase (OAuth & OTP) — optional in LAN mode |
 | Deploy | Docker Compose |
 
-## Quick Start / 快速开始
+---
+
+## Quick Start with Docker / Docker 快速部署
+
+The easiest way to get started. Only [Docker](https://www.docker.com/products/docker-desktop/) is required.
+
+最简单的部署方式，只需要安装 [Docker](https://www.docker.com/products/docker-desktop/)。
+
+### 1. Download / 下载部署文件
+
+```bash
+mkdir family-health && cd family-health
+curl -O https://raw.githubusercontent.com/yangxunj/familyHealthManager/main/deploy/docker-compose.yml
+curl -O https://raw.githubusercontent.com/yangxunj/familyHealthManager/main/deploy/.env.example
+```
+
+### 2. Configure / 配置
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and fill in at minimum:
+
+编辑 `.env`，至少填写以下两项：
+
+- `DB_PASSWORD` — Change to a secure password / 修改为安全的数据库密码
+- `DASHSCOPE_API_KEY` — Get from [Alibaba Cloud DashScope](https://dashscope.console.aliyun.com/) / 从[阿里云百炼](https://dashscope.console.aliyun.com/)获取
+
+### 3. Start / 启动
+
+```bash
+docker compose up -d
+```
+
+Open http://localhost:5180 in your browser. Done!
+
+浏览器打开 http://localhost:5180，完成！
+
+### LAN Mode vs Public Mode / 局域网模式 vs 公网模式
+
+By default, the app runs in **LAN mode** (no login required). To enable authentication, configure Supabase in `.env`.
+
+默认以**局域网模式**运行（无需登录）。如需启用认证登录，在 `.env` 中配置 Supabase。
+
+| | LAN Mode / 局域网模式 | Public Mode / 公网模式 |
+|---|---|---|
+| Auth / 认证 | None (auto login) / 无需登录 | Supabase (OAuth / OTP) |
+| Admin | All users / 所有用户 | Configured via `ADMIN_EMAILS` |
+| Setup / 配置 | Default (no extra config) / 默认（无需额外配置） | Set `SUPABASE_*` vars in `.env` / 在 `.env` 中配置 Supabase |
+
+---
+
+## Build from Source / 从源码构建
+
+For developers who want to modify the code or run in development mode.
+
+适合需要修改代码或以开发模式运行的开发者。
 
 ### Prerequisites / 前置条件
 
@@ -41,136 +98,45 @@ A full-stack family health management platform with AI-powered health insights, 
 - PostgreSQL >= 14
 - pnpm >= 8
 
-### 1. Clone / 克隆
+### Steps / 步骤
 
 ```bash
+# 1. Clone / 克隆
 git clone https://github.com/yangxunj/familyHealthManager.git
 cd familyHealthManager
-```
 
-### 2. Install dependencies / 安装依赖
-
-```bash
+# 2. Install dependencies / 安装依赖
 cd backend && pnpm install
 cd ../frontend && pnpm install
-```
 
-### 3. Configure environment / 配置环境变量
-
-```bash
+# 3. Configure / 配置环境变量
 cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env
-```
+# Edit both .env files / 编辑两个 .env 文件
 
-Edit both `.env` files. See [Configuration](#configuration--配置说明) below.
-
-编辑两个 `.env` 文件，详见下方[配置说明](#configuration--配置说明)。
-
-### 4. Initialize database / 初始化数据库
-
-```bash
+# 4. Initialize database / 初始化数据库
 cd backend
 npx prisma migrate deploy
-npx prisma db seed        # optional / 可选：导入种子数据
+npx prisma db seed        # optional / 可选
+
+# 5. Start / 启动
+cd backend && pnpm run start:dev     # Terminal 1
+cd frontend && pnpm run dev          # Terminal 2
 ```
 
-### 5. Start / 启动
+Open http://localhost:5174. / 打开 http://localhost:5174。
 
-```bash
-# Terminal 1 — backend
-cd backend && pnpm run start:dev
-
-# Terminal 2 — frontend
-cd frontend && pnpm run dev
-```
-
-Open http://localhost:5174 in your browser. / 浏览器打开 http://localhost:5174。
-
-## Configuration / 配置说明
-
-### Backend (`backend/.env`)
-
-```env
-# Database / 数据库
-DATABASE_URL="postgresql://postgres:password@localhost:5432/familyHealthManager?schema=public&client_encoding=utf8"
-
-# Server port / 服务端口
-PORT=5002
-
-# ---- LAN Mode: comment out the Supabase section below ----
-# ---- 局域网模式：注释掉下面的 Supabase 配置即可 ----
-
-# Supabase Auth (public mode only / 仅公网模式)
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_KEY=your-service-role-key
-SUPABASE_JWT_SECRET=your-jwt-secret
-
-# Alibaba Cloud DashScope (required for OCR / OCR 必需)
-DASHSCOPE_API_KEY=your-dashscope-api-key
-
-# Google Gemini (optional / 可选)
-GOOGLE_API_KEY=your-google-api-key
-GOOGLE_API_BASE=https://generativelanguage.googleapis.com/v1beta/openai
-GEMINI_MODEL=gemini-3-flash-preview
-# GEMINI_PROXY=http://localhost:20808   # if you need a proxy / 如需代理
-
-# Admin emails, comma-separated (public mode / 公网模式)
-ADMIN_EMAILS=admin@example.com
-```
-
-### Frontend (`frontend/.env`)
-
-```env
-VITE_API_BASE_URL=http://localhost:5002/api/v1
-
-# Supabase (public mode only / 仅公网模式)
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
-```
-
-### LAN Mode vs Public Mode / 局域网模式 vs 公网模式
-
-| | LAN Mode / 局域网模式 | Public Mode / 公网模式 |
-|---|---|---|
-| Auth / 认证 | None (auto login) / 无需登录 | Supabase (OAuth / OTP) |
-| Admin | All users / 所有用户 | Configured via `ADMIN_EMAILS` |
-| Setup / 配置 | Comment out Supabase env vars / 注释 Supabase 环境变量 | Fill in all Supabase env vars / 填写 Supabase 配置 |
-
-## Docker Deployment / Docker 一键部署
-
-The easiest way to deploy. No Node.js or build tools needed — just Docker.
-
-最简单的部署方式，无需安装 Node.js 或任何构建工具，只需要 Docker。
-
-### Option A: Use pre-built images (recommended) / 使用预构建镜像（推荐）
-
-```bash
-# 1. Download deployment files / 下载部署文件
-mkdir family-health && cd family-health
-curl -O https://raw.githubusercontent.com/yangxunj/familyHealthManager/main/deploy/docker-compose.yml
-curl -O https://raw.githubusercontent.com/yangxunj/familyHealthManager/main/deploy/.env.example
-
-# 2. Configure / 配置
-cp .env.example .env
-# Edit .env — at minimum, set DASHSCOPE_API_KEY and change DB_PASSWORD
-# 编辑 .env — 至少填写 DASHSCOPE_API_KEY 并修改 DB_PASSWORD
-
-# 3. Start / 启动
-docker compose up -d
-```
-
-Open http://localhost:5180. / 打开 http://localhost:5180。
-
-### Option B: Build from source / 从源码构建
+### Build from source with Docker / 使用 Docker 从源码构建
 
 ```bash
 git clone https://github.com/yangxunj/familyHealthManager.git
 cd familyHealthManager
 # Create .env.docker with your config / 创建 .env.docker 填入配置
 docker compose up -d
+# Open http://localhost:5180
 ```
 
-The app will be available at http://localhost:5180. / 应用将在 http://localhost:5180 可用。
+---
 
 ## Project Structure / 项目结构
 
@@ -195,8 +161,9 @@ familyHealthManager/
 │       ├── api/            # API client / API 调用
 │       ├── store/          # Zustand state / 状态管理
 │       └── components/     # Shared components / 公共组件
+├── deploy/                 # Deployment files / 部署文件
 ├── doc/                    # Documentation / 文档
-└── docker-compose.yml
+└── docker-compose.yml      # Dev Docker Compose / 开发用 Docker Compose
 ```
 
 ## Security / 安全特性
