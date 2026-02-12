@@ -76,9 +76,34 @@ export class WhitelistService {
    * 获取所有白名单邮箱
    */
   async getAllEmails() {
-    return this.prisma.allowedEmail.findMany({
+    const emails = await this.prisma.allowedEmail.findMany({
       orderBy: { createdAt: 'desc' },
     });
+
+    // 批量查询 addedBy 邮箱对应的用户名
+    const addedByEmails = [
+      ...new Set(
+        emails
+          .map((e) => e.addedBy)
+          .filter((v): v is string => !!v && !v.startsWith('system:')),
+      ),
+    ];
+
+    const nameMap = new Map<string, string>();
+    if (addedByEmails.length > 0) {
+      const users = await this.prisma.user.findMany({
+        where: { email: { in: addedByEmails } },
+        select: { email: true, name: true },
+      });
+      for (const u of users) {
+        nameMap.set(u.email, u.name);
+      }
+    }
+
+    return emails.map((e) => ({
+      ...e,
+      addedByName: e.addedBy ? (nameMap.get(e.addedBy) || null) : null,
+    }));
   }
 
   /**

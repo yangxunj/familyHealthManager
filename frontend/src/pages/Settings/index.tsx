@@ -369,15 +369,17 @@ function WhitelistSection() {
     },
     {
       title: '添加者',
-      dataIndex: 'addedBy',
       key: 'addedBy',
       width: 200,
-      render: (addedBy: string | null) => (
-        <Space>
-          <UserOutlined style={{ color: 'var(--color-text-quaternary)' }} />
-          <Text type="secondary">{addedBy || '系统'}</Text>
-        </Space>
-      ),
+      render: (_: unknown, record: AllowedEmail) => {
+        const display = record.addedByName || record.addedBy || '系统';
+        return (
+          <Space>
+            <UserOutlined style={{ color: 'var(--color-text-quaternary)' }} />
+            <Text type="secondary">{display}</Text>
+          </Space>
+        );
+      },
     },
     {
       title: '添加时间',

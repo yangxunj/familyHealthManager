@@ -4,6 +4,7 @@ export interface AllowedEmail {
   id: number;
   email: string;
   addedBy: string | null;
+  addedByName: string | null;
   createdAt: string;
 }
 
