@@ -162,6 +162,20 @@ function ApiConfigSection() {
     }
   };
 
+  const [testing, setTesting] = useState<'dashscope' | 'google' | null>(null);
+
+  const handleTest = async (provider: 'dashscope' | 'google') => {
+    setTesting(provider);
+    try {
+      await settingsApi.testApiKey(provider);
+      message.success('连接测试成功');
+    } catch (error: any) {
+      message.error(error.message || '连接测试失败');
+    } finally {
+      setTesting(null);
+    }
+  };
+
   const StatusTag = ({ has, source }: { has: boolean; source: string }) => {
     if (!has) return <Tag icon={<CloseCircleOutlined />} color="default">未配置</Tag>;
     if (source === 'database') return <Tag icon={<CheckCircleOutlined />} color="success">已配置（数据库）</Tag>;
@@ -195,6 +209,9 @@ function ApiConfigSection() {
           <Space>
             <Text type="secondary">当前状态：</Text>
             {config && <StatusTag has={config.hasDashscope} source={config.dashscopeSource} />}
+            {config?.hasDashscope && (
+              <Button size="small" onClick={() => handleTest('dashscope')} loading={testing === 'dashscope'}>测试</Button>
+            )}
           </Space>
           {config?.dashscopeApiKey && (
             <Text type="secondary" style={{ marginLeft: 8 }}>{config.dashscopeApiKey}</Text>
@@ -222,6 +239,9 @@ function ApiConfigSection() {
           <Space>
             <Text type="secondary">当前状态：</Text>
             {config && <StatusTag has={config.hasGoogle} source={config.googleSource} />}
+            {config?.hasGoogle && (
+              <Button size="small" onClick={() => handleTest('google')} loading={testing === 'google'}>测试</Button>
+            )}
           </Space>
           {config?.googleApiKey && (
             <Text type="secondary" style={{ marginLeft: 8 }}>{config.googleApiKey}</Text>

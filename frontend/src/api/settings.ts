@@ -24,4 +24,8 @@ export const settingsApi = {
   updateApiConfig: async (data: UpdateApiConfigRequest): Promise<{ message: string }> => {
     return apiClient.put('/settings/api-config', data);
   },
+
+  testApiKey: async (provider: 'dashscope' | 'google'): Promise<{ success: boolean }> => {
+    return apiClient.post('/settings/test-api-key', { provider });
+  },
 };

@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ProxyAgent, fetch as undiciFetch } from 'undici';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { UpdateApiConfigDto } from './dto';
 
@@ -98,6 +99,64 @@ export class SettingsService {
   async getAiProvider(): Promise<string> {
     const provider = await this.getConfigValue(CONFIG_KEYS.AI_PROVIDER);
     return provider || 'auto';
+  }
+
+  /**
+   * 测试 API Key 连通性：发起一个最小化请求验证 Key 是否有效
+   */
+  async testApiKey(provider: 'dashscope' | 'google'): Promise<{ success: true }> {
+    const apiKey =
+      provider === 'dashscope'
+        ? await this.getEffectiveDashscopeKey()
+        : await this.getEffectiveGoogleKey();
+
+    if (!apiKey) {
+      throw new BadRequestException(`${provider === 'dashscope' ? 'DashScope' : 'Google Gemini'} API Key 未配置`);
+    }
+
+    const baseUrl =
+      provider === 'dashscope'
+        ? this.configService.get<string>('DASHSCOPE_BASE_URL') || 'https://dashscope.aliyuncs.com/compatible-mode/v1'
+        : this.configService.get<string>('GOOGLE_API_BASE') || 'https://generativelanguage.googleapis.com/v1beta/openai';
+
+    const model =
+      provider === 'dashscope'
+        ? 'qwen-plus'
+        : this.configService.get<string>('GEMINI_MODEL') || 'gemini-3-flash-preview';
+
+    // Google Gemini 可能需要代理
+    const proxyUrl = provider === 'google' ? this.configService.get<string>('GEMINI_PROXY') : undefined;
+    const dispatcher = proxyUrl ? new ProxyAgent(proxyUrl) : undefined;
+
+    try {
+      const response = await undiciFetch(`${baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: 'user', content: 'Hi' }],
+          max_tokens: 5,
+        }),
+        signal: AbortSignal.timeout(30_000),
+        ...(dispatcher ? { dispatcher } : {}),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        this.logger.error(`API Key test failed for ${provider}: ${response.status} - ${errorText}`);
+        throw new BadRequestException(`API 请求失败 (${response.status})：请检查 Key 是否正确`);
+      }
+
+      this.logger.log(`API Key test succeeded for ${provider}`);
+      return { success: true };
+    } catch (error) {
+      if (error instanceof BadRequestException) throw error;
+      this.logger.error(`API Key test error for ${provider}: ${(error as Error).message}`);
+      throw new BadRequestException(`连接失败：${(error as Error).message}`);
+    }
   }
 
   // ---- 私有方法 ----

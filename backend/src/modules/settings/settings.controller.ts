@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Put, Post, Body, UseGuards } from '@nestjs/common';
 import { SettingsService } from './settings.service';
 import { UpdateApiConfigDto } from './dto';
 import { AdminGuard } from '../whitelist/guards/admin.guard';
@@ -23,5 +23,13 @@ export class SettingsController {
   async updateApiConfig(@Body() dto: UpdateApiConfigDto) {
     await this.settingsService.updateApiConfig(dto);
     return { message: 'API 配置已更新' };
+  }
+
+  /**
+   * 测试 API Key 连通性
+   */
+  @Post('test-api-key')
+  async testApiKey(@Body() body: { provider: 'dashscope' | 'google' }) {
+    return this.settingsService.testApiKey(body.provider);
   }
 }
