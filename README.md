@@ -70,7 +70,7 @@ docker compose up -d
 
 Open http://localhost:5180 in your browser. Done!
 
-浏览器打开 http://localhost:5180，完成！
+浏览器打开 http://localhost:5180 ，完成！
 
 ### LAN Mode vs Public Mode / 局域网模式 vs 公网模式
 
