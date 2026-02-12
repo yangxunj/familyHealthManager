@@ -8,8 +8,9 @@ RUN npm install -g pnpm@8
 
 # 通过构建参数传入前端环境变量（Vite 在构建时注入）
 ARG VITE_API_BASE_URL=/api/v1
-ARG VITE_SUPABASE_URL
-ARG VITE_SUPABASE_ANON_KEY
+# Supabase 使用占位符，容器启动时由 entrypoint 脚本替换为实际值
+ARG VITE_SUPABASE_URL=__SUPABASE_URL_PLACEHOLDER__
+ARG VITE_SUPABASE_ANON_KEY=__SUPABASE_ANON_KEY_PLACEHOLDER__
 
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
@@ -36,6 +37,10 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # 复制 Nginx 配置
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
+# 复制 entrypoint 脚本（运行时替换 Supabase 环境变量）
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
 EXPOSE 80
 
-CMD ["nginx", "-g", "daemon off;"]
+ENTRYPOINT ["/docker-entrypoint.sh"]

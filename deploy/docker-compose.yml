@@ -1,0 +1,71 @@
+# Family Health Manager - Docker Deployment
+# 家庭健康管理平台 - Docker 一键部署
+#
+# Usage / 使用方法:
+#   1. Copy .env.example to .env and fill in your config
+#      复制 .env.example 为 .env 并填写配置
+#   2. Run: docker compose up -d
+#      启动: docker compose up -d
+#   3. Open http://localhost:5180
+#      打开 http://localhost:5180
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: familyHealthManager
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    image: ghcr.io/yangxunj/family-health-manager-backend:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 5002
+      DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-changeme}@db:5432/familyHealthManager?schema=public&client_encoding=utf8
+      # AI API Keys
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      GOOGLE_API_BASE: ${GOOGLE_API_BASE:-https://generativelanguage.googleapis.com/v1beta/openai}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3-flash-preview}
+      GEMINI_PROXY: ${GEMINI_PROXY:-}
+      # Supabase Auth (leave empty for LAN mode / 留空则为局域网模式)
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:-}
+      SUPABASE_JWT_SECRET: ${SUPABASE_JWT_SECRET:-}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      # Storage
+      STORAGE_MODE: local
+      LOCAL_STORAGE_PATH: ./uploads
+      CORS_ORIGIN: http://localhost:5180
+    volumes:
+      - uploads:/app/uploads
+
+  frontend:
+    image: ghcr.io/yangxunj/family-health-manager-frontend:latest
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${APP_PORT:-5180}:80"
+    environment:
+      # Supabase config injected at runtime (leave empty for LAN mode)
+      # Supabase 配置在容器启动时注入（留空则为局域网模式）
+      VITE_SUPABASE_URL: ${SUPABASE_URL:-}
+      VITE_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-}
+
+volumes:
+  pgdata:
+  uploads:

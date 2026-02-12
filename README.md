@@ -136,12 +136,37 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 | Admin | All users / 所有用户 | Configured via `ADMIN_EMAILS` |
 | Setup / 配置 | Comment out Supabase env vars / 注释 Supabase 环境变量 | Fill in all Supabase env vars / 填写 Supabase 配置 |
 
-## Docker Deployment / Docker 部署
+## Docker Deployment / Docker 一键部署
+
+The easiest way to deploy. No Node.js or build tools needed — just Docker.
+
+最简单的部署方式，无需安装 Node.js 或任何构建工具，只需要 Docker。
+
+### Option A: Use pre-built images (recommended) / 使用预构建镜像（推荐）
 
 ```bash
-# Create .env.docker with your Supabase keys and other secrets
-# 创建 .env.docker 填入 Supabase 密钥等配置
+# 1. Download deployment files / 下载部署文件
+mkdir family-health && cd family-health
+curl -O https://raw.githubusercontent.com/yangxunj/familyHealthManager/main/deploy/docker-compose.yml
+curl -O https://raw.githubusercontent.com/yangxunj/familyHealthManager/main/deploy/.env.example
 
+# 2. Configure / 配置
+cp .env.example .env
+# Edit .env — at minimum, set DASHSCOPE_API_KEY and change DB_PASSWORD
+# 编辑 .env — 至少填写 DASHSCOPE_API_KEY 并修改 DB_PASSWORD
+
+# 3. Start / 启动
+docker compose up -d
+```
+
+Open http://localhost:5180. / 打开 http://localhost:5180。
+
+### Option B: Build from source / 从源码构建
+
+```bash
+git clone https://github.com/yangxunj/familyHealthManager.git
+cd familyHealthManager
+# Create .env.docker with your config / 创建 .env.docker 填入配置
 docker compose up -d
 ```
 
