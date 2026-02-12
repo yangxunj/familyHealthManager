@@ -177,14 +177,15 @@ function ApiConfigSection() {
     }
   };
 
-  const StatusTag = ({ has, source, verified }: { has: boolean; source: string; verified?: boolean }) => {
+  const StatusTags = ({ has, source, verified }: { has: boolean; source: string; verified?: boolean }) => {
     if (!has) return <Tag icon={<CloseCircleOutlined />} color="default">未配置</Tag>;
     const sourceLabel = source === 'database' ? '数据库' : '环境变量';
-    const color = source === 'database' ? 'success' : 'blue';
-    if (verified) {
-      return <Tag icon={<CheckCircleOutlined />} color={color}>已配置（{sourceLabel}）· 已验证</Tag>;
-    }
-    return <Tag icon={<CheckCircleOutlined />} color={color}>已配置（{sourceLabel}）</Tag>;
+    return (
+      <>
+        <Tag icon={<CheckCircleOutlined />} color="blue">已配置（{sourceLabel}）</Tag>
+        {verified && <Tag icon={<CheckCircleOutlined />} color="success">已验证</Tag>}
+      </>
+    );
   };
 
   if (loading) {
@@ -213,7 +214,7 @@ function ApiConfigSection() {
         <div style={{ marginBottom: 8 }}>
           <Space>
             <Text type="secondary">当前状态：</Text>
-            {config && <StatusTag has={config.hasDashscope} source={config.dashscopeSource} verified={config.dashscopeVerified} />}
+            {config && <StatusTags has={config.hasDashscope} source={config.dashscopeSource} verified={config.dashscopeVerified} />}
             {config?.hasDashscope && !config.dashscopeVerified && (
               <Button size="small" onClick={() => handleTest('dashscope')} loading={testing === 'dashscope'}>测试</Button>
             )}
@@ -243,7 +244,7 @@ function ApiConfigSection() {
         <div style={{ marginBottom: 8 }}>
           <Space>
             <Text type="secondary">当前状态：</Text>
-            {config && <StatusTag has={config.hasGoogle} source={config.googleSource} verified={config.googleVerified} />}
+            {config && <StatusTags has={config.hasGoogle} source={config.googleSource} verified={config.googleVerified} />}
             {config?.hasGoogle && !config.googleVerified && (
               <Button size="small" onClick={() => handleTest('google')} loading={testing === 'google'}>测试</Button>
             )}
