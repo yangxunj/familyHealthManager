@@ -10,12 +10,16 @@ export interface ApiConfig {
   googleSource: 'database' | 'env' | 'none';
   dashscopeVerified: boolean;
   googleVerified: boolean;
+  dashscopeModel: string;
+  geminiModel: string;
 }
 
 export interface UpdateApiConfigRequest {
   dashscopeApiKey?: string;
   googleApiKey?: string;
   aiProvider?: string;
+  dashscopeModel?: string;
+  geminiModel?: string;
 }
 
 export const settingsApi = {

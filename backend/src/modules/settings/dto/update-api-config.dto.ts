@@ -13,4 +13,14 @@ export class UpdateApiConfigDto {
   @IsString()
   @IsIn(['auto', 'alibaba', 'google'])
   aiProvider?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['qwen3-max', 'glm-4.7', 'deepseek-v3.2', 'kimi-k2.5'])
+  dashscopeModel?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['gemini-3-flash-preview', 'gemini-3-pro-preview'])
+  geminiModel?: string;
 }

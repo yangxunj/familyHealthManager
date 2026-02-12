@@ -4,6 +4,7 @@ import {
   Tabs,
   Form,
   Input,
+  Select,
   Radio,
   Button,
   Space,
@@ -105,7 +106,11 @@ function ApiConfigSection() {
     try {
       const data = await settingsApi.getApiConfig();
       setConfig(data);
-      form.setFieldsValue({ aiProvider: data.aiProvider });
+      form.setFieldsValue({
+        aiProvider: data.aiProvider,
+        dashscopeModel: data.dashscopeModel,
+        geminiModel: data.geminiModel,
+      });
     } catch (error: any) {
       message.error(error.message || '加载 API 配置失败');
     } finally {
@@ -129,6 +134,12 @@ function ApiConfigSection() {
     }
     if (values.aiProvider) {
       updateData.aiProvider = values.aiProvider;
+    }
+    if (values.dashscopeModel && values.dashscopeModel !== config?.dashscopeModel) {
+      updateData.dashscopeModel = values.dashscopeModel;
+    }
+    if (values.geminiModel && values.geminiModel !== config?.geminiModel) {
+      updateData.geminiModel = values.geminiModel;
     }
 
     if (Object.keys(updateData).length === 0) {
@@ -237,6 +248,21 @@ function ApiConfigSection() {
           </Space.Compact>
         </Form.Item>
 
+        {config?.hasDashscope && (
+          <Form.Item
+            name="dashscopeModel"
+            label="AI 模型"
+            extra="用于健康建议、健康咨询等 AI 功能（当使用阿里云服务时）。"
+          >
+            <Select>
+              <Select.Option value="qwen3-max">通义千问 Qwen3-Max</Select.Option>
+              <Select.Option value="deepseek-v3.2">DeepSeek V3.2</Select.Option>
+              <Select.Option value="glm-4.7">智谱 GLM-4.7</Select.Option>
+              <Select.Option value="kimi-k2.5">Kimi K2.5</Select.Option>
+            </Select>
+          </Form.Item>
+        )}
+
         <Divider orientation="left" plain>
           <Space><GoogleOutlined />Google Gemini</Space>
         </Divider>
@@ -266,6 +292,19 @@ function ApiConfigSection() {
             )}
           </Space.Compact>
         </Form.Item>
+
+        {config?.hasGoogle && (
+          <Form.Item
+            name="geminiModel"
+            label="AI 模型"
+            extra="用于健康建议、健康咨询等 AI 功能（当使用 Google 服务时）。"
+          >
+            <Select>
+              <Select.Option value="gemini-3-flash-preview">Gemini 3 Flash（快速）</Select.Option>
+              <Select.Option value="gemini-3-pro-preview">Gemini 3 Pro（专业）</Select.Option>
+            </Select>
+          </Form.Item>
+        )}
 
         {config?.hasDashscope && config?.hasGoogle && (
           <>

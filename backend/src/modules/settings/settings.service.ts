@@ -11,6 +11,8 @@ const CONFIG_KEYS = {
   AI_PROVIDER: 'ai_provider',
   DASHSCOPE_VERIFIED: 'dashscope_verified',
   GOOGLE_VERIFIED: 'google_verified',
+  DASHSCOPE_MODEL: 'dashscope_model',
+  GEMINI_MODEL: 'gemini_model',
 } as const;
 
 @Injectable()
@@ -36,6 +38,9 @@ export class SettingsService {
     const dashscopeVerified = await this.getConfigValue(CONFIG_KEYS.DASHSCOPE_VERIFIED);
     const googleVerified = await this.getConfigValue(CONFIG_KEYS.GOOGLE_VERIFIED);
 
+    const dashscopeModel = await this.getConfigValue(CONFIG_KEYS.DASHSCOPE_MODEL);
+    const geminiModel = await this.getConfigValue(CONFIG_KEYS.GEMINI_MODEL);
+
     return {
       dashscopeApiKey: this.maskKey(dashscopeKey),
       googleApiKey: this.maskKey(googleKey),
@@ -48,6 +53,9 @@ export class SettingsService {
       // 验证状态
       dashscopeVerified: dashscopeVerified === 'true',
       googleVerified: googleVerified === 'true',
+      // 模型选择
+      dashscopeModel: dashscopeModel || 'qwen3-max',
+      geminiModel: geminiModel || 'gemini-3-flash-preview',
     };
   }
 
@@ -82,6 +90,14 @@ export class SettingsService {
       operations.push(this.setConfigValue(CONFIG_KEYS.AI_PROVIDER, dto.aiProvider));
     }
 
+    if (dto.dashscopeModel !== undefined) {
+      operations.push(this.setConfigValue(CONFIG_KEYS.DASHSCOPE_MODEL, dto.dashscopeModel));
+    }
+
+    if (dto.geminiModel !== undefined) {
+      operations.push(this.setConfigValue(CONFIG_KEYS.GEMINI_MODEL, dto.geminiModel));
+    }
+
     await Promise.all(operations);
 
     this.logger.log('API 配置已更新');
@@ -111,6 +127,23 @@ export class SettingsService {
   async getAiProvider(): Promise<string> {
     const provider = await this.getConfigValue(CONFIG_KEYS.AI_PROVIDER);
     return provider || 'auto';
+  }
+
+  /**
+   * 获取有效的 DashScope 模型
+   */
+  async getEffectiveDashscopeModel(): Promise<string> {
+    const model = await this.getConfigValue(CONFIG_KEYS.DASHSCOPE_MODEL);
+    return model || 'qwen3-max';
+  }
+
+  /**
+   * 获取有效的 Gemini 模型
+   */
+  async getEffectiveGeminiModel(): Promise<string> {
+    const model = await this.getConfigValue(CONFIG_KEYS.GEMINI_MODEL);
+    if (model) return model;
+    return this.configService.get<string>('GEMINI_MODEL') || 'gemini-3-flash-preview';
   }
 
   /**

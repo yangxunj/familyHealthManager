@@ -165,10 +165,19 @@ export class AiService {
       || (aiProvider !== 'alibaba' && !!googleKey);
 
     if (useGoogle && googleKey) {
+      // 如果调用方未指定模型，使用用户配置的模型
+      if (!options?.model) {
+        const effectiveModel = await this.settingsService.getEffectiveGeminiModel();
+        return this.chatWithGemini(messages, googleKey, { ...options, model: effectiveModel });
+      }
       return this.chatWithGemini(messages, googleKey, options);
     }
 
     if (dashscopeKey) {
+      if (!options?.model) {
+        const effectiveModel = await this.settingsService.getEffectiveDashscopeModel();
+        return this.chatWithDashscope(messages, dashscopeKey, { ...options, model: effectiveModel });
+      }
       return this.chatWithDashscope(messages, dashscopeKey, options);
     }
 
@@ -265,7 +274,7 @@ export class AiService {
       jsonSchema?: object;
     },
   ): Promise<AiCompletionResult> {
-    const model = options?.model || 'qwen-plus';
+    const model = options?.model || 'qwen3-max';
 
     const requestBody: Record<string, unknown> = {
       model,
@@ -347,12 +356,12 @@ export class AiService {
     if (useGoogle && googleKey) {
       apiKey = googleKey;
       baseUrl = this.googleBaseUrl;
-      model = options?.model || this.geminiModel;
+      model = options?.model || await this.settingsService.getEffectiveGeminiModel();
       dispatcher = this.proxyAgent;
     } else if (dashscopeKey) {
       apiKey = dashscopeKey;
       baseUrl = this.dashscopeBaseUrl;
-      model = options?.model || 'qwen-plus';
+      model = options?.model || await this.settingsService.getEffectiveDashscopeModel();
       dispatcher = undefined;
     } else {
       throw new Error('未配置任何 AI 服务的 API Key');
