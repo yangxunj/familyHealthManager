@@ -320,6 +320,55 @@ export class FamilyService {
     return { message: '已成功离开家庭' };
   }
 
+  // 管理员：获取所有家庭的概览统计
+  async getAdminOverview() {
+    const families = await this.prisma.family.findMany({
+      include: {
+        users: {
+          where: { isOwner: true },
+          select: { email: true, name: true },
+        },
+        _count: {
+          select: {
+            members: { where: { deletedAt: null } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const result = await Promise.all(
+      families.map(async (family) => {
+        const [documentCount, recordCount, adviceCount] = await Promise.all([
+          this.prisma.document.count({
+            where: { member: { familyId: family.id, deletedAt: null }, deletedAt: null },
+          }),
+          this.prisma.healthRecord.count({
+            where: { member: { familyId: family.id, deletedAt: null } },
+          }),
+          this.prisma.healthAdvice.count({
+            where: { member: { familyId: family.id, deletedAt: null } },
+          }),
+        ]);
+
+        const creator = family.users[0];
+        return {
+          familyId: family.id,
+          familyName: family.name,
+          creatorEmail: creator?.email || '未知',
+          creatorName: creator?.name || '未知',
+          memberCount: family._count.members,
+          documentCount,
+          recordCount,
+          adviceCount,
+          createdAt: family.createdAt.toISOString(),
+        };
+      }),
+    );
+
+    return { families: result };
+  }
+
   // 移除家庭成员（只有创建者可以操作）
   async removeMember(userId: string, targetUserId: string) {
     if (userId === targetUserId) {

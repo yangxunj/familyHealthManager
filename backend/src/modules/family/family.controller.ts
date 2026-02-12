@@ -7,15 +7,24 @@ import {
   Body,
   Param,
   ParseUUIDPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { FamilyService } from './family.service';
 import { CreateFamilyDto, JoinFamilyDto, UpdateFamilyDto } from './dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { CurrentUserData } from '../auth/decorators/current-user.decorator';
+import { AdminGuard } from '../whitelist/guards/admin.guard';
 
 @Controller('family')
 export class FamilyController {
   constructor(private readonly familyService: FamilyService) {}
+
+  // 管理员：获取所有家庭概览
+  @Get('admin/overview')
+  @UseGuards(AdminGuard)
+  getAdminOverview() {
+    return this.familyService.getAdminOverview();
+  }
 
   // 创建家庭
   @Post()

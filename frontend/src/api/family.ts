@@ -31,6 +31,18 @@ export interface UpdateFamilyDto {
   name?: string;
 }
 
+export interface FamilyOverview {
+  familyId: string;
+  familyName: string;
+  creatorEmail: string;
+  creatorName: string;
+  memberCount: number;
+  documentCount: number;
+  recordCount: number;
+  adviceCount: number;
+  createdAt: string;
+}
+
 export const familyApi = {
   // 获取当前家庭信息
   get: async (): Promise<Family | null> => {
@@ -72,5 +84,10 @@ export const familyApi = {
   removeMember: async (userId: string): Promise<{ message: string }> => {
     const response = await apiClient.delete<{ message: string }>(`/family/members/${userId}`);
     return response as unknown as { message: string };
+  },
+
+  // 管理员：获取所有家庭概览
+  getAdminOverview: async (): Promise<{ families: FamilyOverview[] }> => {
+    return apiClient.get('/family/admin/overview');
   },
 };

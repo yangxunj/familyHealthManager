@@ -15,6 +15,10 @@ import {
   Typography,
   Alert,
   Spin,
+  Row,
+  Col,
+  Card,
+  Empty,
   message,
 } from 'antd';
 import {
@@ -30,10 +34,16 @@ import {
   CheckCircleOutlined,
   CloseCircleOutlined,
   InfoCircleOutlined,
+  TeamOutlined,
+  FileTextOutlined,
+  LineChartOutlined,
+  BulbOutlined,
 } from '@ant-design/icons';
+import { useQuery } from '@tanstack/react-query';
 import { isAuthEnabled } from '../../lib/supabase';
 import { whitelistApi, type AllowedEmail } from '../../api/whitelist';
 import { settingsApi, type ApiConfig } from '../../api/settings';
+import { familyApi, type FamilyOverview } from '../../api/family';
 import dayjs from 'dayjs';
 
 const { Text } = Typography;
@@ -76,6 +86,16 @@ export default function SettingsPage() {
             label: <span><ApiOutlined style={{ marginRight: 6 }} />API 配置</span>,
             children: <ApiConfigSection />,
           },
+          // 家庭概览仅在公网模式下显示（LAN 模式只有一个本地家庭）
+          ...(isAuthEnabled
+            ? [
+                {
+                  key: 'families',
+                  label: <span><TeamOutlined style={{ marginRight: 6 }} />家庭概览</span>,
+                  children: <FamilyOverviewSection />,
+                },
+              ]
+            : []),
           // 白名单管理仅在公网模式下显示（LAN 模式无账号登录概念）
           ...(isAuthEnabled
             ? [
@@ -496,6 +516,86 @@ function WhitelistSection() {
       <div style={{ marginTop: 16, textAlign: 'center', color: 'var(--color-text-quaternary)', fontSize: 12 }}>
         共 {emails.length} 个邮箱
       </div>
+    </div>
+  );
+}
+
+// ============================================================
+// 家庭概览区块
+// ============================================================
+function FamilyOverviewSection() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['adminFamilyOverview'],
+    queryFn: familyApi.getAdminOverview,
+  });
+
+  const families = data?.families || [];
+
+  if (isLoading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
+        <Spin />
+      </div>
+    );
+  }
+
+  if (families.length === 0) {
+    return <Empty description="系统中暂无家庭" />;
+  }
+
+  const statItems = [
+    { key: 'memberCount', icon: <TeamOutlined />, color: '#136dec', label: '成员', unit: '人' },
+    { key: 'documentCount', icon: <FileTextOutlined />, color: '#13ec5b', label: '文档', unit: '份' },
+    { key: 'recordCount', icon: <LineChartOutlined />, color: '#faad14', label: '记录', unit: '条' },
+    { key: 'adviceCount', icon: <BulbOutlined />, color: '#722ed1', label: 'AI 建议', unit: '次' },
+  ] as const;
+
+  return (
+    <div>
+      <Alert
+        message={`系统中共有 ${families.length} 个家庭，以下仅显示各家庭的统计数据，不涉及个人隐私信息。`}
+        type="info"
+        showIcon
+        icon={<InfoCircleOutlined />}
+        style={{ marginBottom: 16 }}
+      />
+
+      <Row gutter={[16, 16]}>
+        {families.map((family: FamilyOverview) => (
+          <Col xs={24} sm={12} lg={8} key={family.familyId}>
+            <Card>
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 16, fontWeight: 600 }}>{family.familyName}</div>
+                <div style={{ fontSize: 12, color: 'var(--color-text-quaternary)', marginTop: 4 }}>
+                  <UserOutlined style={{ marginRight: 4 }} />
+                  {family.creatorName}
+                  <MailOutlined style={{ marginLeft: 12, marginRight: 4 }} />
+                  {family.creatorEmail}
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px' }}>
+                {statItems.map((item) => (
+                  <div key={item.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--color-text-secondary)', fontSize: 13 }}>
+                      <span style={{ color: item.color, marginRight: 6 }}>{item.icon}</span>
+                      {item.label}
+                    </span>
+                    <span style={{ fontWeight: 600 }}>
+                      {family[item.key]} <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--color-text-quaternary)' }}>{item.unit}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ marginTop: 12, fontSize: 12, color: 'var(--color-text-quaternary)' }}>
+                <ClockCircleOutlined style={{ marginRight: 4 }} />
+                创建于 {dayjs(family.createdAt).format('YYYY-MM-DD')}
+              </div>
+            </Card>
+          </Col>
+        ))}
+      </Row>
     </div>
   );
 }
