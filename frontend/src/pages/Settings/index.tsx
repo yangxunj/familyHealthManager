@@ -169,6 +169,7 @@ function ApiConfigSection() {
     try {
       await settingsApi.testApiKey(provider);
       message.success('连接测试成功');
+      await loadConfig();
     } catch (error: any) {
       message.error(error.message || '连接测试失败');
     } finally {
@@ -176,10 +177,14 @@ function ApiConfigSection() {
     }
   };
 
-  const StatusTag = ({ has, source }: { has: boolean; source: string }) => {
+  const StatusTag = ({ has, source, verified }: { has: boolean; source: string; verified?: boolean }) => {
     if (!has) return <Tag icon={<CloseCircleOutlined />} color="default">未配置</Tag>;
-    if (source === 'database') return <Tag icon={<CheckCircleOutlined />} color="success">已配置（数据库）</Tag>;
-    return <Tag icon={<CheckCircleOutlined />} color="blue">已配置（环境变量）</Tag>;
+    const sourceLabel = source === 'database' ? '数据库' : '环境变量';
+    const color = source === 'database' ? 'success' : 'blue';
+    if (verified) {
+      return <Tag icon={<CheckCircleOutlined />} color={color}>已配置（{sourceLabel}）· 已验证</Tag>;
+    }
+    return <Tag icon={<CheckCircleOutlined />} color={color}>已配置（{sourceLabel}）</Tag>;
   };
 
   if (loading) {
@@ -208,8 +213,8 @@ function ApiConfigSection() {
         <div style={{ marginBottom: 8 }}>
           <Space>
             <Text type="secondary">当前状态：</Text>
-            {config && <StatusTag has={config.hasDashscope} source={config.dashscopeSource} />}
-            {config?.hasDashscope && (
+            {config && <StatusTag has={config.hasDashscope} source={config.dashscopeSource} verified={config.dashscopeVerified} />}
+            {config?.hasDashscope && !config.dashscopeVerified && (
               <Button size="small" onClick={() => handleTest('dashscope')} loading={testing === 'dashscope'}>测试</Button>
             )}
           </Space>
@@ -238,8 +243,8 @@ function ApiConfigSection() {
         <div style={{ marginBottom: 8 }}>
           <Space>
             <Text type="secondary">当前状态：</Text>
-            {config && <StatusTag has={config.hasGoogle} source={config.googleSource} />}
-            {config?.hasGoogle && (
+            {config && <StatusTag has={config.hasGoogle} source={config.googleSource} verified={config.googleVerified} />}
+            {config?.hasGoogle && !config.googleVerified && (
               <Button size="small" onClick={() => handleTest('google')} loading={testing === 'google'}>测试</Button>
             )}
           </Space>

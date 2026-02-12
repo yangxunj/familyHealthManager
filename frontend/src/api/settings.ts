@@ -8,6 +8,8 @@ export interface ApiConfig {
   hasGoogle: boolean;
   dashscopeSource: 'database' | 'env' | 'none';
   googleSource: 'database' | 'env' | 'none';
+  dashscopeVerified: boolean;
+  googleVerified: boolean;
 }
 
 export interface UpdateApiConfigRequest {
