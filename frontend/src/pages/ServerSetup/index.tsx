@@ -42,7 +42,7 @@ export default function ServerSetup({ onComplete }: ServerSetupProps) {
         timeout: 10000,
       });
 
-      const authRequired = !!data?.data?.authRequired ?? !!data?.authRequired;
+      const authRequired = !!(data?.data?.authRequired ?? data?.authRequired);
 
       // Save config
       setServerConfig(serverUrl, authRequired);
