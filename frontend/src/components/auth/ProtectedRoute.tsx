@@ -5,7 +5,7 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { Spin } from 'antd';
 import { useAuthStore } from '../../store';
-import { isAuthEnabled } from '../../lib/supabase';
+import { getIsAuthEnabled } from '../../lib/supabase';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -16,7 +16,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const location = useLocation();
 
   // If auth is not enabled, allow access without login
-  if (!isAuthEnabled) {
+  if (!getIsAuthEnabled()) {
     return <>{children}</>;
   }
 

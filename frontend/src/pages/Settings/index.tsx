@@ -40,7 +40,7 @@ import {
   BulbOutlined,
 } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
-import { isAuthEnabled } from '../../lib/supabase';
+import { getIsAuthEnabled } from '../../lib/supabase';
 import { whitelistApi, type AllowedEmail } from '../../api/whitelist';
 import { settingsApi, type ApiConfig } from '../../api/settings';
 import { familyApi, type FamilyOverview } from '../../api/family';
@@ -87,7 +87,7 @@ export default function SettingsPage() {
             children: <ApiConfigSection />,
           },
           // 家庭概览仅在公网模式下显示（LAN 模式只有一个本地家庭）
-          ...(isAuthEnabled
+          ...(getIsAuthEnabled()
             ? [
                 {
                   key: 'families',
@@ -97,7 +97,7 @@ export default function SettingsPage() {
               ]
             : []),
           // 白名单管理仅在公网模式下显示（LAN 模式无账号登录概念）
-          ...(isAuthEnabled
+          ...(getIsAuthEnabled()
             ? [
                 {
                   key: 'whitelist',

@@ -3,7 +3,7 @@
  * Reference: banana-slides/frontend/src/store/useAuthStore.ts
  */
 import { create } from 'zustand';
-import { supabase, isAuthEnabled } from '../lib/supabase';
+import { supabase, getIsAuthEnabled } from '../lib/supabase';
 import { isNativePlatform, OAUTH_CALLBACK_URL } from '../lib/capacitor';
 import type { User, Session } from '@supabase/supabase-js';
 import { familyApi, type Family } from '../api/family';
@@ -39,7 +39,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   initialize: async () => {
     // LAN mode: no auth needed, but still load family data
-    if (!isAuthEnabled || !supabase) {
+    if (!getIsAuthEnabled() || !supabase) {
       set({
         isLoading: false,
         isAuthenticated: false,

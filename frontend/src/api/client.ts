@@ -1,6 +1,6 @@
 import axios, { type AxiosError } from 'axios';
 import { message } from 'antd';
-import { supabase, isAuthEnabled } from '../lib/supabase';
+import { supabase, getIsAuthEnabled } from '../lib/supabase';
 import { getApiBaseUrl } from '../lib/capacitor';
 
 // 创建 axios 实例
@@ -16,7 +16,7 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   async (config) => {
     // Add Authorization header if auth is enabled
-    if (isAuthEnabled && supabase) {
+    if (getIsAuthEnabled() && supabase) {
       try {
         const {
           data: { session },
@@ -54,7 +54,7 @@ apiClient.interceptors.response.use(
     const { response, config } = error;
 
     // Handle 401 Unauthorized - try to refresh token first
-    if (response?.status === 401 && isAuthEnabled && supabase) {
+    if (response?.status === 401 && getIsAuthEnabled() && supabase) {
       console.warn('401 received, attempting token refresh...');
 
       // Avoid multiple simultaneous refresh attempts
@@ -135,5 +135,10 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+/** Update the API base URL dynamically (used after server config) */
+export function updateApiBaseUrl(url: string) {
+  apiClient.defaults.baseURL = url;
+}
 
 export default apiClient;

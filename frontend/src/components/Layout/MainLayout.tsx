@@ -23,7 +23,7 @@ import {
   MedicineBoxOutlined,
 } from '@ant-design/icons';
 import { useAuthStore, useThemeStore } from '../../store';
-import { isAuthEnabled } from '../../lib/supabase';
+import { getIsAuthEnabled } from '../../lib/supabase';
 import { whitelistApi } from '../../api/whitelist';
 
 const { Header, Sider, Content } = Layout;
@@ -107,7 +107,7 @@ const MainLayout: React.FC = () => {
       ],
     },
     // 家庭设置仅在公网模式下显示（LAN 模式只有一个本地用户，无需家庭管理）
-    ...(isAuthEnabled
+    ...(getIsAuthEnabled()
       ? [
           {
             key: '/family',
@@ -284,7 +284,7 @@ const MainLayout: React.FC = () => {
                 {isDark ? <SunOutlined /> : <MoonOutlined />}
               </div>
             </Tooltip>
-            {isAuthEnabled ? (
+            {getIsAuthEnabled() ? (
               <Dropdown
                 menu={{ items: userMenuItems, onClick: handleUserMenuClick }}
                 placement="bottomRight"
