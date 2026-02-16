@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Spin } from 'antd';
 import MainLayout from './components/Layout/MainLayout';
@@ -16,9 +16,11 @@ import HealthPlanPage from './pages/HealthPlan';
 import VaccinationList from './pages/Vaccinations/VaccinationList';
 import CheckupList from './pages/Checkups/CheckupList';
 import SettingsPage from './pages/Settings';
+import ServerSetup from './pages/ServerSetup';
 import { useAuthStore } from './store';
 import { isNativePlatform, APP_SCHEME } from './lib/capacitor';
 import { supabase } from './lib/supabase';
+import { isServerConfigured } from './lib/serverConfig';
 
 function RequireFamily({ children }: { children: React.ReactNode }) {
   const { hasFamily, isInitialized, isFamilyLoaded } = useAuthStore();
@@ -94,13 +96,25 @@ function DeepLinkHandler() {
 
 function App() {
   const { initialize, isInitialized } = useAuthStore();
+  const [serverReady, setServerReady] = useState(
+    !isNativePlatform || isServerConfigured()
+  );
 
-  // Initialize authentication
+  const handleServerConfigured = useCallback(() => {
+    setServerReady(true);
+  }, []);
+
+  // Initialize authentication (only after server is configured)
   useEffect(() => {
-    if (!isInitialized) {
+    if (serverReady && !isInitialized) {
       initialize();
     }
-  }, [initialize, isInitialized]);
+  }, [initialize, isInitialized, serverReady]);
+
+  // Capacitor: show server setup if not configured
+  if (isNativePlatform && !serverReady) {
+    return <ServerSetup onComplete={handleServerConfigured} />;
+  }
 
   return (
     <BrowserRouter>

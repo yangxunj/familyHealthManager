@@ -41,6 +41,8 @@ import {
 } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { getIsAuthEnabled } from '../../lib/supabase';
+import { isNativePlatform } from '../../lib/capacitor';
+import { getServerUrl, getServerAuthRequired, clearServerConfig } from '../../lib/serverConfig';
 import { whitelistApi, type AllowedEmail } from '../../api/whitelist';
 import { settingsApi, type ApiConfig } from '../../api/settings';
 import { familyApi, type FamilyOverview } from '../../api/family';
@@ -81,6 +83,16 @@ export default function SettingsPage() {
     <div style={{ maxWidth: 800, margin: '0 auto' }}>
       <Tabs
         items={[
+          // 服务器配置（仅 App 环境显示）
+          ...(isNativePlatform
+            ? [
+                {
+                  key: 'server',
+                  label: <span><CloudOutlined style={{ marginRight: 6 }} />服务器配置</span>,
+                  children: <ServerConfigSection />,
+                },
+              ]
+            : []),
           {
             key: 'api',
             label: <span><ApiOutlined style={{ marginRight: 6 }} />API 配置</span>,
@@ -596,6 +608,60 @@ function FamilyOverviewSection() {
           </Col>
         ))}
       </Row>
+    </div>
+  );
+}
+
+// ============================================================
+// 服务器配置区块（仅 Capacitor 环境）
+// ============================================================
+function ServerConfigSection() {
+  const serverUrl = getServerUrl();
+  const authRequired = getServerAuthRequired();
+
+  const handleChangeServer = () => {
+    clearServerConfig();
+    // Reload the app to go back to ServerSetup
+    window.location.reload();
+  };
+
+  return (
+    <div>
+      <Alert
+        message="当前 App 连接的服务器信息"
+        type="info"
+        showIcon
+        icon={<CloudOutlined />}
+        style={{ marginBottom: 16 }}
+      />
+
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ marginBottom: 16 }}>
+          <Text type="secondary">服务器地址</Text>
+          <div style={{ fontSize: 16, fontWeight: 600, marginTop: 4 }}>
+            {serverUrl || '未配置'}
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <Text type="secondary">运行模式</Text>
+          <div style={{ marginTop: 4 }}>
+            <Tag color={authRequired ? 'blue' : 'green'}>
+              {authRequired ? '公网模式（需要登录）' : '局域网模式（免登录）'}
+            </Tag>
+          </div>
+        </div>
+      </div>
+
+      <Popconfirm
+        title="更换服务器"
+        description="更换服务器后需要重新配置连接，确定继续吗？"
+        onConfirm={handleChangeServer}
+        okText="确定"
+        cancelText="取消"
+      >
+        <Button danger>更换服务器</Button>
+      </Popconfirm>
     </div>
   );
 }
