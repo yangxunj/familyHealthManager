@@ -38,11 +38,23 @@ export default function ServerSetup({ onComplete }: ServerSetupProps) {
     setConnecting(true);
 
     try {
-      const { data } = await axios.get(`${serverUrl}/api/v1/config/public`, {
-        timeout: 10000,
-      });
+      let authRequired = true; // 默认假定需要认证（公网模式）
 
-      const authRequired = !!(data?.data?.authRequired ?? data?.authRequired);
+      try {
+        // 优先尝试新版配置端点
+        const { data } = await axios.get(`${serverUrl}/api/v1/config/public`, {
+          timeout: 10000,
+        });
+        authRequired = !!(data?.data?.authRequired ?? data?.authRequired);
+      } catch (configError: any) {
+        if (configError.response?.status === 404) {
+          // 旧版后端没有 /config/public 端点，回退到 /api/v1/health 验证连通性
+          await axios.get(`${serverUrl}/api/v1/health`, { timeout: 10000 });
+          // 连通成功，默认为公网模式（旧版后端都有 Supabase）
+        } else {
+          throw configError; // 其他错误继续抛出
+        }
+      }
 
       // Save config
       setServerConfig(serverUrl, authRequired);

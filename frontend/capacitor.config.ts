@@ -10,6 +10,12 @@ const config: CapacitorConfig = {
   android: {
     webContentsDebuggingEnabled: true,
   },
+  plugins: {
+    CapacitorHttp: {
+      // 所有 HTTP 请求走原生层，绕过 WebView 的 CORS 限制
+      enabled: true,
+    },
+  },
 };
 
 export default config;
