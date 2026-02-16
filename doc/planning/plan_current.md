@@ -6,7 +6,7 @@
 
 ### 技术选型
 
-- **Capacitor 8**（最新稳定版 8.0.2）
+- **Capacitor 6**（兼容 Node 20，最新 6.2.1）
 - 同时支持 Android 和 iOS（本期只做 Android）
 - Web 代码 100% 复用，无需重写
 
@@ -25,7 +25,7 @@
 
 ## 实施步骤
 
-### 步骤 1：环境准备与 Capacitor 安装
+### 步骤 1：环境准备与 Capacitor 安装 ✅
 
 1. [x] 确认 Android Studio 已安装，SDK Platform API 36 和 Build-Tools 已下载
 2. [x] 在 `frontend/` 目录安装 Capacitor 6 核心依赖（Capacitor 8 要求 Node 22+，降级为 6）：
@@ -43,23 +43,32 @@
    - `npx cap add android`
 6. [x] 验证 `frontend/android/` 目录已生成
 
-### 步骤 2：基础构建与运行验证
+### 步骤 2：基础构建与运行验证 ✅
 
-1. [ ] 执行 `pnpm run build` 构建 Web 资源
-2. [ ] 执行 `npx cap sync android` 同步到 Android 项目
-3. [ ] 执行 `npx cap open android` 在 Android Studio 中打开
-4. [ ] 在模拟器或真机上运行 App，验证基础页面加载正常
-5. [ ] 验证 API 请求能正确到达后端服务（需处理网络地址配置）
-6. [ ] 验证路由跳转正常（SPA 路由兼容性）
+1. [x] 执行 `pnpm run build` 构建 Web 资源
+2. [x] 执行 `npx cap sync android` 同步到 Android 项目
+3. [x] 通过 Gradle 命令行构建 Debug APK（`./gradlew assembleDebug`）
+4. [x] 在真机上安装 APK，验证基础页面加载正常（登录页可正常显示）
+5. [x] 验证 API 请求能正确到达后端服务
+6. [x] 验证路由跳转正常（SPA 路由兼容性）
 
-### 步骤 3：API 网络配置适配
+### 步骤 3：API 网络配置与认证适配 ✅
 
-1. [ ] 分析当前 API 请求方式（Axios baseURL、Vite 代理）
-2. [ ] App 内不走 Vite 代理，需要直接请求后端地址：
-   - 新增环境变量 `VITE_APP_PLATFORM`（web / capacitor）
-   - App 构建时 `VITE_API_BASE_URL` 设为后端实际地址
-3. [ ] 处理 SSE 流式请求（Chat 页面）在 WebView 中的兼容性
-4. [ ] 处理 CORS 配置（如果后端需要允许 capacitor://localhost 来源）
+1. [x] 分析当前 API 请求方式（Axios baseURL、Vite 代理）
+2. [x] App 内不走 Vite 代理，需要直接请求后端地址：
+   - 新增 `src/lib/capacitor.ts` 平台检测工具
+   - 新增环境变量 `VITE_CAPACITOR_API_URL` 指向完整后端地址
+   - API client 根据平台自动选择 baseURL
+3. [x] Google OAuth 适配：使用 `@capacitor/browser` 内置浏览器 + Deep Link 回调
+   - 安装 `@capacitor/app`、`@capacitor/browser` 插件
+   - 配置 `com.familyhealth.app://` 自定义 URL scheme
+   - `AndroidManifest.xml` 添加 deep link intent filter
+   - `App.tsx` 添加 `DeepLinkHandler` 监听 OAuth 回调
+4. [x] 处理 CORS 配置：后端 `CORS_ORIGIN` 添加 `https://localhost`
+5. [x] Supabase 配置：Redirect URLs 添加 `com.familyhealth.app://auth/callback`
+6. [x] 邮箱验证码登录验证通过
+7. [x] Google OAuth 登录验证通过
+8. [x] 首个 Beta APK 通过 GitHub Release 发布（v1.1.0）
 
 ### 步骤 4：App 图标与启动画面
 
@@ -71,12 +80,13 @@
 
 ### 步骤 5：核心原生插件集成
 
-1. [ ] `@capacitor/app` — 应用生命周期管理（返回键处理、前后台切换）
-2. [ ] `@capacitor/status-bar` — 状态栏样式适配（颜色与主题同步）
-3. [ ] `@capacitor/network` — 网络状态监听，断网时给用户提示
-4. [ ] `@capacitor/preferences` — 本地存储（替代 localStorage 在原生环境下的不稳定性）
-5. [ ] `@capacitor/camera`（可选）— 拍照上传健康文档
-6. [ ] `@capacitor/text-zoom` — 文字缩放支持，尊重系统无障碍设置
+1. [x] `@capacitor/app` — 应用生命周期管理（已安装，用于 deep link）
+2. [x] `@capacitor/browser` — 内置浏览器（已安装，用于 OAuth）
+3. [ ] `@capacitor/status-bar` — 状态栏样式适配（颜色与主题同步）
+4. [ ] `@capacitor/network` — 网络状态监听，断网时给用户提示
+5. [ ] `@capacitor/preferences` — 本地存储（替代 localStorage 在原生环境下的不稳定性）
+6. [ ] `@capacitor/camera`（可选）— 拍照上传健康文档
+7. [ ] `@capacitor/text-zoom` — 文字缩放支持，尊重系统无障碍设置
 
 ### 步骤 6：Android 返回键与导航适配
 
@@ -138,6 +148,5 @@
 ## 参考资料
 
 - [Capacitor 官方文档](https://capacitorjs.com/docs)
-- [Capacitor 8 发布公告](https://ionic.io/blog/announcing-capacitor-8)
 - [Capacitor + React 集成指南](https://capacitorjs.com/solution/react)
 - [Capacitor 官方插件列表](https://capacitorjs.com/docs/apis)
