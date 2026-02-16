@@ -23,6 +23,7 @@ import { FamilyModule } from './modules/family/family.module';
 import { VaccinationModule } from './modules/vaccination/vaccination.module';
 import { CheckupsModule } from './modules/checkups/checkups.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { ConfigPublicModule } from './modules/config/config-public.module';
 import { SupabaseAuthGuard } from './modules/auth/guards/supabase-auth.guard';
 
 @Module({
@@ -75,6 +76,7 @@ import { SupabaseAuthGuard } from './modules/auth/guards/supabase-auth.guard';
     VaccinationModule,
     CheckupsModule,
     SettingsModule,
+    ConfigPublicModule,
   ],
   controllers: [AppController],
   providers: [
