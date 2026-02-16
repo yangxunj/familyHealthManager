@@ -70,6 +70,18 @@
 7. [x] Google OAuth 登录验证通过
 8. [x] 首个 Beta APK 通过 GitHub Release 发布（v1.1.0）
 
+### 步骤 3.5：App 动态服务器配置 ✅
+
+1. [x] 后端添加 `GET /api/v1/config/public` 公开端点（返回 authRequired）
+2. [x] 前端新增 `serverConfig.ts` 服务器配置存储模块
+3. [x] 修改 `capacitor.ts` — `getApiBaseUrl()` 从 localStorage 读取
+4. [x] 修改 `supabase.ts` — 新增 `getIsAuthEnabled()` 动态认证检查
+5. [x] 修改 `client.ts` — 使用动态认证检查，新增 `updateApiBaseUrl()`
+6. [x] 所有组件从 `isAuthEnabled` 迁移到 `getIsAuthEnabled()`
+7. [x] 新增 `ServerSetup` 页面 — 首次启动配置服务器地址
+8. [x] 修改 `App.tsx` — Capacitor 未配置时显示 ServerSetup
+9. [x] 修改 Settings 页面 — App 环境下新增"服务器配置" Tab
+
 ### 步骤 4：App 图标与启动画面
 
 1. [ ] 设计/准备 App 图标（至少 1024x1024 源图）
