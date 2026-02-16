@@ -1,10 +1,11 @@
 import axios, { type AxiosError } from 'axios';
 import { message } from 'antd';
 import { supabase, isAuthEnabled } from '../lib/supabase';
+import { getApiBaseUrl } from '../lib/capacitor';
 
 // 创建 axios 实例
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5002/api/v1',
+  baseURL: getApiBaseUrl(),
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',

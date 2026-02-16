@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Spin } from 'antd';
 import MainLayout from './components/Layout/MainLayout';
 import Login from './pages/Auth/Login';
@@ -17,6 +17,8 @@ import VaccinationList from './pages/Vaccinations/VaccinationList';
 import CheckupList from './pages/Checkups/CheckupList';
 import SettingsPage from './pages/Settings';
 import { useAuthStore } from './store';
+import { isNativePlatform, APP_SCHEME } from './lib/capacitor';
+import { supabase } from './lib/supabase';
 
 function RequireFamily({ children }: { children: React.ReactNode }) {
   const { hasFamily, isInitialized, isFamilyLoaded } = useAuthStore();
@@ -37,6 +39,59 @@ function RequireFamily({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/**
+ * Handle deep links from OAuth in Capacitor.
+ * When the in-app browser completes OAuth, the system sends a deep link
+ * like `com.familyhealth.app://auth/callback#access_token=...`
+ * We extract the tokens, set the Supabase session, and navigate to /auth/callback.
+ */
+function DeepLinkHandler() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isNativePlatform) return;
+
+    let cleanup: (() => void) | undefined;
+
+    const setup = async () => {
+      const { App: CapApp } = await import('@capacitor/app');
+      const { Browser } = await import('@capacitor/browser');
+
+      const listener = await CapApp.addListener('appUrlOpen', async ({ url }) => {
+        if (!url.startsWith(APP_SCHEME)) return;
+
+        // Close the in-app browser
+        try { await Browser.close(); } catch { /* may already be closed */ }
+
+        // Extract tokens from the URL hash fragment
+        const hashPart = url.split('#')[1];
+        if (hashPart && supabase) {
+          const params = new URLSearchParams(hashPart);
+          const accessToken = params.get('access_token');
+          const refreshToken = params.get('refresh_token');
+
+          if (accessToken && refreshToken) {
+            await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+          }
+        }
+
+        // Navigate to auth callback page to complete the login flow
+        navigate('/auth/callback', { replace: true });
+      });
+
+      cleanup = () => listener.remove();
+    };
+
+    setup();
+    return () => cleanup?.();
+  }, [navigate]);
+
+  return null;
+}
+
 function App() {
   const { initialize, isInitialized } = useAuthStore();
 
@@ -49,6 +104,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <DeepLinkHandler />
       <Routes>
         {/* Public routes */}
         <Route path="/login" element={<Login />} />

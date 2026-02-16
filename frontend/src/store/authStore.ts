@@ -4,6 +4,7 @@
  */
 import { create } from 'zustand';
 import { supabase, isAuthEnabled } from '../lib/supabase';
+import { isNativePlatform, OAUTH_CALLBACK_URL } from '../lib/capacitor';
 import type { User, Session } from '@supabase/supabase-js';
 import { familyApi, type Family } from '../api/family';
 
@@ -102,16 +103,39 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true });
 
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
+      if (isNativePlatform) {
+        // Capacitor: open OAuth in in-app browser, redirect via deep link
+        const { Browser } = await import('@capacitor/browser');
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: OAUTH_CALLBACK_URL,
+            skipBrowserRedirect: true,
+          },
+        });
 
-      if (error) {
-        console.error('Sign in error:', error);
-        set({ isLoading: false });
+        if (error) {
+          console.error('Sign in error:', error);
+          set({ isLoading: false });
+          return;
+        }
+
+        if (data?.url) {
+          await Browser.open({ url: data.url });
+        }
+      } else {
+        // Web: normal OAuth flow
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: `${window.location.origin}/auth/callback`,
+          },
+        });
+
+        if (error) {
+          console.error('Sign in error:', error);
+          set({ isLoading: false });
+        }
       }
     } catch (error) {
       console.error('Sign in error:', error);
