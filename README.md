@@ -86,6 +86,24 @@ By default, the app runs in **LAN mode** (no login required). To enable authenti
 
 ---
 
+## Android App / 安卓客户端
+
+Download the APK from [GitHub Releases](https://github.com/yangxunj/familyHealthManager/releases) and install on your Android device.
+
+从 [GitHub Releases](https://github.com/yangxunj/familyHealthManager/releases) 下载 APK 安装到安卓手机。
+
+**First launch / 首次使用：**
+
+1. Open the app → Enter your server address / 打开 App → 输入服务器地址
+   - Public server / 公网：`https://health.example.com`
+   - LAN server / 局域网：`192.168.1.100:5002`
+2. The app auto-detects the mode (LAN or Public) / App 自动检测运行模式
+3. Configuration is saved locally — no need to re-enter next time / 配置保存在本地，下次无需重复输入
+
+To change server later: **Settings → Server Config** / 更换服务器：**系统设置 → 服务器配置**
+
+---
+
 ## Build from Source / 从源码构建
 
 For developers who want to modify the code or run in development mode.
