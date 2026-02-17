@@ -276,46 +276,97 @@ const RecordTrend: React.FC = () => {
         </>
       )}
 
-      <Card style={{ marginBottom: 16 }}>
-        <Space wrap size="middle">
-          <Select
-            placeholder="选择家庭成员"
-            style={{ width: 150 }}
-            value={memberId}
-            onChange={setMemberId}
-          >
+      {isElderMode ? (
+        <div style={{ marginBottom: 16 }}>
+          {/* 成员选择 */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
             {members?.map((member) => (
-              <Select.Option key={member.id} value={member.id}>
+              <Button
+                key={member.id}
+                type={memberId === member.id ? 'primary' : 'default'}
+                style={{ borderRadius: 20, ...(memberId !== member.id ? { borderColor: 'var(--color-border)' } : {}) }}
+                onClick={() => setMemberId(member.id)}
+              >
                 {member.name}
-              </Select.Option>
+              </Button>
             ))}
-          </Select>
-
-          <Select
-            placeholder="选择指标类型"
-            style={{ width: 180 }}
-            value={recordType}
-            onChange={setRecordType}
-          >
-            {Object.entries(RecordTypeGroups).map(([groupKey, group]) => (
-              <Select.OptGroup key={groupKey} label={group.label}>
-                {group.types.map((type) => (
-                  <Select.Option key={type} value={type}>
-                    {RecordTypeLabels[type]}
-                  </Select.Option>
-                ))}
-              </Select.OptGroup>
+          </div>
+          {/* 指标类型选择 */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+            {Object.values(RecordTypeGroups).flatMap((group) => group.types).map((type) => (
+              <Button
+                key={type}
+                type={recordType === type ? 'primary' : 'default'}
+                size="small"
+                style={{ borderRadius: 20, ...(recordType !== type ? { borderColor: 'var(--color-border)' } : {}) }}
+                onClick={() => setRecordType(type)}
+              >
+                {RecordTypeLabels[type]}
+              </Button>
             ))}
-          </Select>
+          </div>
+          {/* 时间范围 */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {([
+              { key: 'week' as PeriodType, label: '近7天' },
+              { key: 'month' as PeriodType, label: '近30天' },
+              { key: 'quarter' as PeriodType, label: '近90天' },
+              { key: 'all' as PeriodType, label: '全部' },
+            ]).map((item) => (
+              <Button
+                key={item.key}
+                type={period === item.key ? 'primary' : 'default'}
+                size="small"
+                style={{ borderRadius: 20, ...(period !== item.key ? { borderColor: 'var(--color-border)' } : {}) }}
+                onClick={() => setPeriod(item.key)}
+              >
+                {item.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <Card style={{ marginBottom: 16 }}>
+          <Space wrap size="middle">
+            <Select
+              placeholder="选择家庭成员"
+              style={{ width: 150 }}
+              value={memberId}
+              onChange={setMemberId}
+            >
+              {members?.map((member) => (
+                <Select.Option key={member.id} value={member.id}>
+                  {member.name}
+                </Select.Option>
+              ))}
+            </Select>
 
-          <Radio.Group value={period} onChange={(e) => setPeriod(e.target.value)}>
-            <Radio.Button value="week">近7天</Radio.Button>
-            <Radio.Button value="month">近30天</Radio.Button>
-            <Radio.Button value="quarter">近90天</Radio.Button>
-            <Radio.Button value="all">全部</Radio.Button>
-          </Radio.Group>
-        </Space>
-      </Card>
+            <Select
+              placeholder="选择指标类型"
+              style={{ width: 180 }}
+              value={recordType}
+              onChange={setRecordType}
+            >
+              {Object.entries(RecordTypeGroups).map(([groupKey, group]) => (
+                <Select.OptGroup key={groupKey} label={group.label}>
+                  {group.types.map((type) => (
+                    <Select.Option key={type} value={type}>
+                      {RecordTypeLabels[type]}
+                    </Select.Option>
+                  ))}
+                </Select.OptGroup>
+              ))}
+            </Select>
+
+            <Radio.Group value={period} onChange={(e) => setPeriod(e.target.value)}>
+              <Radio.Button value="week">近7天</Radio.Button>
+              <Radio.Button value="month">近30天</Radio.Button>
+              <Radio.Button value="quarter">近90天</Radio.Button>
+              <Radio.Button value="all">全部</Radio.Button>
+            </Radio.Group>
+          </Space>
+        </Card>
+      )}
 
       <Card>
         {isLoading ? (

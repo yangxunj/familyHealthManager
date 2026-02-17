@@ -341,65 +341,87 @@ const RecordList: React.FC = () => {
         </div>
       )}
 
-      <Card style={{ marginBottom: 16 }}>
-        <Row gutter={[16, 12]}>
-          <Col xs={24} sm={8}>
-            <Select
-              placeholder="选择家庭成员"
-              allowClear
-              style={{ width: '100%' }}
-              value={filters.memberId}
-              onChange={(value) => setFilters({ ...filters, memberId: value })}
-              notFoundContent="暂无记录"
+      {isElderMode ? (
+        <div style={{ marginBottom: 16, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <Button
+            type={!filters.memberId ? 'primary' : 'default'}
+            style={{ borderRadius: 20, ...(filters.memberId ? { borderColor: 'var(--color-border)' } : {}) }}
+            onClick={() => setFilters({ ...filters, memberId: undefined })}
+          >
+            全部成员
+          </Button>
+          {availableMembers.map((member) => (
+            <Button
+              key={member.id}
+              type={filters.memberId === member.id ? 'primary' : 'default'}
+              style={{ borderRadius: 20, ...(filters.memberId !== member.id ? { borderColor: 'var(--color-border)' } : {}) }}
+              onClick={() => setFilters({ ...filters, memberId: member.id })}
             >
-              {availableMembers.map((member) => (
-                <Select.Option key={member.id} value={member.id}>
-                  {member.name}
-                </Select.Option>
-              ))}
-            </Select>
-          </Col>
-          <Col xs={24} sm={8}>
-            <Select
-              placeholder="选择指标类型"
-              allowClear
-              style={{ width: '100%' }}
-              value={filters.recordType}
-              onChange={(value) => setFilters({ ...filters, recordType: value })}
-              notFoundContent="暂无记录"
-            >
-              {availableTypes.map((type) => (
-                <Select.Option key={type} value={type}>
-                  {RecordTypeLabels[type]}
-                </Select.Option>
-              ))}
-            </Select>
-          </Col>
-          <Col xs={24} sm={8}>
-            <Select
-              placeholder="选择时间范围"
-              allowClear
-              style={{ width: '100%' }}
-              value={timeRange}
-              onChange={(value) => {
-                setTimeRange(value);
-                if (value) {
-                  const { startDate, endDate } = getDateRange(value);
-                  setFilters({ ...filters, startDate, endDate });
-                } else {
-                  setFilters({ ...filters, startDate: undefined, endDate: undefined });
-                }
-              }}
-            >
-              {timeRangeOptions.map((option) => (
-                <Select.Option key={option.key} value={option.key}>
-                  {option.label}
-                </Select.Option>
-              ))}
-            </Select>
-          </Col>
-        </Row>
-      </Card>
+              {member.name}
+            </Button>
+          ))}
+        </div>
+      ) : (
+        <Card style={{ marginBottom: 16 }}>
+          <Row gutter={[16, 12]}>
+            <Col xs={24} sm={8}>
+              <Select
+                placeholder="选择家庭成员"
+                allowClear
+                style={{ width: '100%' }}
+                value={filters.memberId}
+                onChange={(value) => setFilters({ ...filters, memberId: value })}
+                notFoundContent="暂无记录"
+              >
+                {availableMembers.map((member) => (
+                  <Select.Option key={member.id} value={member.id}>
+                    {member.name}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Select
+                placeholder="选择指标类型"
+                allowClear
+                style={{ width: '100%' }}
+                value={filters.recordType}
+                onChange={(value) => setFilters({ ...filters, recordType: value })}
+                notFoundContent="暂无记录"
+              >
+                {availableTypes.map((type) => (
+                  <Select.Option key={type} value={type}>
+                    {RecordTypeLabels[type]}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Select
+                placeholder="选择时间范围"
+                allowClear
+                style={{ width: '100%' }}
+                value={timeRange}
+                onChange={(value) => {
+                  setTimeRange(value);
+                  if (value) {
+                    const { startDate, endDate } = getDateRange(value);
+                    setFilters({ ...filters, startDate, endDate });
+                  } else {
+                    setFilters({ ...filters, startDate: undefined, endDate: undefined });
+                  }
+                }}
+              >
+                {timeRangeOptions.map((option) => (
+                  <Select.Option key={option.key} value={option.key}>
+                    {option.label}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Col>
+          </Row>
+        </Card>
+      )}
 
       <Card bodyStyle={isMobile ? { padding: 0 } : undefined}>
         {isMobile ? (

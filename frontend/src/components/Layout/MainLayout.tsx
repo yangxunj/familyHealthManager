@@ -340,25 +340,10 @@ const MainLayout: React.FC = () => {
                   cursor: 'pointer',
                   color: isActive ? '#136dec' : '#c0c0c0',
                   transition: 'color 0.2s',
-                  position: 'relative',
                   userSelect: 'none',
                   WebkitTapHighlightColor: 'transparent',
                 }}
               >
-                {/* 选中指示条 */}
-                {isActive && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: '25%',
-                      right: '25%',
-                      height: 3,
-                      borderRadius: 2,
-                      background: '#136dec',
-                    }}
-                  />
-                )}
                 <span style={{ fontSize: 24, lineHeight: 1 }}>{tab.icon}</span>
                 <span style={{ fontSize: 13, fontWeight: isActive ? 700 : 400 }}>{tab.label}</span>
               </div>
