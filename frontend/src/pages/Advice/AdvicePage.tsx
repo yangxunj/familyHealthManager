@@ -494,49 +494,99 @@ const AdvicePage: React.FC = () => {
       />
 
       <Card style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
-          <span>家庭成员：</span>
-          {members?.map((member) => (
-            <Button
-              key={member.id}
-              type={selectedMemberId === member.id ? 'primary' : 'default'}
-              style={{
-                borderRadius: 20,
-                minWidth: 80,
-                ...(selectedMemberId === member.id ? {} : {
-                  borderColor: 'var(--color-border)',
-                }),
-              }}
-              onClick={() => {
-                if (selectedMemberId !== member.id) {
-                  setSelectedMemberId(member.id);
-                  setSelectedAdvice(null);
-                }
-              }}
-            >
-              {member.name}
-            </Button>
-          ))}
-          <div style={{ flex: 1 }} />
-          {selectedMemberId && newDataCheck?.hasNewData && (
-            <Button
-              type="primary"
-              icon={<ReloadOutlined />}
-              onClick={handleGenerate}
-              loading={generateMutation.isPending}
-            >
-              {newDataCheck.lastAdviceDate ? '重新生成建议' : '生成健康建议'}
-            </Button>
-          )}
-          {selectedMemberId && (
-            <Button
-              icon={<HistoryOutlined />}
-              onClick={() => setShowHistory(true)}
-            >
-              历史建议
-            </Button>
-          )}
-        </div>
+        {isElderMode ? (
+          <>
+            {/* 成员气泡独立一行 */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+              {members?.map((member) => (
+                <Button
+                  key={member.id}
+                  type={selectedMemberId === member.id ? 'primary' : 'default'}
+                  style={{
+                    borderRadius: 20,
+                    minWidth: 80,
+                    ...(selectedMemberId === member.id ? {} : { borderColor: 'var(--color-border)' }),
+                  }}
+                  onClick={() => {
+                    if (selectedMemberId !== member.id) {
+                      setSelectedMemberId(member.id);
+                      setSelectedAdvice(null);
+                    }
+                  }}
+                >
+                  {member.name}
+                </Button>
+              ))}
+            </div>
+            {/* 操作按钮独立一行 */}
+            {selectedMemberId && (
+              <div style={{ display: 'flex', gap: 8 }}>
+                {newDataCheck?.hasNewData && (
+                  <Button
+                    type="primary"
+                    icon={<ReloadOutlined />}
+                    onClick={handleGenerate}
+                    loading={generateMutation.isPending}
+                    style={{ flex: 1 }}
+                  >
+                    {newDataCheck.lastAdviceDate ? '重新生成建议' : '生成健康建议'}
+                  </Button>
+                )}
+                <Button
+                  icon={<HistoryOutlined />}
+                  onClick={() => setShowHistory(true)}
+                  style={{ flex: newDataCheck?.hasNewData ? undefined : 1 }}
+                >
+                  历史建议
+                </Button>
+              </div>
+            )}
+          </>
+        ) : (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
+            <span>家庭成员：</span>
+            {members?.map((member) => (
+              <Button
+                key={member.id}
+                type={selectedMemberId === member.id ? 'primary' : 'default'}
+                style={{
+                  borderRadius: 20,
+                  minWidth: 80,
+                  ...(selectedMemberId === member.id ? {} : {
+                    borderColor: 'var(--color-border)',
+                  }),
+                }}
+                onClick={() => {
+                  if (selectedMemberId !== member.id) {
+                    setSelectedMemberId(member.id);
+                    setSelectedAdvice(null);
+                  }
+                }}
+              >
+                {member.name}
+              </Button>
+            ))}
+            <div style={{ flex: 1 }} />
+            {selectedMemberId && newDataCheck?.hasNewData && (
+              <Button
+                type="primary"
+                icon={<ReloadOutlined />}
+                onClick={handleGenerate}
+                loading={generateMutation.isPending}
+              >
+                {newDataCheck.lastAdviceDate ? '重新生成建议' : '生成健康建议'}
+              </Button>
+            )}
+            {selectedMemberId && (
+              <Button
+                icon={<HistoryOutlined />}
+                onClick={() => setShowHistory(true)}
+              >
+                历史建议
+              </Button>
+            )}
+          </div>
+        )}
 
         {selectedMemberId && newDataCheck && (
           <div style={{ marginTop: 12 }}>
