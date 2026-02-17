@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Card, Select, Button, Space, Spin, Empty, Radio, Tag, Tabs } from 'antd';
 import { ArrowLeftOutlined, WarningOutlined } from '@ant-design/icons';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -30,6 +30,27 @@ const RecordTrend: React.FC = () => {
     queryKey: ['members'],
     queryFn: membersApi.getAll,
   });
+
+  // 老人模式：查询所选成员有数据的指标类型
+  const { data: memberRecords } = useQuery({
+    queryKey: ['records', 'byMember', memberId],
+    queryFn: () => recordsApi.getAll({ memberId }),
+    enabled: isElderMode && !!memberId,
+  });
+
+  const availableTypes = useMemo(() => {
+    if (!memberRecords) return [];
+    const typesSet = new Set<RecordType>();
+    memberRecords.forEach((r) => typesSet.add(r.recordType));
+    return Array.from(typesSet);
+  }, [memberRecords]);
+
+  // 切换成员后，清除不再可用的指标选择
+  useEffect(() => {
+    if (isElderMode && recordType && availableTypes.length > 0 && !availableTypes.includes(recordType)) {
+      setRecordType(undefined);
+    }
+  }, [isElderMode, availableTypes, recordType]);
 
   const { data: trendData, isLoading } = useQuery({
     queryKey: ['recordTrend', memberId, recordType, period],
@@ -279,7 +300,8 @@ const RecordTrend: React.FC = () => {
       {isElderMode ? (
         <div style={{ marginBottom: 16 }}>
           {/* 成员选择 */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+          <div style={{ fontSize: 13, color: 'var(--color-text-tertiary)', marginBottom: 6 }}>选择成员</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingBottom: 12, borderBottom: '1px solid var(--color-border)' }}>
             {members?.map((member) => (
               <Button
                 key={member.id}
@@ -291,38 +313,58 @@ const RecordTrend: React.FC = () => {
               </Button>
             ))}
           </div>
-          {/* 指标类型选择 */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-            {Object.values(RecordTypeGroups).flatMap((group) => group.types).map((type) => (
-              <Button
-                key={type}
-                type={recordType === type ? 'primary' : 'default'}
-                size="small"
-                style={{ borderRadius: 20, ...(recordType !== type ? { borderColor: 'var(--color-border)' } : {}) }}
-                onClick={() => setRecordType(type)}
-              >
-                {RecordTypeLabels[type]}
-              </Button>
-            ))}
+          {/* 指标选择（只显示有数据的） */}
+          <div style={{ fontSize: 13, color: 'var(--color-text-tertiary)', marginTop: 12, marginBottom: 6 }}>选择指标</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingBottom: 12, borderBottom: '1px solid var(--color-border)' }}>
+            {!memberId ? (
+              <span style={{ fontSize: 14, color: 'var(--color-text-quaternary)', padding: '4px 0' }}>请先选择成员</span>
+            ) : availableTypes.length === 0 ? (
+              <span style={{ fontSize: 14, color: 'var(--color-text-quaternary)', padding: '4px 0' }}>该成员暂无记录</span>
+            ) : (
+              availableTypes.map((type) => {
+                const isActive = recordType === type;
+                return (
+                  <Button
+                    key={type}
+                    style={{
+                      borderRadius: 20,
+                      ...(isActive
+                        ? { background: '#52c41a', borderColor: '#52c41a', color: '#fff' }
+                        : { borderColor: 'var(--color-border)' }),
+                    }}
+                    onClick={() => setRecordType(type)}
+                  >
+                    {RecordTypeLabels[type]}
+                  </Button>
+                );
+              })
+            )}
           </div>
           {/* 时间范围 */}
+          <div style={{ fontSize: 13, color: 'var(--color-text-tertiary)', marginTop: 12, marginBottom: 6 }}>时间范围</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {([
               { key: 'week' as PeriodType, label: '近7天' },
               { key: 'month' as PeriodType, label: '近30天' },
               { key: 'quarter' as PeriodType, label: '近90天' },
               { key: 'all' as PeriodType, label: '全部' },
-            ]).map((item) => (
-              <Button
-                key={item.key}
-                type={period === item.key ? 'primary' : 'default'}
-                size="small"
-                style={{ borderRadius: 20, ...(period !== item.key ? { borderColor: 'var(--color-border)' } : {}) }}
-                onClick={() => setPeriod(item.key)}
-              >
-                {item.label}
-              </Button>
-            ))}
+            ]).map((item) => {
+              const isActive = period === item.key;
+              return (
+                <Button
+                  key={item.key}
+                  style={{
+                    borderRadius: 20,
+                    ...(isActive
+                      ? { background: '#faad14', borderColor: '#faad14', color: '#fff' }
+                      : { borderColor: 'var(--color-border)' }),
+                  }}
+                  onClick={() => setPeriod(item.key)}
+                >
+                  {item.label}
+                </Button>
+              );
+            })}
           </div>
         </div>
       ) : (
