@@ -387,6 +387,11 @@ const ChatPage: React.FC = () => {
     createSessionMutation.mutate({ memberId: selectedMemberId });
   };
 
+  // 消息气泡尺寸（老人模式放大）
+  const msgFontSize = isElderMode ? 17 : (isMobile ? 14 : undefined);
+  const msgLineHeight = isElderMode ? 1.8 : 1.6;
+  const msgPadding = isElderMode ? '12px 16px' : (isMobile ? '8px 12px' : '10px 14px');
+
   // 渲染消息气泡
   const renderMessage = (msg: ChatMessage) => {
     const isUser = msg.role === 'user';
@@ -428,13 +433,13 @@ const ChatPage: React.FC = () => {
             style={{
               backgroundColor: isUser ? '#136dec' : 'var(--color-bg-chat-ai)',
               color: isUser ? '#fff' : 'var(--color-text-primary)',
-              padding: isMobile ? '8px 12px' : '10px 14px',
+              padding: msgPadding,
               borderRadius: 16,
               borderTopLeftRadius: isUser ? 16 : 4,
               borderTopRightRadius: isUser ? 4 : 16,
               wordBreak: 'break-word',
-              fontSize: isMobile ? 14 : undefined,
-              lineHeight: 1.6,
+              fontSize: msgFontSize,
+              lineHeight: msgLineHeight,
             }}
             className={isUser ? undefined : 'markdown-content'}
           >
@@ -489,10 +494,11 @@ const ChatPage: React.FC = () => {
               style={{
                 backgroundColor: 'var(--color-bg-chat-ai)',
                 color: 'var(--color-text-primary)',
-                padding: isMobile ? '8px 12px' : '12px 16px',
+                padding: isElderMode ? '12px 16px' : (isMobile ? '8px 12px' : '12px 16px'),
                 borderRadius: 12,
                 borderTopLeftRadius: 4,
                 minWidth: 60,
+                fontSize: msgFontSize,
               }}
             >
               <Spin size="small" />
@@ -547,13 +553,13 @@ const ChatPage: React.FC = () => {
               style={{
                 backgroundColor: 'var(--color-bg-chat-ai)',
                 color: 'var(--color-text-primary)',
-                padding: isMobile ? '8px 12px' : '12px 16px',
+                padding: isElderMode ? '12px 16px' : (isMobile ? '8px 12px' : '12px 16px'),
                 borderRadius: 12,
                 borderTopLeftRadius: 4,
                 wordBreak: 'break-word',
                 minWidth: 60,
-                fontSize: isMobile ? 14 : undefined,
-                lineHeight: 1.6,
+                fontSize: msgFontSize,
+                lineHeight: msgLineHeight,
               }}
               className="markdown-content"
             >
@@ -836,7 +842,7 @@ const ChatPage: React.FC = () => {
               placeholder="输入您的健康问题..."
               autoSize={{ minRows: 1, maxRows: isMobile ? 3 : 4 }}
               disabled={isStreaming || isTyping}
-              style={{ flex: 1 }}
+              style={{ flex: 1, ...(isElderMode ? { fontSize: 17 } : {}) }}
             />
             <Button
               type="primary"
