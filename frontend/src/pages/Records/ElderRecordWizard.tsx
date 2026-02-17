@@ -3,7 +3,6 @@ import { Drawer, Button, InputNumber, message, Avatar, Empty } from 'antd';
 import {
   HeartOutlined,
   ExperimentOutlined,
-  MedicineBoxOutlined,
   DashboardOutlined,
   ArrowLeftOutlined,
   UserOutlined,
@@ -14,7 +13,7 @@ import { RecordTypeUnits } from '../../types';
 import type { RecordType, RecordItem } from '../../types';
 import dayjs from 'dayjs';
 
-type WizardCategory = 'bloodPressure' | 'bloodSugar' | 'bloodLipid' | 'basic';
+type WizardCategory = 'bloodPressure' | 'bloodSugar' | 'basic';
 
 interface ElderRecordWizardProps {
   open: boolean;
@@ -43,15 +42,7 @@ const CATEGORIES: {
     icon: <ExperimentOutlined style={{ fontSize: 32 }} />,
     color: '#136dec',
     bg: '#e6f4ff',
-    desc: '空腹 / 餐后 / 糖化',
-  },
-  {
-    key: 'bloodLipid',
-    label: '血脂检查',
-    icon: <MedicineBoxOutlined style={{ fontSize: 32 }} />,
-    color: '#52c41a',
-    bg: '#f6ffed',
-    desc: '胆固醇、甘油三酯',
+    desc: '空腹血糖、餐后血糖',
   },
   {
     key: 'basic',
@@ -74,7 +65,6 @@ const BASIC_TYPES: { key: RecordType; label: string; hint: string }[] = [
 const GLUCOSE_TYPES: { key: RecordType; label: string; hint: string }[] = [
   { key: 'FASTING_GLUCOSE', label: '空腹血糖', hint: '3.9 ~ 6.1 正常' },
   { key: 'POSTPRANDIAL_GLUCOSE', label: '餐后血糖', hint: '3.9 ~ 7.8 正常' },
-  { key: 'HBA1C', label: '糖化血红蛋白', hint: '4.0 ~ 6.0% 正常' },
 ];
 
 const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) => {
@@ -91,8 +81,6 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
   const [singleValue, setSingleValue] = useState<number | null>(null);
   // Blood pressure values
   const [bpValues, setBpValues] = useState({ systolic: null as number | null, diastolic: null as number | null, heartRate: null as number | null });
-  // Blood lipid values
-  const [lipidValues, setLipidValues] = useState({ totalCholesterol: null as number | null, triglycerides: null as number | null, hdl: null as number | null, ldl: null as number | null });
 
   const { data: members } = useQuery({ queryKey: ['members'], queryFn: membersApi.getAll });
 
@@ -124,7 +112,6 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
     setSubType(null);
     setSingleValue(null);
     setBpValues({ systolic: null, diastolic: null, heartRate: null });
-    setLipidValues({ totalCholesterol: null, triglycerides: null, hdl: null, ldl: null });
   };
 
   const handleClose = () => {
@@ -142,7 +129,6 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
       setSubType(null);
       setSingleValue(null);
       setBpValues({ systolic: null, diastolic: null, heartRate: null });
-      setLipidValues({ totalCholesterol: null, triglycerides: null, hdl: null, ldl: null });
     }
   };
 
@@ -160,14 +146,6 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
     } else if (category === 'bloodSugar') {
       if (!subType || singleValue == null) { message.warning('请填写完整数据'); return; }
       createMutation.mutate({ memberId, recordDate, recordType: subType, value: singleValue, unit: RecordTypeUnits[subType] });
-    } else if (category === 'bloodLipid') {
-      const records: RecordItem[] = [];
-      if (lipidValues.totalCholesterol != null) records.push({ recordType: 'TOTAL_CHOLESTEROL', value: lipidValues.totalCholesterol, unit: 'mmol/L' });
-      if (lipidValues.triglycerides != null) records.push({ recordType: 'TRIGLYCERIDES', value: lipidValues.triglycerides, unit: 'mmol/L' });
-      if (lipidValues.hdl != null) records.push({ recordType: 'HDL', value: lipidValues.hdl, unit: 'mmol/L' });
-      if (lipidValues.ldl != null) records.push({ recordType: 'LDL', value: lipidValues.ldl, unit: 'mmol/L' });
-      if (records.length === 0) { message.warning('请至少填写一项数据'); return; }
-      createBatchMutation.mutate({ memberId, recordDate, records });
     } else if (category === 'basic') {
       if (!subType || singleValue == null) { message.warning('请填写完整数据'); return; }
       createMutation.mutate({ memberId, recordDate, recordType: subType, value: singleValue, unit: RecordTypeUnits[subType] });
@@ -244,7 +222,7 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
 
   /* ---- Step 0: Select Category ---- */
   const renderCategoryStep = () => (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, padding: 16 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 16 }}>
       {CATEGORIES.map((cat) => (
         <div
           key={cat.key}
@@ -252,19 +230,32 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
           style={{
             background: cat.bg,
             borderRadius: 16,
-            padding: '24px 16px',
+            padding: '20px 24px',
             cursor: 'pointer',
             display: 'flex',
-            flexDirection: 'column',
             alignItems: 'center',
-            gap: 8,
+            gap: 20,
             WebkitTapHighlightColor: 'transparent',
             userSelect: 'none',
           }}
         >
-          <div style={{ color: cat.color }}>{cat.icon}</div>
-          <div style={{ fontSize: 18, fontWeight: 600, color: cat.color }}>{cat.label}</div>
-          <div style={{ fontSize: 13, color: 'var(--color-text-tertiary)', textAlign: 'center' }}>{cat.desc}</div>
+          <div style={{
+            width: 56,
+            height: 56,
+            borderRadius: '50%',
+            background: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: cat.color,
+            flexShrink: 0,
+          }}>
+            {cat.icon}
+          </div>
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 600, color: cat.color }}>{cat.label}</div>
+            <div style={{ fontSize: 14, color: 'var(--color-text-tertiary)', marginTop: 4 }}>{cat.desc}</div>
+          </div>
         </div>
       ))}
     </div>
@@ -340,19 +331,6 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
               setSingleValue,
               { precision: 2, addonAfter: RecordTypeUnits[subType] },
             )}
-          </>
-        )}
-
-        {category === 'bloodLipid' && (
-          <>
-            {renderInputRow('总胆固醇', '2.8 ~ 5.2 mmol/L', lipidValues.totalCholesterol,
-              (v) => setLipidValues({ ...lipidValues, totalCholesterol: v }), { precision: 2, addonAfter: 'mmol/L' })}
-            {renderInputRow('甘油三酯', '0.56 ~ 1.7 mmol/L', lipidValues.triglycerides,
-              (v) => setLipidValues({ ...lipidValues, triglycerides: v }), { precision: 2, addonAfter: 'mmol/L' })}
-            {renderInputRow('HDL（高密度脂蛋白）', '1.0 ~ 1.5 mmol/L', lipidValues.hdl,
-              (v) => setLipidValues({ ...lipidValues, hdl: v }), { precision: 2, addonAfter: 'mmol/L' })}
-            {renderInputRow('LDL（低密度脂蛋白）', '0 ~ 3.4 mmol/L', lipidValues.ldl,
-              (v) => setLipidValues({ ...lipidValues, ldl: v }), { precision: 2, addonAfter: 'mmol/L' })}
           </>
         )}
 
