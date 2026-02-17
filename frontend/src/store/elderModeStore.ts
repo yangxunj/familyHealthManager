@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useThemeStore } from './themeStore';
 
 interface ElderModeState {
   isElderMode: boolean;
@@ -15,6 +16,10 @@ export const useElderModeStore = create<ElderModeState>((set) => ({
         'data-elder-mode',
         next ? 'true' : 'false',
       );
+      // 开启老人模式时强制切换到浅色模式
+      if (next && useThemeStore.getState().isDark) {
+        useThemeStore.getState().toggleTheme();
+      }
       return { isElderMode: next };
     }),
 }));

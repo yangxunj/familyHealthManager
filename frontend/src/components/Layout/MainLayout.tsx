@@ -277,44 +277,47 @@ const MainLayout: React.FC = () => {
             )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Tooltip title={isElderMode ? '退出老人模式' : '开启老人模式'}>
-              <div
-                onClick={toggleElderMode}
-                style={{
-                  cursor: 'pointer',
-                  fontSize: 18,
-                  padding: '4px 8px',
-                  borderRadius: 8,
-                  transition: 'background 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  color: isElderMode ? '#136dec' : undefined,
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-              >
-                <EyeOutlined />
-              </div>
-            </Tooltip>
-            <Tooltip title={isDark ? '切换亮色模式' : '切换暗色模式'}>
-              <div
-                onClick={toggleTheme}
-                style={{
-                  cursor: 'pointer',
-                  fontSize: 18,
-                  padding: '4px 8px',
-                  borderRadius: 8,
-                  transition: 'background 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-              >
-                {isDark ? <SunOutlined /> : <MoonOutlined />}
-              </div>
-            </Tooltip>
-            {getIsAuthEnabled() ? (
+            {!isElderMode && (
+              <>
+                <Tooltip title="开启老人模式">
+                  <div
+                    onClick={toggleElderMode}
+                    style={{
+                      cursor: 'pointer',
+                      fontSize: 18,
+                      padding: '4px 8px',
+                      borderRadius: 8,
+                      transition: 'background 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <EyeOutlined />
+                  </div>
+                </Tooltip>
+                <Tooltip title={isDark ? '切换亮色模式' : '切换暗色模式'}>
+                  <div
+                    onClick={toggleTheme}
+                    style={{
+                      cursor: 'pointer',
+                      fontSize: 18,
+                      padding: '4px 8px',
+                      borderRadius: 8,
+                      transition: 'background 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    {isDark ? <SunOutlined /> : <MoonOutlined />}
+                  </div>
+                </Tooltip>
+              </>
+            )}
+            {getIsAuthEnabled() && !isElderMode ? (
               <Dropdown
                 menu={{ items: userMenuItems, onClick: handleUserMenuClick }}
                 placement="bottomRight"
@@ -343,7 +346,7 @@ const MainLayout: React.FC = () => {
                 padding: '4px 12px',
               }}>
                 <Avatar icon={<UserOutlined />} size={isMobile ? 'small' : 'default'} />
-                {!isMobile && <span>本地用户</span>}
+                {!isMobile && <span>{isElderMode ? (user?.user_metadata?.full_name || '用户') : '本地用户'}</span>}
               </div>
             )}
           </div>

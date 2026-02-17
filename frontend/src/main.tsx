@@ -73,10 +73,13 @@ function ThemedApp() {
   const isDark = useThemeStore((s) => s.isDark);
   const isElderMode = useElderModeStore((s) => s.isElderMode);
 
+  // 老人模式强制浅色
+  const effectiveDark = isDark && !isElderMode;
+
   // 初始化时同步 data-theme 和 data-elder-mode 属性
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
-  }, [isDark]);
+    document.documentElement.setAttribute('data-theme', effectiveDark ? 'dark' : 'light');
+  }, [effectiveDark]);
 
   useEffect(() => {
     document.documentElement.setAttribute(
@@ -85,7 +88,7 @@ function ThemedApp() {
     );
   }, [isElderMode]);
 
-  const baseToken = isDark
+  const baseToken = effectiveDark
     ? sharedToken
     : {
         ...sharedToken,
@@ -98,7 +101,7 @@ function ThemedApp() {
         boxShadowSecondary: '0 4px 16px rgba(0, 0, 0, 0.08)',
       };
 
-  const baseComponents = isDark
+  const baseComponents = effectiveDark
     ? sharedComponents
     : {
         ...sharedComponents,
@@ -123,7 +126,7 @@ function ThemedApp() {
     <ConfigProvider
       locale={zhCN}
       theme={{
-        algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
+        algorithm: effectiveDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
         token: mergedToken,
         components: mergedComponents,
       }}
