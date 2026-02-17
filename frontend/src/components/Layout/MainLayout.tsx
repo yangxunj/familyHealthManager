@@ -22,7 +22,6 @@ import {
   BulbOutlined,
   MedicineBoxOutlined,
   EyeOutlined,
-  PlusOutlined,
 } from '@ant-design/icons';
 import { useAuthStore, useThemeStore, useElderModeStore } from '../../store';
 import { getIsAuthEnabled } from '../../lib/supabase';
@@ -35,8 +34,7 @@ const { useBreakpoint } = Grid;
 const elderTabs = [
   { key: '/chat', icon: <MessageOutlined />, label: '健康咨询' },
   { key: '/advice', icon: <BulbOutlined />, label: '健康建议' },
-  { key: '/records', icon: <PlusOutlined />, label: '记录数据' },
-  { key: '/records/trend', icon: <LineChartOutlined />, label: '我的记录' },
+  { key: '/records', icon: <LineChartOutlined />, label: '健康记录' },
 ];
 
 const ELDER_TAB_HEIGHT = 64;
@@ -234,12 +232,9 @@ const MainLayout: React.FC = () => {
   // 老人模式底部 Tab 高亮匹配
   const getActiveElderTab = () => {
     const path = location.pathname;
-    // /records/trend 需要精确匹配，优先于 /records
-    if (path.startsWith('/records/trend')) return '/records/trend';
     if (path.startsWith('/records')) return '/records';
     if (path.startsWith('/chat')) return '/chat';
     if (path.startsWith('/advice')) return '/advice';
-    // 首页或其他页面不高亮任何 tab
     return '';
   };
 

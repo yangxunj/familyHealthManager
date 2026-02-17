@@ -17,6 +17,7 @@ import {
   DatePicker,
   Divider,
   Radio,
+  Tabs,
 } from 'antd';
 import {
   PlusOutlined,
@@ -27,6 +28,7 @@ import {
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { recordsApi, membersApi } from '../../api';
+import { useElderModeStore } from '../../store';
 import type { HealthRecord, RecordType, QueryRecordParams, MeasurementContext, RecordItem } from '../../types';
 import { RecordTypeLabels, RecordTypeUnits, MeasurementContextLabels } from '../../types';
 import dayjs from 'dayjs';
@@ -72,6 +74,7 @@ const RecordList: React.FC = () => {
   const [searchParams] = useSearchParams();
   const screens = useBreakpoint();
   const isMobile = !screens.md;
+  const isElderMode = useElderModeStore((s) => s.isElderMode);
   const queryClient = useQueryClient();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
@@ -304,16 +307,38 @@ const RecordList: React.FC = () => {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
-        <h2 style={{ margin: 0 }}>健康记录</h2>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => setAddOpen(true)}
-        >
-          添加记录
-        </Button>
-      </div>
+      {isElderMode ? (
+        <div style={{ marginBottom: 16 }}>
+          <Tabs
+            activeKey="list"
+            onChange={(key) => { if (key === 'trend') navigate('/records/trend'); }}
+            items={[
+              { key: 'list', label: '记录列表' },
+              { key: 'trend', label: '趋势图表' },
+            ]}
+            tabBarExtraContent={
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => setAddOpen(true)}
+              >
+                添加记录
+              </Button>
+            }
+          />
+        </div>
+      ) : (
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
+          <h2 style={{ margin: 0 }}>健康记录</h2>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setAddOpen(true)}
+          >
+            添加记录
+          </Button>
+        </div>
+      )}
 
       <Card style={{ marginBottom: 16 }}>
         <Row gutter={[16, 12]}>

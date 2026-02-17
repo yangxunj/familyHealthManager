@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { Card, Select, Button, Space, Spin, Empty, Radio, Tag } from 'antd';
+import { Card, Select, Button, Space, Spin, Empty, Radio, Tag, Tabs } from 'antd';
 import { ArrowLeftOutlined, WarningOutlined } from '@ant-design/icons';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import * as echarts from 'echarts';
 import { recordsApi, membersApi } from '../../api';
+import { useElderModeStore } from '../../store';
 import type { RecordType } from '../../types';
 import { RecordTypeLabels, RecordTypeGroups } from '../../types';
 
@@ -12,6 +13,7 @@ type PeriodType = 'week' | 'month' | 'quarter' | 'all';
 
 const RecordTrend: React.FC = () => {
   const navigate = useNavigate();
+  const isElderMode = useElderModeStore((s) => s.isElderMode);
   const [searchParams] = useSearchParams();
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<echarts.ECharts | null>(null);
@@ -252,13 +254,27 @@ const RecordTrend: React.FC = () => {
 
   return (
     <div>
-      <div style={{ marginBottom: 24 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/records')}>
-          返回列表
-        </Button>
-      </div>
-
-      <h2 style={{ marginBottom: 24 }}>健康趋势</h2>
+      {isElderMode ? (
+        <div style={{ marginBottom: 16 }}>
+          <Tabs
+            activeKey="trend"
+            onChange={(key) => { if (key === 'list') navigate('/records'); }}
+            items={[
+              { key: 'list', label: '记录列表' },
+              { key: 'trend', label: '趋势图表' },
+            ]}
+          />
+        </div>
+      ) : (
+        <>
+          <div style={{ marginBottom: 24 }}>
+            <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/records')}>
+              返回列表
+            </Button>
+          </div>
+          <h2 style={{ marginBottom: 24 }}>健康趋势</h2>
+        </>
+      )}
 
       <Card style={{ marginBottom: 16 }}>
         <Space wrap size="middle">
