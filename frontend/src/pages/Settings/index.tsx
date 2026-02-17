@@ -38,6 +38,7 @@ import {
   FileTextOutlined,
   LineChartOutlined,
   BulbOutlined,
+  EyeOutlined,
 } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { getIsAuthEnabled } from '../../lib/supabase';
@@ -46,6 +47,7 @@ import { getServerUrl, getServerAuthRequired, clearServerConfig } from '../../li
 import { whitelistApi, type AllowedEmail } from '../../api/whitelist';
 import { settingsApi, type ApiConfig } from '../../api/settings';
 import { familyApi, type FamilyOverview } from '../../api/family';
+import { useElderModeStore } from '../../store';
 import dayjs from 'dayjs';
 
 const { Text } = Typography;
@@ -83,6 +85,11 @@ export default function SettingsPage() {
     <div style={{ maxWidth: 800, margin: '0 auto' }}>
       <Tabs
         items={[
+          {
+            key: 'display',
+            label: <span><EyeOutlined style={{ marginRight: 6 }} />显示设置</span>,
+            children: <DisplaySection />,
+          },
           // 服务器配置（仅 App 环境显示）
           ...(isNativePlatform
             ? [
@@ -608,6 +615,56 @@ function FamilyOverviewSection() {
           </Col>
         ))}
       </Row>
+    </div>
+  );
+}
+
+// ============================================================
+// 显示设置区块
+// ============================================================
+function DisplaySection() {
+  const { isElderMode, toggleElderMode } = useElderModeStore();
+
+  return (
+    <div>
+      <Alert
+        message="调整界面显示模式，适配不同使用需求。"
+        type="info"
+        showIcon
+        icon={<EyeOutlined />}
+        style={{ marginBottom: 16 }}
+      />
+
+      <Card>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 4 }}>
+              <EyeOutlined style={{ marginRight: 8, color: '#136dec' }} />
+              老人模式
+            </div>
+            <Text type="secondary">
+              开启后将增大字体、简化导航菜单、显示大按钮首页，更适合长辈使用。
+            </Text>
+          </div>
+          <Button
+            type={isElderMode ? 'primary' : 'default'}
+            onClick={toggleElderMode}
+            style={{ minWidth: 80 }}
+          >
+            {isElderMode ? '已开启' : '开启'}
+          </Button>
+        </div>
+
+        {isElderMode && (
+          <Alert
+            message="老人模式已开启"
+            description="界面已切换为大字体、简化导航。部分高级功能（健康文档、家庭成员管理等）已隐藏，可通过关闭老人模式恢复。"
+            type="success"
+            showIcon
+            style={{ marginTop: 16 }}
+          />
+        )}
+      </Card>
     </div>
   );
 }

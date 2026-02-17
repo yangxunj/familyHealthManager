@@ -21,8 +21,9 @@ import {
   MoonOutlined,
   BulbOutlined,
   MedicineBoxOutlined,
+  EyeOutlined,
 } from '@ant-design/icons';
-import { useAuthStore, useThemeStore } from '../../store';
+import { useAuthStore, useThemeStore, useElderModeStore } from '../../store';
 import { getIsAuthEnabled } from '../../lib/supabase';
 import { whitelistApi } from '../../api/whitelist';
 
@@ -37,6 +38,7 @@ const MainLayout: React.FC = () => {
   const location = useLocation();
   const { user, signOut, hasFamily, isFamilyLoaded } = useAuthStore();
   const { isDark, toggleTheme } = useThemeStore();
+  const { isElderMode, toggleElderMode } = useElderModeStore();
   const screens = useBreakpoint();
   const isMobile = !screens.md; // < 768px
   const {
@@ -164,10 +166,19 @@ const MainLayout: React.FC = () => {
     return ['/dashboard'];
   };
 
-  // 根据是否有家庭过滤菜单项
-  const visibleMenuItems = (hasFamily || !isFamilyLoaded)
-    ? menuItems
-    : menuItems.filter(item => item?.key === '/family');
+  // 老人模式下隐藏复杂菜单项
+  const elderModeHiddenKeys = new Set(['/members', '/documents', '/health-plan', '/family']);
+
+  // 根据是否有家庭 + 老人模式过滤菜单项
+  const visibleMenuItems = (() => {
+    if (!hasFamily && isFamilyLoaded) {
+      return menuItems.filter(item => item?.key === '/family');
+    }
+    if (isElderMode) {
+      return menuItems.filter(item => !elderModeHiddenKeys.has(item?.key as string));
+    }
+    return menuItems;
+  })();
 
   // 菜单内容（桌面端和移动端共用）
   const siderContent = (
@@ -266,6 +277,25 @@ const MainLayout: React.FC = () => {
             )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Tooltip title={isElderMode ? '退出老人模式' : '开启老人模式'}>
+              <div
+                onClick={toggleElderMode}
+                style={{
+                  cursor: 'pointer',
+                  fontSize: 18,
+                  padding: '4px 8px',
+                  borderRadius: 8,
+                  transition: 'background 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  color: isElderMode ? '#136dec' : undefined,
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+              >
+                <EyeOutlined />
+              </div>
+            </Tooltip>
             <Tooltip title={isDark ? '切换亮色模式' : '切换暗色模式'}>
               <div
                 onClick={toggleTheme}

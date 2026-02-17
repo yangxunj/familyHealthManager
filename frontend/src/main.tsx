@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import 'dayjs/locale/zh-cn';
 import App from './App';
-import { useThemeStore } from './store';
+import { useThemeStore, useElderModeStore } from './store';
 import './styles/global.css';
 
 // 设置 dayjs 语言
@@ -45,37 +45,87 @@ const sharedComponents = {
   Table: { borderRadius: 12 },
 };
 
+// 老人模式额外 token
+const elderModeToken = {
+  fontSize: 17,
+  fontSizeSM: 15,
+  fontSizeLG: 19,
+  fontSizeXL: 22,
+  fontSizeHeading1: 32,
+  fontSizeHeading2: 26,
+  fontSizeHeading3: 22,
+  fontSizeHeading4: 19,
+  fontSizeHeading5: 17,
+  lineHeight: 1.8,
+};
+
+// 老人模式额外组件配置
+const elderModeComponents = {
+  Button: { controlHeight: 52, controlHeightLG: 56, fontSize: 17 },
+  Input: { controlHeight: 52, fontSize: 17 },
+  Select: { controlHeight: 52, fontSize: 17 },
+  Menu: { itemHeight: 52, fontSize: 17 },
+  Tabs: { titleFontSize: 17 },
+  Tag: { fontSize: 15 },
+};
+
 function ThemedApp() {
   const isDark = useThemeStore((s) => s.isDark);
+  const isElderMode = useElderModeStore((s) => s.isElderMode);
 
-  // 初始化时同步 data-theme 属性
+  // 初始化时同步 data-theme 和 data-elder-mode 属性
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
   }, [isDark]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute(
+      'data-elder-mode',
+      isElderMode ? 'true' : 'false',
+    );
+  }, [isElderMode]);
+
+  const baseToken = isDark
+    ? sharedToken
+    : {
+        ...sharedToken,
+        colorBgLayout: '#f6f7f8',
+        colorBgContainer: '#ffffff',
+        colorBorder: '#e7edf3',
+        colorText: '#0d141b',
+        colorTextSecondary: '#4c739a',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+        boxShadowSecondary: '0 4px 16px rgba(0, 0, 0, 0.08)',
+      };
+
+  const baseComponents = isDark
+    ? sharedComponents
+    : {
+        ...sharedComponents,
+        Table: { ...sharedComponents.Table, headerBg: '#fafbfc' },
+      };
+
+  // 合并老人模式覆盖
+  const mergedToken = isElderMode ? { ...baseToken, ...elderModeToken } : baseToken;
+  const mergedComponents = isElderMode
+    ? {
+        ...baseComponents,
+        Button: { ...baseComponents.Button, ...elderModeComponents.Button },
+        Input: { ...baseComponents.Input, ...elderModeComponents.Input },
+        Select: { ...baseComponents.Select, ...elderModeComponents.Select },
+        Menu: { ...baseComponents.Menu, ...elderModeComponents.Menu },
+        Tabs: { ...elderModeComponents.Tabs },
+        Tag: { ...elderModeComponents.Tag },
+      }
+    : baseComponents;
 
   return (
     <ConfigProvider
       locale={zhCN}
       theme={{
         algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
-        token: isDark
-          ? sharedToken
-          : {
-              ...sharedToken,
-              colorBgLayout: '#f6f7f8',
-              colorBgContainer: '#ffffff',
-              colorBorder: '#e7edf3',
-              colorText: '#0d141b',
-              colorTextSecondary: '#4c739a',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
-              boxShadowSecondary: '0 4px 16px rgba(0, 0, 0, 0.08)',
-            },
-        components: isDark
-          ? sharedComponents
-          : {
-              ...sharedComponents,
-              Table: { ...sharedComponents.Table, headerBg: '#fafbfc' },
-            },
+        token: mergedToken,
+        components: mergedComponents,
       }}
     >
       <App />

@@ -58,6 +58,25 @@
   --color-markdown-border: #303030;
 }
 
+/* ===== 老人模式覆盖 ===== */
+[data-elder-mode='true'] {
+  font-size: 17px;
+  line-height: 1.8;
+}
+
+[data-elder-mode='true'] .ant-tag {
+  font-size: 15px;
+  padding: 4px 10px;
+}
+
+[data-elder-mode='true'] .anticon {
+  font-size: 1.15em;
+}
+
+[data-elder-mode='true'] .ant-btn {
+  min-height: 48px;
+}
+
 * {
   margin: 0;
   padding: 0;

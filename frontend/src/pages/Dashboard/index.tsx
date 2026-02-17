@@ -15,9 +15,16 @@ import { useQuery } from '@tanstack/react-query';
 import { membersApi } from '../../api';
 import type { FamilyMember } from '../../types';
 import { RelationshipLabels } from '../../types';
+import { useElderModeStore } from '../../store';
+import ElderDashboard from './ElderDashboard';
 import dayjs from 'dayjs';
 
 const Dashboard: React.FC = () => {
+  const isElderMode = useElderModeStore((s) => s.isElderMode);
+
+  if (isElderMode) {
+    return <ElderDashboard />;
+  }
   const navigate = useNavigate();
 
   const { data: stats, isLoading: isLoadingStats } = useQuery({
