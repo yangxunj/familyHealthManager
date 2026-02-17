@@ -354,15 +354,19 @@ const MainLayout: React.FC = () => {
         <Content
           style={{
             margin: isMobile ? 12 : 24,
-            padding: isMobile ? 12 : 28,
+            padding: isElderMode ? (isMobile ? 8 : 16) : (isMobile ? 12 : 28),
             background: colorBgContainer,
             borderRadius: 16,
             minHeight: 280,
-            overflow: 'auto',
+            overflow: isElderMode ? 'hidden' : 'auto',
             boxShadow: '0 1px 4px var(--color-shadow-light)',
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
-          <Outlet />
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <Outlet />
+          </div>
         </Content>
       </Layout>
     </Layout>

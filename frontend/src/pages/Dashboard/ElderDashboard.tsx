@@ -1,4 +1,4 @@
-import { Card, Row, Col } from 'antd';
+import { Card } from 'antd';
 import {
   MessageOutlined,
   BulbOutlined,
@@ -46,51 +46,51 @@ const ElderDashboard: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div>
-      <h2 style={{ marginBottom: 24, fontSize: 26 }}>您好，今天想做什么？</h2>
-      <Row gutter={[20, 20]}>
-        {actions.map((item) => (
-          <Col xs={24} sm={12} key={item.key}>
-            <Card
-              hoverable
-              onClick={() => navigate(item.key)}
-              style={{
-                borderRadius: 20,
-                border: 'none',
-                background: item.bg,
-                minHeight: 160,
-              }}
-              styles={{ body: { padding: 28 } }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  textAlign: 'center',
-                  gap: 12,
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 56,
-                    color: item.color,
-                    lineHeight: 1,
-                  }}
-                >
-                  {item.icon}
-                </div>
-                <div style={{ fontSize: 26, fontWeight: 700, color: item.color }}>
-                  {item.title}
-                </div>
-                <div style={{ fontSize: 16, color: 'var(--color-text-secondary)' }}>
-                  {item.desc}
-                </div>
-              </div>
-            </Card>
-          </Col>
-        ))}
-      </Row>
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gridTemplateRows: '1fr 1fr',
+        gap: 16,
+        flex: 1,
+      }}
+    >
+      {actions.map((item) => (
+        <Card
+          key={item.key}
+          hoverable
+          onClick={() => navigate(item.key)}
+          style={{
+            borderRadius: 20,
+            border: 'none',
+            background: item.bg,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          styles={{ body: { padding: 16, width: '100%' } }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              textAlign: 'center',
+              gap: 8,
+            }}
+          >
+            <div style={{ fontSize: 48, color: item.color, lineHeight: 1 }}>
+              {item.icon}
+            </div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: item.color }}>
+              {item.title}
+            </div>
+            <div style={{ fontSize: 15, color: 'var(--color-text-secondary)' }}>
+              {item.desc}
+            </div>
+          </div>
+        </Card>
+      ))}
     </div>
   );
 };
