@@ -10,20 +10,20 @@ import {
   ManOutlined,
   WomanOutlined,
 } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { membersApi } from '../../api';
 import type { FamilyMember } from '../../types';
 import { RelationshipLabels } from '../../types';
 import { useElderModeStore } from '../../store';
-import ElderDashboard from './ElderDashboard';
 import dayjs from 'dayjs';
 
 const Dashboard: React.FC = () => {
   const isElderMode = useElderModeStore((s) => s.isElderMode);
 
+  // 老人模式下直接跳转到健康咨询
   if (isElderMode) {
-    return <ElderDashboard />;
+    return <Navigate to="/chat" replace />;
   }
   const navigate = useNavigate();
 

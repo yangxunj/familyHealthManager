@@ -256,13 +256,15 @@ const MainLayout: React.FC = () => {
             background: colorBgContainer,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
+            justifyContent: 'space-between',
             boxShadow: '0 1px 4px var(--color-shadow)',
             zIndex: 1,
             height: 56,
             lineHeight: '56px',
           }}
         >
+          {/* 左侧占位，保持标题居中 */}
+          <div style={{ width: 40 }} />
           <h1
             style={{
               margin: 0,
@@ -277,13 +279,34 @@ const MainLayout: React.FC = () => {
             <HeartOutlined />
             家庭健康管理
           </h1>
+          {/* 右侧设置图标 */}
+          {isAdmin ? (
+            <div
+              onClick={() => navigate('/settings')}
+              style={{
+                width: 40,
+                height: 40,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                fontSize: 18,
+                color: 'var(--color-text-quaternary)',
+                borderRadius: 8,
+              }}
+            >
+              <SettingOutlined />
+            </div>
+          ) : (
+            <div style={{ width: 40 }} />
+          )}
         </Header>
 
         <Content
           style={{
             padding: isMobile ? 8 : 16,
             background: colorBgContainer,
-            overflow: 'hidden',
+            overflow: 'auto',
             display: 'flex',
             flexDirection: 'column',
             flex: 1,
@@ -301,7 +324,7 @@ const MainLayout: React.FC = () => {
             background: colorBgContainer,
             borderTop: '1px solid var(--color-border)',
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'stretch',
             flexShrink: 0,
           }}
         >
@@ -319,15 +342,29 @@ const MainLayout: React.FC = () => {
                   justifyContent: 'center',
                   gap: 2,
                   cursor: 'pointer',
-                  color: isActive ? '#136dec' : 'var(--color-text-secondary)',
+                  color: isActive ? '#136dec' : '#c0c0c0',
                   transition: 'color 0.2s',
-                  height: '100%',
+                  position: 'relative',
                   userSelect: 'none',
                   WebkitTapHighlightColor: 'transparent',
                 }}
               >
+                {/* 选中指示条 */}
+                {isActive && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: '25%',
+                      right: '25%',
+                      height: 3,
+                      borderRadius: 2,
+                      background: '#136dec',
+                    }}
+                  />
+                )}
                 <span style={{ fontSize: 24, lineHeight: 1 }}>{tab.icon}</span>
-                <span style={{ fontSize: 13, fontWeight: isActive ? 600 : 400 }}>{tab.label}</span>
+                <span style={{ fontSize: 13, fontWeight: isActive ? 700 : 400 }}>{tab.label}</span>
               </div>
             );
           })}
