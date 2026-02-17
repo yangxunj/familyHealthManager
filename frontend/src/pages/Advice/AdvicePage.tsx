@@ -39,6 +39,7 @@ import {
   ActionPriorityConfig,
   SuggestionCategoryIcons,
 } from '../../types';
+import { useElderModeStore } from '../../store';
 import dayjs from 'dayjs';
 
 // 条目样式
@@ -50,6 +51,7 @@ const itemStyle: React.CSSProperties = {
 const AdvicePage: React.FC = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const isElderMode = useElderModeStore((s) => s.isElderMode);
   const [selectedMemberId, setSelectedMemberId] = useState<string | undefined>();
   const [showHistory, setShowHistory] = useState(false);
   const [selectedAdvice, setSelectedAdvice] = useState<HealthAdvice | null>(null);
@@ -328,18 +330,18 @@ const AdvicePage: React.FC = () => {
         renderItem={(item, index) => (
           <List.Item style={itemStyle}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-              <div style={{ fontSize: 16, marginTop: 5.5 }}>{getIcon(item.level)}</div>
+              <div style={{ fontSize: isElderMode ? 18 : 16, marginTop: 5.5 }}>{getIcon(item.level)}</div>
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                   <Space>
-                    <span style={{ fontWeight: 500, lineHeight: '22px' }}>{item.title}</span>
+                    <span style={{ fontWeight: 500, lineHeight: '22px', fontSize: isElderMode ? 17 : undefined }}>{item.title}</span>
                     <Tag color={ConcernLevelConfig[item.level as keyof typeof ConcernLevelConfig]?.color}>
                       {ConcernLevelConfig[item.level as keyof typeof ConcernLevelConfig]?.label}
                     </Tag>
                   </Space>
                   {renderAskButton('concern', index, item.title, item.description)}
                 </div>
-                <div style={{ color: 'var(--color-text-secondary)', fontSize: 14 }}>
+                <div style={{ color: 'var(--color-text-secondary)', fontSize: isElderMode ? 16 : 14, lineHeight: isElderMode ? 1.8 : undefined }}>
                   {item.description}
                 </div>
               </div>
@@ -379,12 +381,12 @@ const AdvicePage: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span>{SuggestionCategoryIcons[item.category] || '📝'}</span>
                 <Tag>{item.category}</Tag>
-                <span style={{ fontWeight: 500 }}>{item.title}</span>
+                <span style={{ fontWeight: 500, fontSize: isElderMode ? 17 : undefined }}>{item.title}</span>
               </div>
               {renderAskButton('suggestion', index, item.title, item.content)}
             </div>
             <div style={{ padding: '12px 16px' }}>
-              <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{item.content}</p>
+              <p style={{ margin: 0, whiteSpace: 'pre-wrap', fontSize: isElderMode ? 16 : undefined, lineHeight: isElderMode ? 1.8 : undefined }}>{item.content}</p>
             </div>
           </div>
         ))}
@@ -424,7 +426,7 @@ const AdvicePage: React.FC = () => {
               </span>
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Space wrap>
-                  <span>{item.text}</span>
+                  <span style={{ fontSize: isElderMode ? 16 : undefined }}>{item.text}</span>
                   <Tag color={ActionPriorityConfig[item.priority as keyof typeof ActionPriorityConfig]?.color}>
                     {ActionPriorityConfig[item.priority as keyof typeof ActionPriorityConfig]?.label}优先级
                   </Tag>
@@ -454,7 +456,7 @@ const AdvicePage: React.FC = () => {
           </Col>
           <Col xs={24} md={16}>
             <Card title="健康概述" bordered={false}>
-              <p style={{ fontSize: 15, lineHeight: 1.8, margin: 0 }}>
+              <p style={{ fontSize: isElderMode ? 17 : 15, lineHeight: 1.8, margin: 0 }}>
                 {advice.summary}
               </p>
             </Card>
