@@ -618,10 +618,14 @@ const ChatPage: React.FC = () => {
       )}
 
       <Button
-        type="primary"
+        type={isElderMode ? undefined : 'primary'}
         icon={<PlusOutlined />}
         onClick={() => setShowNewSessionModal(true)}
-        style={{ marginBottom: 16, flexShrink: 0 }}
+        style={{
+          marginBottom: 16,
+          flexShrink: 0,
+          ...(isElderMode ? { background: '#52c41a', borderColor: '#52c41a', color: '#fff' } : {}),
+        }}
         block
       >
         新建对话

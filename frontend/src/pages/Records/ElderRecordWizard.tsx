@@ -409,12 +409,11 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
       {step === 2 && (
         <div style={{ padding: '12px 16px', borderTop: '1px solid var(--color-border)', flexShrink: 0 }}>
           <Button
-            type="primary"
             block
             size="large"
             onClick={handleSubmit}
             loading={isSubmitting}
-            style={{ height: 52, fontSize: 18, borderRadius: 12 }}
+            style={{ height: 52, fontSize: 18, borderRadius: 12, background: '#52c41a', borderColor: '#52c41a', color: '#fff' }}
           >
             提交记录
           </Button>

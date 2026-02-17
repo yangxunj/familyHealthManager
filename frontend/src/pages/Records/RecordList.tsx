@@ -319,9 +319,9 @@ const RecordList: React.FC = () => {
             ]}
             tabBarExtraContent={
               <Button
-                type="primary"
                 icon={<PlusOutlined />}
                 onClick={() => setAddOpen(true)}
+                style={{ background: '#52c41a', borderColor: '#52c41a', color: '#fff' }}
               >
                 添加记录
               </Button>

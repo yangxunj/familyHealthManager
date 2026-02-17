@@ -523,11 +523,10 @@ const AdvicePage: React.FC = () => {
               <div style={{ display: 'flex', gap: 8 }}>
                 {newDataCheck?.hasNewData && (
                   <Button
-                    type="primary"
                     icon={<ReloadOutlined />}
                     onClick={handleGenerate}
                     loading={generateMutation.isPending}
-                    style={{ flex: 1 }}
+                    style={{ flex: 1, background: '#52c41a', borderColor: '#52c41a', color: '#fff' }}
                   >
                     {newDataCheck.lastAdviceDate ? '重新生成建议' : '生成健康建议'}
                   </Button>
@@ -535,7 +534,7 @@ const AdvicePage: React.FC = () => {
                 <Button
                   icon={<HistoryOutlined />}
                   onClick={() => setShowHistory(true)}
-                  style={{ flex: newDataCheck?.hasNewData ? undefined : 1 }}
+                  style={{ flex: newDataCheck?.hasNewData ? undefined : 1, borderColor: 'var(--color-border)' }}
                 >
                   历史建议
                 </Button>
