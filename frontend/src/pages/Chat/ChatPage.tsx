@@ -870,11 +870,12 @@ const ChatPage: React.FC = () => {
       <>
         <div
           style={{
-            height: 'calc(100dvh - 100px)',
+            flex: 1,
+            minHeight: 0,
             display: 'flex',
             flexDirection: 'column',
             background: 'var(--color-bg-container)',
-            margin: -12,
+            margin: isElderMode ? -8 : -12,
           }}
         >
           {selectedSessionId ? (
@@ -938,7 +939,7 @@ const ChatPage: React.FC = () => {
 
   // ========== 桌面端布局 ==========
   return (
-    <Layout style={{ height: 'calc(100dvh - 180px)', background: 'var(--color-bg-container)' }}>
+    <Layout style={{ flex: 1, minHeight: 0, background: 'var(--color-bg-container)' }}>
       {/* 会话列表侧边栏 */}
       <Sider
         width={280}
