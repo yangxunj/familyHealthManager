@@ -32,6 +32,7 @@ import { useElderModeStore } from '../../store';
 import type { HealthRecord, RecordType, QueryRecordParams, MeasurementContext, RecordItem } from '../../types';
 import { RecordTypeLabels, RecordTypeUnits, MeasurementContextLabels } from '../../types';
 import dayjs from 'dayjs';
+import ElderRecordWizard from './ElderRecordWizard';
 
 type RecordMode = 'single' | 'bloodPressure' | 'bloodSugar' | 'bloodLipid';
 
@@ -503,151 +504,156 @@ const RecordList: React.FC = () => {
         <p>确定要删除该记录吗？此操作不可恢复。</p>
       </Modal>
 
-      <Modal
-        title="添加健康记录"
-        open={addOpen}
-        onCancel={handleAddClose}
-        footer={null}
-        destroyOnClose
-        width={isMobile ? '100%' : 600}
-        style={isMobile ? { top: 0, paddingBottom: 0 } : undefined}
-        styles={isMobile ? { body: { maxHeight: 'calc(100dvh - 55px)', overflowY: 'auto' } } : undefined}
-      >
-        <Form
-          form={addForm}
-          layout="vertical"
-          onFinish={onAddFinish}
-          initialValues={{ recordDate: dayjs(), context: 'OTHER' }}
-          preserve={false}
+      {/* 老人模式：引导式 Wizard；普通模式：原 Modal */}
+      {isElderMode ? (
+        <ElderRecordWizard open={addOpen} onClose={handleAddClose} />
+      ) : (
+        <Modal
+          title="添加健康记录"
+          open={addOpen}
+          onCancel={handleAddClose}
+          footer={null}
+          destroyOnClose
+          width={isMobile ? '100%' : 600}
+          style={isMobile ? { top: 0, paddingBottom: 0 } : undefined}
+          styles={isMobile ? { body: { maxHeight: 'calc(100dvh - 55px)', overflowY: 'auto' } } : undefined}
         >
-          <Form.Item label="记录类型">
-            <Radio.Group
-              value={recordMode}
-              onChange={(e) => {
-                setRecordMode(e.target.value);
-                addForm.resetFields([
-                  'recordType', 'value',
-                  'systolicBp', 'diastolicBp', 'heartRate',
-                  'glucoseType', 'glucoseValue',
-                  'totalCholesterol', 'triglycerides', 'hdl', 'ldl',
-                ]);
-              }}
-              optionType="button"
-              buttonStyle="solid"
-            >
-              <Radio.Button value="single">单项指标</Radio.Button>
-              <Radio.Button value="bloodPressure">血压监测</Radio.Button>
-              <Radio.Button value="bloodSugar">血糖监测</Radio.Button>
-              <Radio.Button value="bloodLipid">血脂监测</Radio.Button>
-            </Radio.Group>
-          </Form.Item>
-
-          <Divider />
-
-          <Form.Item name="memberId" label="家庭成员" rules={[{ required: true, message: '请选择家庭成员' }]}>
-            <Select placeholder="请选择家庭成员">
-              {members?.map((member) => (
-                <Select.Option key={member.id} value={member.id}>{member.name}</Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
-
-          <Form.Item name="recordDate" label="记录时间" rules={[{ required: true, message: '请选择记录时间' }]}>
-            <DatePicker
-              showTime
-              style={{ width: '100%' }}
-              inputReadOnly={isMobile}
-              disabledDate={(current) => current && current > dayjs().endOf('day')}
-            />
-          </Form.Item>
-
-          <Form.Item name="context" label="测量场景">
-            <Select>
-              {(Object.keys(MeasurementContextLabels) as (keyof typeof MeasurementContextLabels)[]).map((key) => (
-                <Select.Option key={key} value={key}>{MeasurementContextLabels[key]}</Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
-
-          <Divider />
-
-          {recordMode === 'single' && (
-            <>
-              <Form.Item name="recordType" label="指标类型" rules={[{ required: true, message: '请选择指标类型' }]}>
-                <Select placeholder="请选择指标类型">
-                  {(Object.keys(RecordTypeLabels) as RecordType[]).map((key) => (
-                    <Select.Option key={key} value={key}>{RecordTypeLabels[key]} ({RecordTypeUnits[key]})</Select.Option>
-                  ))}
-                </Select>
-              </Form.Item>
-              <Form.Item name="value" label="数值" rules={[{ required: true, message: '请输入数值' }]}>
-                <InputNumber style={{ width: '100%' }} min={0} precision={2} />
-              </Form.Item>
-            </>
-          )}
-
-          {recordMode === 'bloodPressure' && (
-            <>
-              <Form.Item label="收缩压 (mmHg)" name="systolicBp">
-                <InputNumber style={{ width: '100%' }} min={0} max={300} placeholder="90-139 正常" />
-              </Form.Item>
-              <Form.Item label="舒张压 (mmHg)" name="diastolicBp">
-                <InputNumber style={{ width: '100%' }} min={0} max={200} placeholder="60-89 正常" />
-              </Form.Item>
-              <Form.Item label="心率 (次/分)" name="heartRate">
-                <InputNumber style={{ width: '100%' }} min={0} max={300} placeholder="60-100 正常" />
-              </Form.Item>
-            </>
-          )}
-
-          {recordMode === 'bloodSugar' && (
-            <>
-              <Form.Item name="glucoseType" label="血糖类型" rules={[{ required: true, message: '请选择血糖类型' }]}>
-                <Select placeholder="请选择血糖类型">
-                  <Select.Option value="FASTING_GLUCOSE">空腹血糖 (3.9-6.1 正常)</Select.Option>
-                  <Select.Option value="POSTPRANDIAL_GLUCOSE">餐后血糖 (3.9-7.8 正常)</Select.Option>
-                  <Select.Option value="HBA1C">糖化血红蛋白 (4.0-6.0% 正常)</Select.Option>
-                </Select>
-              </Form.Item>
-              <Form.Item name="glucoseValue" label="数值" rules={[{ required: true, message: '请输入数值' }]}>
-                <InputNumber style={{ width: '100%' }} min={0} precision={2} />
-              </Form.Item>
-            </>
-          )}
-
-          {recordMode === 'bloodLipid' && (
-            <>
-              <Form.Item label="总胆固醇 (mmol/L)" name="totalCholesterol">
-                <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder="2.8-5.2 正常" />
-              </Form.Item>
-              <Form.Item label="甘油三酯 (mmol/L)" name="triglycerides">
-                <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder="0.56-1.7 正常" />
-              </Form.Item>
-              <Form.Item label="HDL (mmol/L)" name="hdl">
-                <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder="1.0-1.5 正常" />
-              </Form.Item>
-              <Form.Item label="LDL (mmol/L)" name="ldl">
-                <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder="0-3.4 正常" />
-              </Form.Item>
-            </>
-          )}
-
-          <Divider />
-
-          <Form.Item style={{ marginBottom: 0 }}>
-            <Space>
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={createMutation.isPending || createBatchMutation.isPending}
+          <Form
+            form={addForm}
+            layout="vertical"
+            onFinish={onAddFinish}
+            initialValues={{ recordDate: dayjs(), context: 'OTHER' }}
+            preserve={false}
+          >
+            <Form.Item label="记录类型">
+              <Radio.Group
+                value={recordMode}
+                onChange={(e) => {
+                  setRecordMode(e.target.value);
+                  addForm.resetFields([
+                    'recordType', 'value',
+                    'systolicBp', 'diastolicBp', 'heartRate',
+                    'glucoseType', 'glucoseValue',
+                    'totalCholesterol', 'triglycerides', 'hdl', 'ldl',
+                  ]);
+                }}
+                optionType="button"
+                buttonStyle="solid"
               >
-                提交
-              </Button>
-              <Button onClick={handleAddClose}>取消</Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
+                <Radio.Button value="single">单项指标</Radio.Button>
+                <Radio.Button value="bloodPressure">血压监测</Radio.Button>
+                <Radio.Button value="bloodSugar">血糖监测</Radio.Button>
+                <Radio.Button value="bloodLipid">血脂监测</Radio.Button>
+              </Radio.Group>
+            </Form.Item>
+
+            <Divider />
+
+            <Form.Item name="memberId" label="家庭成员" rules={[{ required: true, message: '请选择家庭成员' }]}>
+              <Select placeholder="请选择家庭成员">
+                {members?.map((member) => (
+                  <Select.Option key={member.id} value={member.id}>{member.name}</Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
+
+            <Form.Item name="recordDate" label="记录时间" rules={[{ required: true, message: '请选择记录时间' }]}>
+              <DatePicker
+                showTime
+                style={{ width: '100%' }}
+                inputReadOnly={isMobile}
+                disabledDate={(current) => current && current > dayjs().endOf('day')}
+              />
+            </Form.Item>
+
+            <Form.Item name="context" label="测量场景">
+              <Select>
+                {(Object.keys(MeasurementContextLabels) as (keyof typeof MeasurementContextLabels)[]).map((key) => (
+                  <Select.Option key={key} value={key}>{MeasurementContextLabels[key]}</Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
+
+            <Divider />
+
+            {recordMode === 'single' && (
+              <>
+                <Form.Item name="recordType" label="指标类型" rules={[{ required: true, message: '请选择指标类型' }]}>
+                  <Select placeholder="请选择指标类型">
+                    {(Object.keys(RecordTypeLabels) as RecordType[]).map((key) => (
+                      <Select.Option key={key} value={key}>{RecordTypeLabels[key]} ({RecordTypeUnits[key]})</Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+                <Form.Item name="value" label="数值" rules={[{ required: true, message: '请输入数值' }]}>
+                  <InputNumber style={{ width: '100%' }} min={0} precision={2} />
+                </Form.Item>
+              </>
+            )}
+
+            {recordMode === 'bloodPressure' && (
+              <>
+                <Form.Item label="收缩压 (mmHg)" name="systolicBp">
+                  <InputNumber style={{ width: '100%' }} min={0} max={300} placeholder="90-139 正常" />
+                </Form.Item>
+                <Form.Item label="舒张压 (mmHg)" name="diastolicBp">
+                  <InputNumber style={{ width: '100%' }} min={0} max={200} placeholder="60-89 正常" />
+                </Form.Item>
+                <Form.Item label="心率 (次/分)" name="heartRate">
+                  <InputNumber style={{ width: '100%' }} min={0} max={300} placeholder="60-100 正常" />
+                </Form.Item>
+              </>
+            )}
+
+            {recordMode === 'bloodSugar' && (
+              <>
+                <Form.Item name="glucoseType" label="血糖类型" rules={[{ required: true, message: '请选择血糖类型' }]}>
+                  <Select placeholder="请选择血糖类型">
+                    <Select.Option value="FASTING_GLUCOSE">空腹血糖 (3.9-6.1 正常)</Select.Option>
+                    <Select.Option value="POSTPRANDIAL_GLUCOSE">餐后血糖 (3.9-7.8 正常)</Select.Option>
+                    <Select.Option value="HBA1C">糖化血红蛋白 (4.0-6.0% 正常)</Select.Option>
+                  </Select>
+                </Form.Item>
+                <Form.Item name="glucoseValue" label="数值" rules={[{ required: true, message: '请输入数值' }]}>
+                  <InputNumber style={{ width: '100%' }} min={0} precision={2} />
+                </Form.Item>
+              </>
+            )}
+
+            {recordMode === 'bloodLipid' && (
+              <>
+                <Form.Item label="总胆固醇 (mmol/L)" name="totalCholesterol">
+                  <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder="2.8-5.2 正常" />
+                </Form.Item>
+                <Form.Item label="甘油三酯 (mmol/L)" name="triglycerides">
+                  <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder="0.56-1.7 正常" />
+                </Form.Item>
+                <Form.Item label="HDL (mmol/L)" name="hdl">
+                  <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder="1.0-1.5 正常" />
+                </Form.Item>
+                <Form.Item label="LDL (mmol/L)" name="ldl">
+                  <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder="0-3.4 正常" />
+                </Form.Item>
+              </>
+            )}
+
+            <Divider />
+
+            <Form.Item style={{ marginBottom: 0 }}>
+              <Space>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={createMutation.isPending || createBatchMutation.isPending}
+                >
+                  提交
+                </Button>
+                <Button onClick={handleAddClose}>取消</Button>
+              </Space>
+            </Form.Item>
+          </Form>
+        </Modal>
+      )}
     </div>
   );
 };
