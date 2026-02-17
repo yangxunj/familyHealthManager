@@ -22,6 +22,7 @@ import {
   BulbOutlined,
   MedicineBoxOutlined,
   EyeOutlined,
+  PlusOutlined,
 } from '@ant-design/icons';
 import { useAuthStore, useThemeStore, useElderModeStore } from '../../store';
 import { getIsAuthEnabled } from '../../lib/supabase';
@@ -29,6 +30,16 @@ import { whitelistApi } from '../../api/whitelist';
 
 const { Header, Sider, Content } = Layout;
 const { useBreakpoint } = Grid;
+
+// 老人模式底部 Tab 栏配置
+const elderTabs = [
+  { key: '/chat', icon: <MessageOutlined />, label: '健康咨询' },
+  { key: '/advice', icon: <BulbOutlined />, label: '健康建议' },
+  { key: '/records', icon: <PlusOutlined />, label: '记录数据' },
+  { key: '/records/trend', icon: <LineChartOutlined />, label: '我的记录' },
+];
+
+const ELDER_TAB_HEIGHT = 64;
 
 const MainLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
@@ -220,6 +231,114 @@ const MainLayout: React.FC = () => {
     </>
   );
 
+  // 老人模式底部 Tab 高亮匹配
+  const getActiveElderTab = () => {
+    const path = location.pathname;
+    // /records/trend 需要精确匹配，优先于 /records
+    if (path.startsWith('/records/trend')) return '/records/trend';
+    if (path.startsWith('/records')) return '/records';
+    if (path.startsWith('/chat')) return '/chat';
+    if (path.startsWith('/advice')) return '/advice';
+    // 首页或其他页面不高亮任何 tab
+    return '';
+  };
+
+  // ============================================================
+  // 老人模式布局：无侧边栏 + 底部 Tab 栏
+  // ============================================================
+  if (isElderMode) {
+    const activeTab = getActiveElderTab();
+    return (
+      <Layout style={{ height: '100dvh', overflow: 'hidden' }}>
+        <Header
+          style={{
+            padding: '0 16px',
+            background: colorBgContainer,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 1px 4px var(--color-shadow)',
+            zIndex: 1,
+            height: 56,
+            lineHeight: '56px',
+          }}
+        >
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 20,
+              fontWeight: 700,
+              color: '#136dec',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}
+          >
+            <HeartOutlined />
+            家庭健康管理
+          </h1>
+        </Header>
+
+        <Content
+          style={{
+            padding: isMobile ? 8 : 16,
+            background: colorBgContainer,
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            flex: 1,
+          }}
+        >
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            <Outlet />
+          </div>
+        </Content>
+
+        {/* 底部 Tab 栏 */}
+        <div
+          style={{
+            height: ELDER_TAB_HEIGHT,
+            background: colorBgContainer,
+            borderTop: '1px solid var(--color-border)',
+            display: 'flex',
+            alignItems: 'center',
+            flexShrink: 0,
+          }}
+        >
+          {elderTabs.map((tab) => {
+            const isActive = tab.key === activeTab;
+            return (
+              <div
+                key={tab.key}
+                onClick={() => navigate(tab.key)}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 2,
+                  cursor: 'pointer',
+                  color: isActive ? '#136dec' : 'var(--color-text-secondary)',
+                  transition: 'color 0.2s',
+                  height: '100%',
+                  userSelect: 'none',
+                  WebkitTapHighlightColor: 'transparent',
+                }}
+              >
+                <span style={{ fontSize: 24, lineHeight: 1 }}>{tab.icon}</span>
+                <span style={{ fontSize: 13, fontWeight: isActive ? 600 : 400 }}>{tab.label}</span>
+              </div>
+            );
+          })}
+        </div>
+      </Layout>
+    );
+  }
+
+  // ============================================================
+  // 普通模式布局：侧边栏 + 顶栏
+  // ============================================================
   return (
     <Layout style={{ minHeight: '100dvh' }}>
       {/* 桌面端侧边栏 */}
@@ -277,47 +396,43 @@ const MainLayout: React.FC = () => {
             )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {!isElderMode && (
-              <>
-                <Tooltip title="开启老人模式">
-                  <div
-                    onClick={toggleElderMode}
-                    style={{
-                      cursor: 'pointer',
-                      fontSize: 18,
-                      padding: '4px 8px',
-                      borderRadius: 8,
-                      transition: 'background 0.2s',
-                      display: 'flex',
-                      alignItems: 'center',
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                  >
-                    <EyeOutlined />
-                  </div>
-                </Tooltip>
-                <Tooltip title={isDark ? '切换亮色模式' : '切换暗色模式'}>
-                  <div
-                    onClick={toggleTheme}
-                    style={{
-                      cursor: 'pointer',
-                      fontSize: 18,
-                      padding: '4px 8px',
-                      borderRadius: 8,
-                      transition: 'background 0.2s',
-                      display: 'flex',
-                      alignItems: 'center',
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                  >
-                    {isDark ? <SunOutlined /> : <MoonOutlined />}
-                  </div>
-                </Tooltip>
-              </>
-            )}
-            {getIsAuthEnabled() && !isElderMode ? (
+            <Tooltip title="开启老人模式">
+              <div
+                onClick={toggleElderMode}
+                style={{
+                  cursor: 'pointer',
+                  fontSize: 18,
+                  padding: '4px 8px',
+                  borderRadius: 8,
+                  transition: 'background 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+              >
+                <EyeOutlined />
+              </div>
+            </Tooltip>
+            <Tooltip title={isDark ? '切换亮色模式' : '切换暗色模式'}>
+              <div
+                onClick={toggleTheme}
+                style={{
+                  cursor: 'pointer',
+                  fontSize: 18,
+                  padding: '4px 8px',
+                  borderRadius: 8,
+                  transition: 'background 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+              >
+                {isDark ? <SunOutlined /> : <MoonOutlined />}
+              </div>
+            </Tooltip>
+            {getIsAuthEnabled() ? (
               <Dropdown
                 menu={{ items: userMenuItems, onClick: handleUserMenuClick }}
                 placement="bottomRight"
@@ -346,7 +461,7 @@ const MainLayout: React.FC = () => {
                 padding: '4px 12px',
               }}>
                 <Avatar icon={<UserOutlined />} size={isMobile ? 'small' : 'default'} />
-                {!isMobile && <span>{isElderMode ? (user?.user_metadata?.full_name || '用户') : '本地用户'}</span>}
+                {!isMobile && <span>本地用户</span>}
               </div>
             )}
           </div>
@@ -354,11 +469,11 @@ const MainLayout: React.FC = () => {
         <Content
           style={{
             margin: isMobile ? 12 : 24,
-            padding: isElderMode ? (isMobile ? 8 : 16) : (isMobile ? 12 : 28),
+            padding: isMobile ? 12 : 28,
             background: colorBgContainer,
             borderRadius: 16,
             minHeight: 280,
-            overflow: isElderMode ? 'hidden' : 'auto',
+            overflow: 'auto',
             boxShadow: '0 1px 4px var(--color-shadow-light)',
             display: 'flex',
             flexDirection: 'column',
