@@ -306,7 +306,8 @@ const MainLayout: React.FC = () => {
           style={{
             padding: isMobile ? 8 : 16,
             background: colorBgContainer,
-            overflow: 'auto',
+            overflowX: 'hidden',
+            overflowY: 'auto',
             display: 'flex',
             flexDirection: 'column',
             flex: 1,

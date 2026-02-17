@@ -29,6 +29,7 @@ import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { chatApi, membersApi } from '../../api';
+import { useElderModeStore } from '../../store';
 import type {
   ChatSession,
   ChatMessage,
@@ -76,6 +77,7 @@ const ChatPage: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const screens = useBreakpoint();
   const isMobile = !screens.md;
+  const isElderMode = useElderModeStore((s) => s.isElderMode);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [selectedMemberId, setSelectedMemberId] = useState<string | undefined>();
   const [filterMemberId, setFilterMemberId] = useState<string | undefined>(); // 筛选成员
@@ -568,20 +570,45 @@ const ChatPage: React.FC = () => {
   // 会话列表内容（桌面端和移动端共用）
   const renderSessionList = () => (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      {/* 成员筛选下拉菜单 */}
+      {/* 成员筛选 */}
       {membersWithSessions && membersWithSessions.length > 0 && (
-        <Select
-          value={filterMemberId || 'all'}
-          onChange={(value) => setFilterMemberId(value === 'all' ? undefined : value)}
-          style={{ marginBottom: 12, flexShrink: 0 }}
-        >
-          <Select.Option value="all">所有人</Select.Option>
-          {membersWithSessions.map((member) => (
-            <Select.Option key={member.id} value={member.id}>
-              {member.name}
-            </Select.Option>
-          ))}
-        </Select>
+        isElderMode ? (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12, flexShrink: 0 }}>
+            <Button
+              type={!filterMemberId ? 'primary' : 'default'}
+              style={{ borderRadius: 20 }}
+              onClick={() => setFilterMemberId(undefined)}
+            >
+              全部
+            </Button>
+            {membersWithSessions.map((member) => (
+              <Button
+                key={member.id}
+                type={filterMemberId === member.id ? 'primary' : 'default'}
+                style={{
+                  borderRadius: 20,
+                  ...(filterMemberId !== member.id ? { borderColor: 'var(--color-border)' } : {}),
+                }}
+                onClick={() => setFilterMemberId(member.id)}
+              >
+                {member.name}
+              </Button>
+            ))}
+          </div>
+        ) : (
+          <Select
+            value={filterMemberId || 'all'}
+            onChange={(value) => setFilterMemberId(value === 'all' ? undefined : value)}
+            style={{ marginBottom: 12, flexShrink: 0 }}
+          >
+            <Select.Option value="all">所有人</Select.Option>
+            {membersWithSessions.map((member) => (
+              <Select.Option key={member.id} value={member.id}>
+                {member.name}
+              </Select.Option>
+            ))}
+          </Select>
+        )
       )}
 
       <Button
@@ -863,18 +890,37 @@ const ChatPage: React.FC = () => {
           <div style={{ marginBottom: 16 }}>
             <Text>请选择要咨询的家庭成员：</Text>
           </div>
-          <Select
-            placeholder="选择家庭成员"
-            style={{ width: '100%' }}
-            value={selectedMemberId}
-            onChange={setSelectedMemberId}
-          >
-            {members?.map((member) => (
-              <Select.Option key={member.id} value={member.id}>
-                {member.name}
-              </Select.Option>
-            ))}
-          </Select>
+          {isElderMode ? (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+              {members?.map((member) => (
+                <Button
+                  key={member.id}
+                  type={selectedMemberId === member.id ? 'primary' : 'default'}
+                  style={{
+                    borderRadius: 20,
+                    minWidth: 80,
+                    ...(selectedMemberId !== member.id ? { borderColor: 'var(--color-border)' } : {}),
+                  }}
+                  onClick={() => setSelectedMemberId(member.id)}
+                >
+                  {member.name}
+                </Button>
+              ))}
+            </div>
+          ) : (
+            <Select
+              placeholder="选择家庭成员"
+              style={{ width: '100%' }}
+              value={selectedMemberId}
+              onChange={setSelectedMemberId}
+            >
+              {members?.map((member) => (
+                <Select.Option key={member.id} value={member.id}>
+                  {member.name}
+                </Select.Option>
+              ))}
+            </Select>
+          )}
         </Modal>
       </>
     );
