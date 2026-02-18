@@ -39,7 +39,7 @@ import {
   FileTextOutlined,
   LineChartOutlined,
   BulbOutlined,
-  EyeOutlined,
+  FontSizeOutlined,
 } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { getIsAuthEnabled } from '../../lib/supabase';
@@ -94,7 +94,7 @@ export default function SettingsPage() {
       <div>
         <Card>
           <div style={{ textAlign: 'center', padding: '24px 0' }}>
-            <EyeOutlined style={{ fontSize: 48, color: '#136dec', marginBottom: 16 }} />
+            <FontSizeOutlined style={{ fontSize: 48, color: '#136dec', marginBottom: 16 }} />
             <div style={{ fontSize: 20, fontWeight: 600, marginBottom: 8 }}>当前为老人模式</div>
             <div style={{ fontSize: 15, color: 'var(--color-text-secondary)', marginBottom: 24, lineHeight: 1.8 }}>
               老人模式提供大字体、简化导航，更适合长辈使用。<br />
@@ -120,8 +120,8 @@ export default function SettingsPage() {
     {
       key: 'display',
       label: isMobile
-        ? <span><EyeOutlined style={{ marginRight: 4 }} />显示</span>
-        : <span><EyeOutlined style={{ marginRight: 6 }} />显示设置</span>,
+        ? <span><FontSizeOutlined style={{ marginRight: 4 }} />显示</span>
+        : <span><FontSizeOutlined style={{ marginRight: 6 }} />显示设置</span>,
       children: <DisplaySection />,
     },
     // 服务器配置（仅 App 环境显示）
@@ -747,7 +747,7 @@ function DisplaySection() {
         message="调整界面显示模式，适配不同使用需求。"
         type="info"
         showIcon
-        icon={<EyeOutlined />}
+        icon={<FontSizeOutlined />}
         style={{ marginBottom: 16 }}
       />
 
@@ -755,7 +755,7 @@ function DisplaySection() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 4 }}>
-              <EyeOutlined style={{ marginRight: 8, color: '#136dec' }} />
+              <FontSizeOutlined style={{ marginRight: 8, color: '#136dec' }} />
               老人模式
             </div>
             <Text type="secondary">

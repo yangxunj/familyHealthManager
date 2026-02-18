@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Menu, Avatar, Dropdown, Drawer, Grid, theme, message, Tooltip } from 'antd';
+import { Layout, Menu, Avatar, Dropdown, Drawer, Grid, theme, message, Tooltip, Popconfirm } from 'antd';
 import type { MenuProps } from 'antd';
 import {
   HomeOutlined,
@@ -21,7 +21,7 @@ import {
   MoonOutlined,
   BulbOutlined,
   MedicineBoxOutlined,
-  EyeOutlined,
+  FontSizeOutlined,
 } from '@ant-design/icons';
 import { useAuthStore, useThemeStore, useElderModeStore } from '../../store';
 import { getIsAuthEnabled } from '../../lib/supabase';
@@ -414,24 +414,31 @@ const MainLayout: React.FC = () => {
             )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Tooltip title="开启老人模式">
-              <div
-                onClick={toggleElderMode}
-                style={{
-                  cursor: 'pointer',
-                  fontSize: 18,
-                  padding: '4px 8px',
-                  borderRadius: 8,
-                  transition: 'background 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-              >
-                <EyeOutlined />
-              </div>
-            </Tooltip>
+            <Popconfirm
+              title="切换到老人模式"
+              description="开启后将增大字体、简化导航，更适合长辈使用。"
+              onConfirm={() => { toggleElderMode(); navigate('/chat'); }}
+              okText="开启"
+              cancelText="取消"
+            >
+              <Tooltip title="老人模式">
+                <div
+                  style={{
+                    cursor: 'pointer',
+                    fontSize: 18,
+                    padding: '4px 8px',
+                    borderRadius: 8,
+                    transition: 'background 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <FontSizeOutlined />
+                </div>
+              </Tooltip>
+            </Popconfirm>
             <Tooltip title={isDark ? '切换亮色模式' : '切换暗色模式'}>
               <div
                 onClick={toggleTheme}
