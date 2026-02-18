@@ -494,6 +494,7 @@ ${adviceSection}
         sessionId,
         role: 'USER',
         content: dto.content,
+        imageUrls: dto.imageUrls?.length ? dto.imageUrls : undefined,
       },
     });
 
@@ -510,14 +511,35 @@ ${adviceSection}
       session.sourceAdviceId || undefined,
     );
 
-    // 构建消息数组
-    const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
+    // 构建消息数组（历史消息用纯文本，当前消息如果带图片则用多模态格式）
+    const messages: { role: 'system' | 'user' | 'assistant'; content: any }[] = [
       { role: 'system', content: this.buildSystemPrompt(healthContext) },
       ...historyMessages.map((m) => ({
         role: m.role.toLowerCase() as 'user' | 'assistant',
         content: m.content,
       })),
     ];
+
+    // 如果最后一条用户消息包含图片，构建多模态内容
+    const lastDbMsg = historyMessages[historyMessages.length - 1];
+    if (lastDbMsg?.role === 'USER' && lastDbMsg.imageUrls) {
+      const imageUrls = lastDbMsg.imageUrls as string[];
+      if (imageUrls.length > 0) {
+        const imageParts = await Promise.all(
+          imageUrls.map(async (url) => ({
+            type: 'image_url' as const,
+            image_url: { url: await this.aiService.imagePathToBase64(url) },
+          })),
+        );
+        messages[messages.length - 1] = {
+          role: 'user',
+          content: [
+            ...imageParts,
+            { type: 'text', text: lastDbMsg.content },
+          ],
+        };
+      }
+    }
 
     // 收集完整响应
     let fullContent = '';

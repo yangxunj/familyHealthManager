@@ -11,10 +11,16 @@ import { SettingsService } from '../settings/settings.service';
 
 const execFileAsync = promisify(execFile);
 
+// Chat 消息内容类型（支持纯文本和多模态）
+type MessageContent = string | Array<
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string } }
+>;
+
 // Chat 消息类型（OpenAI 兼容格式）
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
-  content: string;
+  content: MessageContent;
 }
 
 // OCR 识别结果
@@ -679,7 +685,7 @@ ${healthData.documentContent ? `## 健康文档详细内容\n${healthData.docume
   }
 
   // 将本地图片路径转换为 base64 Data URL
-  private async imagePathToBase64(imagePath: string): Promise<string> {
+  async imagePathToBase64(imagePath: string): Promise<string> {
     // 如果已经是 URL（http/https/data:），直接返回
     if (
       imagePath.startsWith('http://') ||

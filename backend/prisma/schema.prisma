@@ -331,6 +331,7 @@ model ChatMessage {
   // 消息内容
   role          ChatRole
   content       String      @db.Text
+  imageUrls     Json?       @map("image_urls")   // 用户消息附带的图片 URL 数组
 
   // AI相关（仅assistant消息）
   tokensUsed    Int?        @map("tokens_used")
