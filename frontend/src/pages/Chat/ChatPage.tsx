@@ -22,6 +22,8 @@ import {
   RobotOutlined,
   UserOutlined,
   ArrowLeftOutlined,
+  PictureOutlined,
+  CloseCircleFilled,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
@@ -91,6 +93,10 @@ const ChatPage: React.FC = () => {
   const [showNewSessionModal, setShowNewSessionModal] = useState(false);
   const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
   const autoCreateTriggered = useRef(false);
+  const [pendingImages, setPendingImages] = useState<File[]>([]);
+  const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   // 获取家庭成员（用于新建会话）
   const { data: members } = useQuery({
@@ -317,21 +323,60 @@ const ChatPage: React.FC = () => {
     }, 16); // ~60fps
   };
 
+  // 选择图片
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    const remaining = 3 - pendingImages.length;
+    const toAdd = files.slice(0, remaining);
+    setPendingImages((prev) => [...prev, ...toAdd]);
+    setImagePreviewUrls((prev) => [...prev, ...toAdd.map((f) => URL.createObjectURL(f))]);
+    e.target.value = ''; // 清空 input 以便重新选择
+  };
+
+  // 移除已选图片
+  const handleRemoveImage = (index: number) => {
+    URL.revokeObjectURL(imagePreviewUrls[index]);
+    setPendingImages((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviewUrls((prev) => prev.filter((_, i) => i !== index));
+  };
+
   // 发送消息（可选传入消息内容，用于自动发送）
   const handleSend = async (messageContent?: string) => {
     const content = messageContent || inputValue.trim();
-    if (!content || !selectedSessionId || isStreaming || isTyping) return;
+    if ((!content && pendingImages.length === 0) || !selectedSessionId || isStreaming || isTyping) return;
+
+    // 先上传图片
+    let uploadedUrls: string[] = [];
+    if (pendingImages.length > 0) {
+      setUploading(true);
+      try {
+        uploadedUrls = await Promise.all(
+          pendingImages.map((f) => chatApi.uploadChatImage(f).then((r) => r.url)),
+        );
+      } catch {
+        message.error('图片上传失败');
+        setUploading(false);
+        return;
+      }
+      setUploading(false);
+    }
 
     const userMessage: ChatMessage = {
       id: `temp-${Date.now()}`,
       role: 'user',
-      content,
+      content: content || '(图片)',
+      imageUrls: uploadedUrls.length > 0 ? uploadedUrls : undefined,
       createdAt: new Date().toISOString(),
     };
 
     // 立即添加用户消息到本地，并滚动到底部让用户看到自己的问题
     setLocalMessages((prev) => [...(prev || []), userMessage]);
     if (!messageContent) setInputValue('');
+    // 清空已选图片
+    imagePreviewUrls.forEach((url) => URL.revokeObjectURL(url));
+    setPendingImages([]);
+    setImagePreviewUrls([]);
     setIsStreaming(true);
     setStreamingContent('');
     fullResponseRef.current = '';
@@ -363,6 +408,7 @@ const ChatPage: React.FC = () => {
           setIsStreaming(false);
           fullResponseRef.current = '';
         },
+        uploadedUrls.length > 0 ? uploadedUrls : undefined,
       );
     } catch (error) {
       console.error('[ChatPage] 发送消息失败:', error);
@@ -444,7 +490,30 @@ const ChatPage: React.FC = () => {
             className={isUser ? undefined : 'markdown-content'}
           >
             {isUser ? (
-              <span style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</span>
+              <>
+                {msg.imageUrls && msg.imageUrls.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: msg.content && msg.content !== '(图片)' ? 8 : 0 }}>
+                    {msg.imageUrls.map((url, i) => (
+                      <img
+                        key={i}
+                        src={url}
+                        alt={`图片${i + 1}`}
+                        style={{
+                          maxWidth: isMobile ? 160 : 200,
+                          maxHeight: isMobile ? 160 : 200,
+                          borderRadius: 8,
+                          cursor: 'pointer',
+                          objectFit: 'cover',
+                        }}
+                        onClick={() => window.open(url, '_blank')}
+                      />
+                    ))}
+                  </div>
+                )}
+                {msg.content && msg.content !== '(图片)' && (
+                  <span style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</span>
+                )}
+              </>
             ) : (
               <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>{preprocessMarkdown(msg.content)}</Markdown>
             )}
@@ -833,7 +902,56 @@ const ChatPage: React.FC = () => {
             flexShrink: 0,
           }}
         >
-          <div style={{ display: 'flex', gap: 8 }}>
+          {/* 图片预览 */}
+          {imagePreviewUrls.length > 0 && (
+            <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+              {imagePreviewUrls.map((url, i) => (
+                <div key={i} style={{ position: 'relative', display: 'inline-block' }}>
+                  <img
+                    src={url}
+                    alt={`预览${i + 1}`}
+                    style={{
+                      width: 64,
+                      height: 64,
+                      objectFit: 'cover',
+                      borderRadius: 8,
+                      border: '1px solid var(--color-border)',
+                    }}
+                  />
+                  <CloseCircleFilled
+                    onClick={() => handleRemoveImage(i)}
+                    style={{
+                      position: 'absolute',
+                      top: -6,
+                      right: -6,
+                      fontSize: 18,
+                      color: '#ff4d4f',
+                      cursor: 'pointer',
+                      background: '#fff',
+                      borderRadius: '50%',
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            style={{ display: 'none' }}
+            onChange={handleImageSelect}
+          />
+          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+            <Button
+              type="text"
+              icon={<PictureOutlined />}
+              onClick={() => imageInputRef.current?.click()}
+              disabled={isStreaming || isTyping || uploading || pendingImages.length >= 3}
+              title="添加图片（最多3张）"
+              style={{ flexShrink: 0, padding: '4px 8px' }}
+            />
             <TextArea
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
@@ -843,7 +961,7 @@ const ChatPage: React.FC = () => {
                   handleSend();
                 }
               }}
-              placeholder="输入您的健康问题..."
+              placeholder={pendingImages.length > 0 ? '添加文字说明（可选）...' : '输入您的健康问题...'}
               autoSize={{ minRows: 1, maxRows: isMobile ? 3 : 4 }}
               disabled={isStreaming || isTyping}
               style={{ flex: 1, ...(isElderMode ? { fontSize: 17 } : {}) }}
@@ -852,8 +970,8 @@ const ChatPage: React.FC = () => {
               type="primary"
               icon={<SendOutlined />}
               onClick={() => handleSend()}
-              loading={isStreaming || isTyping}
-              disabled={!inputValue.trim()}
+              loading={isStreaming || isTyping || uploading}
+              disabled={!inputValue.trim() && pendingImages.length === 0}
               style={isMobile ? { padding: '0 12px' } : undefined}
             >
               {isMobile ? '' : '发送'}

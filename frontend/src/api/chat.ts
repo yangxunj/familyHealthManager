@@ -52,12 +52,22 @@ export const chatApi = {
     return apiClient.get(`/chat/advice/${adviceId}/sessions`, { params });
   },
 
+  // 上传聊天图片
+  uploadChatImage: async (file: File): Promise<{ url: string }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return apiClient.post('/storage/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
   // 发送消息（SSE 流式响应）
   sendMessage: async (
     sessionId: string,
     content: string,
     onMessage: SSECallback,
     onError?: (error: string) => void,
+    imageUrls?: string[],
   ): Promise<void> => {
     // 从 Supabase session 获取 token
     const session = await supabase?.auth.getSession();
@@ -74,7 +84,7 @@ export const chatApi = {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ content }),
+      body: JSON.stringify({ content, ...(imageUrls?.length ? { imageUrls } : {}) }),
     });
 
     console.log('[chatApi.sendMessage] response status:', response.status);

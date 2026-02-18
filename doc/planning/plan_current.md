@@ -18,7 +18,7 @@
 
 ## 第一阶段：聊天窗口支持发送图片
 
-### 步骤 1：数据库 Schema 扩展
+### ✅ 步骤 1：数据库 Schema 扩展
 
 **修改** `backend/prisma/schema.prisma`
 
@@ -37,7 +37,7 @@ model ChatMessage {
 
 **执行**：`npx prisma migrate dev --name add-chat-image-urls`
 
-### 步骤 2：后端 DTO 扩展
+### ✅ 步骤 2：后端 DTO 扩展
 
 **修改** `backend/src/modules/chat/dto/send-message.dto.ts`
 
@@ -55,7 +55,7 @@ export class SendMessageDto {
 }
 ```
 
-### 步骤 3：后端聊天服务改造
+### ✅ 步骤 3：后端聊天服务改造
 
 **修改** `backend/src/modules/chat/chat.service.ts`
 
@@ -96,7 +96,7 @@ export class SendMessageDto {
    }
    ```
 
-### 步骤 4：AI Service 接口适配
+### ✅ 步骤 4：AI Service 接口适配
 
 **修改** `backend/src/modules/ai/ai.service.ts`
 
@@ -117,7 +117,7 @@ export class SendMessageDto {
 
 3. **`chat()` 和 `chatStream()`**：无需改动——它们已经把 `messages` 数组直接传给 OpenAI API，API 本身支持 content 数组格式。
 
-### 步骤 5：聊天图片上传端点
+### ✅ 步骤 5：聊天图片上传端点（复用现有 upload 端点）
 
 **修改** `backend/src/modules/storage/storage.service.ts`
 
@@ -135,7 +135,7 @@ async saveChatImage(file: Express.Multer.File, userId: string): Promise<Uploaded
 
 新增端点 `POST /storage/upload-chat-image`（或复用现有 `upload` 端点，前端指定用途即可）。
 
-### 步骤 6：前端类型扩展
+### ✅ 步骤 6：前端类型扩展
 
 **修改** `frontend/src/types/chat.ts`
 
@@ -154,7 +154,7 @@ export interface SendMessageRequest {
 }
 ```
 
-### 步骤 7：前端 API 层改造
+### ✅ 步骤 7：前端 API 层改造
 
 **修改** `frontend/src/api/chat.ts`
 
@@ -182,7 +182,7 @@ uploadChatImage: async (file: File): Promise<{ url: string }> => {
 }
 ```
 
-### 步骤 8：前端 ChatPage UI 改造
+### ✅ 步骤 8：前端 ChatPage UI 改造
 
 **修改** `frontend/src/pages/Chat/ChatPage.tsx`
 
@@ -231,7 +231,7 @@ uploadChatImage: async (file: File): Promise<{ url: string }> => {
 
 ### 步骤 9：验证
 
-- [ ] TypeScript 编译零错误
+- [x] TypeScript 编译零错误
 - [ ] 纯文本消息收发不受影响（向后兼容）
 - [ ] 选择图片后显示预览，可删除
 - [ ] 图片 + 文字消息成功发送，AI 能识别图片内容并回复

@@ -6,6 +6,7 @@ export interface ChatMessage {
   id: string;
   role: ChatRole;
   content: string;
+  imageUrls?: string[];
   createdAt: string;
 }
 
@@ -49,6 +50,7 @@ export interface AdviceSessionStats {
 // 发送消息请求
 export interface SendMessageRequest {
   content: string;
+  imageUrls?: string[];
 }
 
 // 查询会话参数
