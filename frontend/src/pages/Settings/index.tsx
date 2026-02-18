@@ -19,6 +19,7 @@ import {
   Col,
   Card,
   Empty,
+  Grid,
   message,
 } from 'antd';
 import {
@@ -51,10 +52,14 @@ import { useElderModeStore } from '../../store';
 import dayjs from 'dayjs';
 
 const { Text } = Typography;
+const { useBreakpoint } = Grid;
 
 export default function SettingsPage() {
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null); // null = 加载中
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
+  const { isElderMode, toggleElderMode } = useElderModeStore();
 
   // 检查管理员权限
   useEffect(() => {
@@ -81,52 +86,92 @@ export default function SettingsPage() {
     );
   }
 
+  // ============================================================
+  // 老人模式：极简设置页，只提供退出老人模式
+  // ============================================================
+  if (isElderMode) {
+    return (
+      <div>
+        <Card>
+          <div style={{ textAlign: 'center', padding: '24px 0' }}>
+            <EyeOutlined style={{ fontSize: 48, color: '#136dec', marginBottom: 16 }} />
+            <div style={{ fontSize: 20, fontWeight: 600, marginBottom: 8 }}>当前为老人模式</div>
+            <div style={{ fontSize: 15, color: 'var(--color-text-secondary)', marginBottom: 24, lineHeight: 1.8 }}>
+              老人模式提供大字体、简化导航，更适合长辈使用。<br />
+              退出后将恢复完整功能界面。
+            </div>
+            <Button
+              size="large"
+              onClick={() => { toggleElderMode(); navigate('/dashboard'); }}
+              style={{ minWidth: 160, height: 48, fontSize: 17, background: '#ff4d4f', borderColor: '#ff4d4f', color: '#fff' }}
+            >
+              退出老人模式
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  // ============================================================
+  // 普通模式：完整设置页（桌面/移动端自适应）
+  // ============================================================
+  const tabItems = [
+    {
+      key: 'display',
+      label: isMobile
+        ? <span><EyeOutlined style={{ marginRight: 4 }} />显示</span>
+        : <span><EyeOutlined style={{ marginRight: 6 }} />显示设置</span>,
+      children: <DisplaySection />,
+    },
+    // 服务器配置（仅 App 环境显示）
+    ...(isNativePlatform
+      ? [
+          {
+            key: 'server',
+            label: isMobile
+              ? <span><CloudOutlined style={{ marginRight: 4 }} />服务器</span>
+              : <span><CloudOutlined style={{ marginRight: 6 }} />服务器配置</span>,
+            children: <ServerConfigSection />,
+          },
+        ]
+      : []),
+    {
+      key: 'api',
+      label: isMobile
+        ? <span><ApiOutlined style={{ marginRight: 4 }} />API</span>
+        : <span><ApiOutlined style={{ marginRight: 6 }} />API 配置</span>,
+      children: <ApiConfigSection isMobile={isMobile} />,
+    },
+    // 家庭概览仅在公网模式下显示（LAN 模式只有一个本地家庭）
+    ...(getIsAuthEnabled()
+      ? [
+          {
+            key: 'families',
+            label: isMobile
+              ? <span><TeamOutlined style={{ marginRight: 4 }} />家庭</span>
+              : <span><TeamOutlined style={{ marginRight: 6 }} />家庭概览</span>,
+            children: <FamilyOverviewSection />,
+          },
+        ]
+      : []),
+    // 白名单管理仅在公网模式下显示（LAN 模式无账号登录概念）
+    ...(getIsAuthEnabled()
+      ? [
+          {
+            key: 'whitelist',
+            label: isMobile
+              ? <span><SafetyOutlined style={{ marginRight: 4 }} />白名单</span>
+              : <span><SafetyOutlined style={{ marginRight: 6 }} />白名单管理</span>,
+            children: <WhitelistSection isMobile={isMobile} />,
+          },
+        ]
+      : []),
+  ];
+
   return (
-    <div style={{ maxWidth: 800, margin: '0 auto' }}>
-      <Tabs
-        items={[
-          {
-            key: 'display',
-            label: <span><EyeOutlined style={{ marginRight: 6 }} />显示设置</span>,
-            children: <DisplaySection />,
-          },
-          // 服务器配置（仅 App 环境显示）
-          ...(isNativePlatform
-            ? [
-                {
-                  key: 'server',
-                  label: <span><CloudOutlined style={{ marginRight: 6 }} />服务器配置</span>,
-                  children: <ServerConfigSection />,
-                },
-              ]
-            : []),
-          {
-            key: 'api',
-            label: <span><ApiOutlined style={{ marginRight: 6 }} />API 配置</span>,
-            children: <ApiConfigSection />,
-          },
-          // 家庭概览仅在公网模式下显示（LAN 模式只有一个本地家庭）
-          ...(getIsAuthEnabled()
-            ? [
-                {
-                  key: 'families',
-                  label: <span><TeamOutlined style={{ marginRight: 6 }} />家庭概览</span>,
-                  children: <FamilyOverviewSection />,
-                },
-              ]
-            : []),
-          // 白名单管理仅在公网模式下显示（LAN 模式无账号登录概念）
-          ...(getIsAuthEnabled()
-            ? [
-                {
-                  key: 'whitelist',
-                  label: <span><SafetyOutlined style={{ marginRight: 6 }} />白名单管理</span>,
-                  children: <WhitelistSection />,
-                },
-              ]
-            : []),
-        ]}
-      />
+    <div style={isMobile ? undefined : { maxWidth: 800, margin: '0 auto' }}>
+      <Tabs items={tabItems} size={isMobile ? 'small' : undefined} />
     </div>
   );
 }
@@ -134,7 +179,7 @@ export default function SettingsPage() {
 // ============================================================
 // API 配置区块
 // ============================================================
-function ApiConfigSection() {
+function ApiConfigSection({ isMobile }: { isMobile?: boolean }) {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -238,6 +283,36 @@ function ApiConfigSection() {
     );
   };
 
+  const renderKeyField = (
+    name: string,
+    label: string,
+    extra: string,
+    source: string | undefined,
+    keyName: 'dashscopeApiKey' | 'googleApiKey',
+  ) => {
+    const showClear = source === 'database';
+    if (isMobile && showClear) {
+      return (
+        <Form.Item name={name} label={label} extra={extra}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <Input.Password placeholder="输入新的 API Key（留空则不修改）" autoComplete="off" />
+            <Button danger onClick={() => handleClearKey(keyName)} loading={saving} block>清除已保存的 Key</Button>
+          </div>
+        </Form.Item>
+      );
+    }
+    return (
+      <Form.Item name={name} label={label} extra={extra}>
+        <Space.Compact style={{ width: '100%' }}>
+          <Input.Password placeholder="输入新的 API Key（留空则不修改）" autoComplete="off" />
+          {showClear && (
+            <Button danger onClick={() => handleClearKey(keyName)} loading={saving}>清除</Button>
+          )}
+        </Space.Compact>
+      </Form.Item>
+    );
+  };
+
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
@@ -262,30 +337,27 @@ function ApiConfigSection() {
         </Divider>
 
         <div style={{ marginBottom: 8 }}>
-          <Space>
-            <Text type="secondary">当前状态：</Text>
-            {config && <StatusTags has={config.hasDashscope} source={config.dashscopeSource} verified={config.dashscopeVerified} />}
-            {config?.hasDashscope && !config.dashscopeVerified && (
-              <Button size="small" onClick={() => handleTest('dashscope')} loading={testing === 'dashscope'}>测试</Button>
+          <div style={isMobile ? { display: 'flex', flexDirection: 'column', gap: 4 } : undefined}>
+            <Space wrap>
+              <Text type="secondary">当前状态：</Text>
+              {config && <StatusTags has={config.hasDashscope} source={config.dashscopeSource} verified={config.dashscopeVerified} />}
+              {config?.hasDashscope && !config.dashscopeVerified && (
+                <Button size="small" onClick={() => handleTest('dashscope')} loading={testing === 'dashscope'}>测试</Button>
+              )}
+            </Space>
+            {config?.dashscopeApiKey && (
+              <Text type="secondary" style={isMobile ? undefined : { marginLeft: 8 }}>{config.dashscopeApiKey}</Text>
             )}
-          </Space>
-          {config?.dashscopeApiKey && (
-            <Text type="secondary" style={{ marginLeft: 8 }}>{config.dashscopeApiKey}</Text>
-          )}
+          </div>
         </div>
 
-        <Form.Item
-          name="dashscopeApiKey"
-          label="API Key"
-          extra="用于 OCR 文字识别服务（必需）。无此 Key 时 OCR 功能不可用。"
-        >
-          <Space.Compact style={{ width: '100%' }}>
-            <Input.Password placeholder="输入新的 API Key（留空则不修改）" autoComplete="off" />
-            {config?.dashscopeSource === 'database' && (
-              <Button danger onClick={() => handleClearKey('dashscopeApiKey')} loading={saving}>清除</Button>
-            )}
-          </Space.Compact>
-        </Form.Item>
+        {renderKeyField(
+          'dashscopeApiKey',
+          'API Key',
+          '用于 OCR 文字识别服务（必需）。无此 Key 时 OCR 功能不可用。',
+          config?.dashscopeSource,
+          'dashscopeApiKey',
+        )}
 
         {config?.hasDashscope && (
           <Form.Item
@@ -307,30 +379,27 @@ function ApiConfigSection() {
         </Divider>
 
         <div style={{ marginBottom: 8 }}>
-          <Space>
-            <Text type="secondary">当前状态：</Text>
-            {config && <StatusTags has={config.hasGoogle} source={config.googleSource} verified={config.googleVerified} />}
-            {config?.hasGoogle && !config.googleVerified && (
-              <Button size="small" onClick={() => handleTest('google')} loading={testing === 'google'}>测试</Button>
+          <div style={isMobile ? { display: 'flex', flexDirection: 'column', gap: 4 } : undefined}>
+            <Space wrap>
+              <Text type="secondary">当前状态：</Text>
+              {config && <StatusTags has={config.hasGoogle} source={config.googleSource} verified={config.googleVerified} />}
+              {config?.hasGoogle && !config.googleVerified && (
+                <Button size="small" onClick={() => handleTest('google')} loading={testing === 'google'}>测试</Button>
+              )}
+            </Space>
+            {config?.googleApiKey && (
+              <Text type="secondary" style={isMobile ? undefined : { marginLeft: 8 }}>{config.googleApiKey}</Text>
             )}
-          </Space>
-          {config?.googleApiKey && (
-            <Text type="secondary" style={{ marginLeft: 8 }}>{config.googleApiKey}</Text>
-          )}
+          </div>
         </div>
 
-        <Form.Item
-          name="googleApiKey"
-          label="API Key"
-          extra="用于 AI 健康建议和健康咨询（可选）。如不配置，这些功能将使用阿里云。"
-        >
-          <Space.Compact style={{ width: '100%' }}>
-            <Input.Password placeholder="输入新的 API Key（留空则不修改）" autoComplete="off" />
-            {config?.googleSource === 'database' && (
-              <Button danger onClick={() => handleClearKey('googleApiKey')} loading={saving}>清除</Button>
-            )}
-          </Space.Compact>
-        </Form.Item>
+        {renderKeyField(
+          'googleApiKey',
+          'API Key',
+          '用于 AI 健康建议和健康咨询（可选）。如不配置，这些功能将使用阿里云。',
+          config?.googleSource,
+          'googleApiKey',
+        )}
 
         {config?.hasGoogle && (
           <Form.Item
@@ -373,7 +442,7 @@ function ApiConfigSection() {
 // ============================================================
 // 白名单管理区块
 // ============================================================
-function WhitelistSection() {
+function WhitelistSection({ isMobile }: { isMobile?: boolean }) {
   const [emails, setEmails] = useState<AllowedEmail[]>([]);
   const [newEmail, setNewEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -493,6 +562,49 @@ function WhitelistSection() {
     },
   ];
 
+  const renderMobileList = () => {
+    if (loading) {
+      return <div style={{ textAlign: 'center', padding: 24 }}><Spin /></div>;
+    }
+    if (emails.length === 0) {
+      return <Empty description="白名单为空，所有认证用户都可以登录" image={Empty.PRESENTED_IMAGE_SIMPLE} />;
+    }
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {emails.map((item) => (
+          <Card key={item.id} size="small" styles={{ body: { padding: '12px' } }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                  <MailOutlined style={{ color: '#136dec', flexShrink: 0 }} />
+                  <Text strong style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.email}</Text>
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--color-text-quaternary)' }}>
+                  {item.addedByName || item.addedBy || '系统'} · {dayjs(item.createdAt).format('YYYY-MM-DD')}
+                </div>
+              </div>
+              <Popconfirm
+                title="确认移除"
+                description={`确定要移除 ${item.email} 吗？`}
+                onConfirm={() => handleDelete(item.email)}
+                okText="确定"
+                cancelText="取消"
+              >
+                <Button
+                  type="text"
+                  danger
+                  icon={<DeleteOutlined />}
+                  size="small"
+                  loading={deletingEmail === item.email}
+                />
+              </Popconfirm>
+            </div>
+          </Card>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div>
       <Alert
@@ -522,15 +634,19 @@ function WhitelistSection() {
         </Button>
       </div>
 
-      <Table
-        columns={columns}
-        dataSource={emails}
-        rowKey="id"
-        loading={loading}
-        pagination={false}
-        scroll={{ y: 400 }}
-        locale={{ emptyText: '白名单为空，所有认证用户都可以登录' }}
-      />
+      {isMobile ? (
+        renderMobileList()
+      ) : (
+        <Table
+          columns={columns}
+          dataSource={emails}
+          rowKey="id"
+          loading={loading}
+          pagination={false}
+          scroll={{ y: 400 }}
+          locale={{ emptyText: '白名单为空，所有认证用户都可以登录' }}
+        />
+      )}
 
       <div style={{ marginTop: 16, textAlign: 'center', color: 'var(--color-text-quaternary)', fontSize: 12 }}>
         共 {emails.length} 个邮箱
@@ -695,7 +811,7 @@ function ServerConfigSection() {
       <div style={{ marginBottom: 24 }}>
         <div style={{ marginBottom: 16 }}>
           <Text type="secondary">服务器地址</Text>
-          <div style={{ fontSize: 16, fontWeight: 600, marginTop: 4 }}>
+          <div style={{ fontSize: 16, fontWeight: 600, marginTop: 4, wordBreak: 'break-all' }}>
             {serverUrl || '未配置'}
           </div>
         </div>
