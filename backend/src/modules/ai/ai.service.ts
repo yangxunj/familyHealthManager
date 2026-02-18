@@ -369,6 +369,56 @@ export class AiService {
       throw new Error('未配置任何 AI 服务的 API Key');
     }
 
+    // 检测消息是否包含多模态内容（image_url）
+    const hasMultimodal = messages.some(
+      (m) => Array.isArray(m.content) && m.content.some((c: any) => c.type === 'image_url'),
+    );
+
+    // Gemini + 代理 + 多模态 + 流式会超时，改用非流式请求
+    if (hasMultimodal && dispatcher) {
+      this.logger.log(`AI non-stream (multimodal fallback): baseUrl=${baseUrl}, model=${model}`);
+      try {
+        const response = await undiciFetch(`${baseUrl}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model,
+            messages,
+            temperature: options?.temperature ?? 0.7,
+            max_tokens: options?.maxTokens ?? 2000,
+            stream: false,
+          }),
+          signal: AbortSignal.timeout(180_000),
+          ...(dispatcher ? { dispatcher } : {}),
+        });
+
+        this.logger.log(`AI non-stream response: status=${response.status}`);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          this.logger.error(`AI API error: ${response.status} - ${errorText}`);
+          throw new Error(`AI service error: ${response.status}`);
+        }
+
+        const data = (await response.json()) as any;
+        const content = data.choices?.[0]?.message?.content || '';
+        const totalTokens = data.usage?.total_tokens || 0;
+
+        // 模拟流式输出
+        if (content) {
+          onChunk({ content, done: false });
+        }
+        onChunk({ content: '', done: true, tokensUsed: totalTokens });
+        return;
+      } catch (error) {
+        this.logger.error('Failed to call AI non-stream API (multimodal)', error);
+        throw error;
+      }
+    }
+
     try {
       this.logger.log(`AI stream: baseUrl=${baseUrl}, model=${model}, messages=${messages.length}`);
 
