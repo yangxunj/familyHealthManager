@@ -13,6 +13,7 @@ import {
   message,
   Popconfirm,
   Grid,
+  Dropdown,
 } from 'antd';
 import {
   MessageOutlined,
@@ -23,6 +24,7 @@ import {
   UserOutlined,
   ArrowLeftOutlined,
   PictureOutlined,
+  CameraOutlined,
   CloseCircleFilled,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
@@ -97,6 +99,7 @@ const ChatPage: React.FC = () => {
   const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   // 获取家庭成员（用于新建会话）
   const { data: members } = useQuery({
@@ -935,6 +938,7 @@ const ChatPage: React.FC = () => {
               ))}
             </div>
           )}
+          {/* 选择本地图片 */}
           <input
             ref={imageInputRef}
             type="file"
@@ -943,15 +947,45 @@ const ChatPage: React.FC = () => {
             style={{ display: 'none' }}
             onChange={handleImageSelect}
           />
+          {/* 拍照（capture 属性调起摄像头） */}
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            style={{ display: 'none' }}
+            onChange={handleImageSelect}
+          />
           <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-            <Button
-              type="text"
-              icon={<PictureOutlined />}
-              onClick={() => imageInputRef.current?.click()}
+            <Dropdown
+              menu={{
+                items: [
+                  {
+                    key: 'gallery',
+                    icon: <PictureOutlined />,
+                    label: '本地相册',
+                    onClick: () => imageInputRef.current?.click(),
+                  },
+                  {
+                    key: 'camera',
+                    icon: <CameraOutlined />,
+                    label: '拍照',
+                    onClick: () => cameraInputRef.current?.click(),
+                  },
+                ],
+              }}
+              placement="topLeft"
+              trigger={['click']}
               disabled={isStreaming || isTyping || uploading || pendingImages.length >= 3}
-              title="添加图片（最多3张）"
-              style={{ flexShrink: 0, padding: '4px 8px' }}
-            />
+            >
+              <Button
+                type="text"
+                icon={<PictureOutlined />}
+                disabled={isStreaming || isTyping || uploading || pendingImages.length >= 3}
+                title="添加图片（最多3张）"
+                style={{ flexShrink: 0, padding: '4px 8px' }}
+              />
+            </Dropdown>
             <TextArea
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
