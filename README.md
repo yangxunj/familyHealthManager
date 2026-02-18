@@ -18,6 +18,8 @@ A full-stack family health management platform with AI-powered health insights, 
 
 - **AI Health Chat / AI 健康咨询** — Real-time AI conversation with streaming responses (SSE) for health-related questions. / 实时 AI 对话，支持 SSE 流式响应，随时咨询健康问题。
 
+- **Elder Mode / 老人模式** — One-tap switch to a senior-friendly UI with larger fonts, simplified bottom-tab navigation (Chat, Advice, Records), guided health-record wizard, and pill-button filters. / 一键切换老人友好界面：大字体、底部 Tab 简化导航（咨询、建议、记录）、分步引导式健康记录录入、气泡按钮筛选。
+
 - **Multi-AI Provider / 多 AI 服务商** — Supports Alibaba Cloud DashScope (Qwen, DeepSeek, GLM, Kimi) and Google Gemini, configurable from the settings page. / 支持阿里云 DashScope（通义千问、DeepSeek、智谱、Kimi）和 Google Gemini，可在设置页面切换。
 
 - **Dual Deployment / 双模式部署** — Run in LAN mode (no login required) for home use, or in public mode with Supabase authentication (Google OAuth / email OTP). / 局域网模式（免登录）适合家庭内网使用；公网模式通过 Supabase 认证（Google OAuth / 邮箱验证码）。
