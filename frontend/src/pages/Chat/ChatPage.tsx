@@ -95,6 +95,7 @@ const ChatPage: React.FC = () => {
   const [showNewSessionModal, setShowNewSessionModal] = useState(false);
   const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
   const autoCreateTriggered = useRef(false);
+  const [draftMember, setDraftMember] = useState<{ id: string; name: string } | null>(null); // 草稿模式：选了成员但未发消息
   const [pendingImages, setPendingImages] = useState<File[]>([]);
   const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -347,7 +348,24 @@ const ChatPage: React.FC = () => {
   // 发送消息（可选传入消息内容，用于自动发送）
   const handleSend = async (messageContent?: string) => {
     const content = messageContent || inputValue.trim();
-    if ((!content && pendingImages.length === 0) || !selectedSessionId || isStreaming || isTyping) return;
+    if ((!content && pendingImages.length === 0) || isStreaming || isTyping) return;
+
+    // 草稿模式：先创建会话
+    let sessionId = selectedSessionId;
+    if (!sessionId && draftMember) {
+      try {
+        const session = await chatApi.createSession({ memberId: draftMember.id });
+        sessionId = session.id;
+        setSelectedSessionId(session.id);
+        setDraftMember(null);
+        queryClient.invalidateQueries({ queryKey: ['chat-sessions'] });
+        queryClient.invalidateQueries({ queryKey: ['chat-members-with-sessions'] });
+      } catch {
+        message.error('创建会话失败');
+        return;
+      }
+    }
+    if (!sessionId) return;
 
     // 先上传图片
     let uploadedUrls: string[] = [];
@@ -389,7 +407,7 @@ const ChatPage: React.FC = () => {
 
     try {
       await chatApi.sendMessage(
-        selectedSessionId,
+        sessionId,
         userMessage.content,
         (event) => {
           if ('tokensUsed' in event) {
@@ -427,13 +445,18 @@ const ChatPage: React.FC = () => {
     setInputValue(question);
   };
 
-  // 创建新会话
+  // 创建新会话（进入草稿模式，不立即调 API）
   const handleCreateSession = () => {
     if (!selectedMemberId) {
       message.warning('请选择家庭成员');
       return;
     }
-    createSessionMutation.mutate({ memberId: selectedMemberId });
+    const member = members?.find((m) => m.id === selectedMemberId);
+    if (!member) return;
+    setDraftMember({ id: member.id, name: member.name });
+    setSelectedSessionId(null);
+    setLocalMessages([]);
+    setShowNewSessionModal(false);
   };
 
   // 消息气泡尺寸（老人模式放大）
@@ -789,7 +812,7 @@ const ChatPage: React.FC = () => {
 
   // 对话内容区（桌面端和移动端共用）
   const renderChatContent = () => {
-    if (!selectedSessionId) {
+    if (!selectedSessionId && !draftMember) {
       return (
         <div
           style={{
@@ -833,15 +856,15 @@ const ChatPage: React.FC = () => {
             <Button
               type="text"
               icon={<ArrowLeftOutlined />}
-              onClick={() => setSelectedSessionId(null)}
+              onClick={() => { setSelectedSessionId(null); setDraftMember(null); }}
               style={{ padding: '4px 8px' }}
             />
             <div style={{ flex: 1, minWidth: 0 }}>
               <Text strong ellipsis style={{ display: 'block', fontSize: 15 }}>
-                {currentSession?.title || '对话'}
+                {currentSession?.title || (draftMember ? '新对话' : '对话')}
               </Text>
               <Text type="secondary" style={{ fontSize: 12 }}>
-                {currentSession?.member?.name}
+                {currentSession?.member?.name || draftMember?.name}
               </Text>
             </div>
           </div>
@@ -1030,7 +1053,7 @@ const ChatPage: React.FC = () => {
             margin: isElderMode ? -8 : -12,
           }}
         >
-          {selectedSessionId ? (
+          {(selectedSessionId || draftMember) ? (
             // 移动端：聊天界面（全屏）
             renderChatContent()
           ) : (
@@ -1048,7 +1071,7 @@ const ChatPage: React.FC = () => {
           open={showNewSessionModal}
           onOk={handleCreateSession}
           onCancel={() => setShowNewSessionModal(false)}
-          confirmLoading={createSessionMutation.isPending}
+          confirmLoading={false}
         >
           <div style={{ marginBottom: 16 }}>
             <Text>请选择要咨询的家庭成员：</Text>
