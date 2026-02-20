@@ -525,17 +525,12 @@ ${adviceSection}
     const lastDbMsg = historyMessages[historyMessages.length - 1];
     if (lastDbMsg?.role === 'USER' && lastDbMsg.imageUrls) {
       const imageUrls = lastDbMsg.imageUrls as string[];
-      console.log(`[多模态] 检测到 ${imageUrls.length} 张图片: ${imageUrls.join(', ')}`);
       if (imageUrls.length > 0) {
         const imageParts = await Promise.all(
-          imageUrls.map(async (url) => {
-            const b64 = await this.aiService.imagePathToBase64(url);
-            console.log(`[多模态] 图片 ${url} 转 base64 长度: ${b64.length} 字符`);
-            return {
-              type: 'image_url' as const,
-              image_url: { url: b64 },
-            };
-          }),
+          imageUrls.map(async (url) => ({
+            type: 'image_url' as const,
+            image_url: { url: await this.aiService.imagePathToBase64(url) },
+          })),
         );
         messages[messages.length - 1] = {
           role: 'user',
@@ -544,9 +539,6 @@ ${adviceSection}
             { type: 'text', text: lastDbMsg.content },
           ],
         };
-        // 估算请求体大小
-        const bodySize = JSON.stringify(messages).length;
-        console.log(`[多模态] 消息体总大小: ${(bodySize / 1024 / 1024).toFixed(2)} MB`);
       }
     }
 
