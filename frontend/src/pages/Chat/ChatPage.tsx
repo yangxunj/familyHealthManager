@@ -88,9 +88,7 @@ const ChatPage: React.FC = () => {
   const [inputValue, setInputValue] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
-  const [isTyping, setIsTyping] = useState(false); // 打字机效果进行中
-  const fullResponseRef = useRef(''); // 累积完整的 AI 回复
-  const typingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const fullResponseRef = useRef(''); // 累积完整的 AI 回复（用于最终存入 localMessages）
   const [localMessages, setLocalMessages] = useState<ChatMessage[]>();
   const [showNewSessionModal, setShowNewSessionModal] = useState(false);
   const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
@@ -149,7 +147,7 @@ const ChatPage: React.FC = () => {
 
   // 同步远程消息到本地（智能合并，避免用旧数据覆盖新添加的本地消息）
   useEffect(() => {
-    if (currentSession?.messages && !isStreaming && !isTyping) {
+    if (currentSession?.messages && !isStreaming) {
       setLocalMessages((prev) => {
         // 如果本地没有消息，直接使用服务器消息
         if (!prev || prev.length === 0) {
@@ -164,7 +162,7 @@ const ChatPage: React.FC = () => {
         return prev;
       });
     }
-  }, [currentSession?.messages, isStreaming, isTyping]);
+  }, [currentSession?.messages, isStreaming]);
 
   // 创建会话
   const createSessionMutation = useMutation({
@@ -240,14 +238,6 @@ const ChatPage: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
-  // 清理打字机定时器
-  useEffect(() => {
-    return () => {
-      if (typingTimerRef.current) {
-        clearInterval(typingTimerRef.current);
-      }
-    };
-  }, []);
 
   // 会话列表滚动加载更多
   const handleSessionListScroll = useCallback(() => {
@@ -273,59 +263,6 @@ const ChatPage: React.FC = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingQuestion, selectedSessionId, isStreaming]);
-
-  // 开始打字机效果
-  const startTypingEffect = (fullText: string) => {
-    // 先清理可能存在的旧定时器
-    if (typingTimerRef.current) {
-      clearInterval(typingTimerRef.current);
-      typingTimerRef.current = null;
-    }
-
-    setIsTyping(true);
-    setStreamingContent('');
-    let currentIndex = 0;
-    let isCompleted = false; // 防止重复执行完成逻辑
-    const charsPerTick = 3; // 每次显示的字符数，可调整速度
-
-    typingTimerRef.current = setInterval(() => {
-      // 如果已经完成，直接返回
-      if (isCompleted) return;
-
-      currentIndex += charsPerTick;
-      if (currentIndex >= fullText.length) {
-        // 标记为已完成，防止重复执行
-        isCompleted = true;
-
-        // 先清除定时器
-        if (typingTimerRef.current) {
-          clearInterval(typingTimerRef.current);
-          typingTimerRef.current = null;
-        }
-
-        // 将完整消息添加到本地消息列表
-        const aiMessage: ChatMessage = {
-          id: `ai-${Date.now()}`,
-          role: 'assistant',
-          content: fullText,
-          createdAt: new Date().toISOString(),
-        };
-        setLocalMessages((prev) => [...(prev || []), aiMessage]);
-
-        // 延迟后清空打字机状态，确保 localMessages 已渲染到屏幕
-        // 使用 setTimeout 确保 React 有足够时间完成渲染
-        setTimeout(() => {
-          setStreamingContent('');
-          setIsTyping(false);
-          // 刷新服务器数据
-          queryClient.invalidateQueries({ queryKey: ['chat-session', selectedSessionId] });
-          queryClient.invalidateQueries({ queryKey: ['chat-sessions'] });
-        }, 50);
-      } else {
-        setStreamingContent(fullText.substring(0, currentIndex));
-      }
-    }, 16); // ~60fps
-  };
 
   // 生成缩略图（canvas 缩放，避免渲染原始大图）
   const createThumbnail = (file: File, maxSize = 128): Promise<string> => {
@@ -382,7 +319,7 @@ const ChatPage: React.FC = () => {
   // 发送消息（可选传入消息内容，用于自动发送）
   const handleSend = async (messageContent?: string) => {
     const content = messageContent || inputValue.trim();
-    if ((!content && pendingImages.length === 0) || isStreaming || isTyping) return;
+    if ((!content && pendingImages.length === 0) || isStreaming) return;
 
     // 草稿模式：先创建会话
     let sessionId = selectedSessionId;
@@ -445,16 +382,29 @@ const ChatPage: React.FC = () => {
         userMessage.content,
         (event) => {
           if ('tokensUsed' in event) {
-            // API 完成事件 - 开始打字机效果
-            setIsStreaming(false);
-            if (fullResponseRef.current) {
-              startTypingEffect(fullResponseRef.current);
+            // API 完成事件 — 将完整回复存入 localMessages，清空流式状态
+            const fullText = fullResponseRef.current;
+            if (fullText) {
+              const aiMessage: ChatMessage = {
+                id: `ai-${Date.now()}`,
+                role: 'assistant',
+                content: fullText,
+                createdAt: new Date().toISOString(),
+              };
+              setLocalMessages((prev) => [...(prev || []), aiMessage]);
             }
+            setIsStreaming(false);
+            setStreamingContent('');
+            fullResponseRef.current = '';
+            // 刷新服务器数据
+            queryClient.invalidateQueries({ queryKey: ['chat-session', selectedSessionId] });
+            queryClient.invalidateQueries({ queryKey: ['chat-sessions'] });
           } else {
-            // 累积 API 返回的内容（不实时显示）
+            // 实时显示 AI 返回的内容
             const msgEvent = event as SSEMessageEvent;
             if (!msgEvent.done) {
               fullResponseRef.current += msgEvent.content;
+              setStreamingContent(fullResponseRef.current);
             }
           }
         },
@@ -583,123 +533,68 @@ const ChatPage: React.FC = () => {
     );
   };
 
-  // 渲染流式消息（等待 API 时显示加载，打字机效果时显示内容）
+  // 渲染流式消息（实时显示 AI 返回的内容）
   const renderStreamingMessage = () => {
-    // 等待 API 返回时显示加载状态
-    if (isStreaming) {
-      return (
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'flex-start',
-            marginBottom: 16,
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              maxWidth: isMobile ? '90%' : '80%',
-            }}
-          >
-            <div
-              style={{
-                width: isMobile ? 30 : 36,
-                height: isMobile ? 30 : 36,
-                borderRadius: '50%',
-                backgroundColor: '#13ec5b',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#fff',
-                flexShrink: 0,
-                fontSize: isMobile ? 12 : 14,
-                marginRight: 8,
-              }}
-            >
-              <RobotOutlined />
-            </div>
-            <div
-              style={{
-                backgroundColor: 'var(--color-bg-chat-ai)',
-                color: 'var(--color-text-primary)',
-                padding: isElderMode ? '12px 16px' : (isMobile ? '8px 12px' : '12px 16px'),
-                borderRadius: 12,
-                borderTopLeftRadius: 4,
-                minWidth: 60,
-                fontSize: msgFontSize,
-              }}
-            >
-              <Spin size="small" />
-              <span style={{ marginLeft: 8, color: 'var(--color-text-secondary)' }}>AI 正在思考...</span>
-            </div>
-          </div>
-        </div>
-      );
-    }
+    if (!isStreaming) return null;
 
-    // 打字机效果时显示内容
-    // 检查 localMessages 是否已经包含相同内容，避免重复显示
-    if (isTyping && streamingContent) {
-      const lastMessage = localMessages?.[localMessages.length - 1];
-      if (lastMessage?.role === 'assistant' && lastMessage.content === streamingContent) {
-        // localMessages 已经包含这条消息，不显示打字机气泡
-        return null;
-      }
-      return (
+    return (
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'flex-start',
+          marginBottom: 16,
+        }}
+      >
         <div
           style={{
             display: 'flex',
-            justifyContent: 'flex-start',
-            marginBottom: 16,
+            alignItems: 'flex-start',
+            maxWidth: isMobile ? '90%' : '80%',
           }}
         >
           <div
             style={{
+              width: isMobile ? 30 : 36,
+              height: isMobile ? 30 : 36,
+              borderRadius: '50%',
+              backgroundColor: '#13ec5b',
               display: 'flex',
-              alignItems: 'flex-start',
-              maxWidth: isMobile ? '90%' : '80%',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              flexShrink: 0,
+              fontSize: isMobile ? 12 : 14,
+              marginRight: 8,
             }}
           >
-            <div
-              style={{
-                width: isMobile ? 30 : 36,
-                height: isMobile ? 30 : 36,
-                borderRadius: '50%',
-                backgroundColor: '#13ec5b',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#fff',
-                flexShrink: 0,
-                fontSize: isMobile ? 12 : 14,
-                marginRight: 8,
-              }}
-            >
-              <RobotOutlined />
-            </div>
-            <div
-              style={{
-                backgroundColor: 'var(--color-bg-chat-ai)',
-                color: 'var(--color-text-primary)',
-                padding: isElderMode ? '12px 16px' : (isMobile ? '8px 12px' : '12px 16px'),
-                borderRadius: 12,
-                borderTopLeftRadius: 4,
-                wordBreak: 'break-word',
-                minWidth: 60,
-                fontSize: msgFontSize,
-                lineHeight: msgLineHeight,
-              }}
-              className="markdown-content"
-            >
+            <RobotOutlined />
+          </div>
+          <div
+            style={{
+              backgroundColor: 'var(--color-bg-chat-ai)',
+              color: 'var(--color-text-primary)',
+              padding: isElderMode ? '12px 16px' : (isMobile ? '8px 12px' : '12px 16px'),
+              borderRadius: 12,
+              borderTopLeftRadius: 4,
+              wordBreak: 'break-word',
+              minWidth: 60,
+              fontSize: msgFontSize,
+              lineHeight: msgLineHeight,
+            }}
+            className="markdown-content"
+          >
+            {streamingContent ? (
               <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>{preprocessMarkdown(streamingContent)}</Markdown>
-            </div>
+            ) : (
+              <>
+                <Spin size="small" />
+                <span style={{ marginLeft: 8, color: 'var(--color-text-secondary)' }}>AI 正在思考...</span>
+              </>
+            )}
           </div>
         </div>
-      );
-    }
-
-    return null;
+      </div>
+    );
   };
 
   // 会话列表内容（桌面端和移动端共用）
@@ -934,7 +829,7 @@ const ChatPage: React.FC = () => {
         </div>
 
         {/* 快捷问题 */}
-        {(!localMessages || localMessages.length === 0) && !isStreaming && !isTyping && pendingImages.length === 0 && (
+        {(!localMessages || localMessages.length === 0) && !isStreaming && pendingImages.length === 0 && (
           <div style={{ padding: isMobile ? '0 12px 12px' : '0 24px 16px' }}>
             <Text type="secondary" style={{ marginBottom: 8, display: 'block', fontSize: 13 }}>
               快捷问题：
@@ -1050,12 +945,12 @@ const ChatPage: React.FC = () => {
               }}
               placement="topLeft"
               trigger={['click']}
-              disabled={isStreaming || isTyping || uploading || pendingImages.length >= 3}
+              disabled={isStreaming || uploading || pendingImages.length >= 3}
             >
               <Button
                 type="text"
                 icon={<PictureOutlined />}
-                disabled={isStreaming || isTyping || uploading || pendingImages.length >= 3}
+                disabled={isStreaming || uploading || pendingImages.length >= 3}
                 title="添加图片（最多3张）"
                 style={{ flexShrink: 0, padding: '4px 8px' }}
               />
@@ -1071,14 +966,14 @@ const ChatPage: React.FC = () => {
               }}
               placeholder={pendingImages.length > 0 ? '添加文字说明（可选）...' : '输入您的健康问题...'}
               autoSize={{ minRows: 1, maxRows: isMobile ? 3 : 4 }}
-              disabled={isStreaming || isTyping}
+              disabled={isStreaming}
               style={{ flex: 1, ...(isElderMode ? { fontSize: 17 } : {}) }}
             />
             <Button
               type="primary"
               icon={<SendOutlined />}
               onClick={() => handleSend()}
-              loading={isStreaming || isTyping || uploading}
+              loading={isStreaming || uploading}
               disabled={!inputValue.trim() && pendingImages.length === 0}
               style={isMobile ? { padding: '0 12px' } : undefined}
             >
