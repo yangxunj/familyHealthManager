@@ -327,20 +327,54 @@ const ChatPage: React.FC = () => {
     }, 16); // ~60fps
   };
 
+  // 生成缩略图（canvas 缩放，避免渲染原始大图）
+  const createThumbnail = (file: File, maxSize = 128): Promise<string> => {
+    return new Promise((resolve) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
+      };
+      img.onerror = () => {
+        // fallback：直接用 blob URL
+        resolve(url);
+      };
+      img.src = url;
+    });
+  };
+
   // 选择图片
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
     const remaining = 3 - pendingImages.length;
     const toAdd = files.slice(0, remaining);
+    // 立即更新文件列表，预览先放占位空串（触发加载状态）
     setPendingImages((prev) => [...prev, ...toAdd]);
-    setImagePreviewUrls((prev) => [...prev, ...toAdd.map((f) => URL.createObjectURL(f))]);
-    e.target.value = ''; // 清空 input 以便重新选择
+    setImagePreviewUrls((prev) => [...prev, ...toAdd.map(() => '')]);
+    e.target.value = '';
+    // 异步生成缩略图
+    const startIndex = pendingImages.length;
+    toAdd.forEach((file, i) => {
+      createThumbnail(file).then((thumbUrl) => {
+        setImagePreviewUrls((prev) => {
+          const next = [...prev];
+          next[startIndex + i] = thumbUrl;
+          return next;
+        });
+      });
+    });
   };
 
   // 移除已选图片
   const handleRemoveImage = (index: number) => {
-    URL.revokeObjectURL(imagePreviewUrls[index]);
     setPendingImages((prev) => prev.filter((_, i) => i !== index));
     setImagePreviewUrls((prev) => prev.filter((_, i) => i !== index));
   };
@@ -933,17 +967,34 @@ const ChatPage: React.FC = () => {
             <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
               {imagePreviewUrls.map((url, i) => (
                 <div key={i} style={{ position: 'relative', display: 'inline-block' }}>
-                  <img
-                    src={url}
-                    alt={`预览${i + 1}`}
-                    style={{
-                      width: 64,
-                      height: 64,
-                      objectFit: 'cover',
-                      borderRadius: 8,
-                      border: '1px solid var(--color-border)',
-                    }}
-                  />
+                  {url ? (
+                    <img
+                      src={url}
+                      alt={`预览${i + 1}`}
+                      style={{
+                        width: 64,
+                        height: 64,
+                        objectFit: 'cover',
+                        borderRadius: 8,
+                        border: '1px solid var(--color-border)',
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: 64,
+                        height: 64,
+                        borderRadius: 8,
+                        border: '1px solid var(--color-border)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: 'var(--color-bg-elevated)',
+                      }}
+                    >
+                      <Spin size="small" />
+                    </div>
+                  )}
                   <CloseCircleFilled
                     onClick={() => handleRemoveImage(i)}
                     style={{
