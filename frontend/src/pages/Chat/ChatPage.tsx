@@ -396,9 +396,11 @@ const ChatPage: React.FC = () => {
             setIsStreaming(false);
             setStreamingContent('');
             fullResponseRef.current = '';
-            // 刷新服务器数据（使用局部变量 sessionId，避免闭包捕获过期的 state）
-            queryClient.invalidateQueries({ queryKey: ['chat-session', sessionId] });
-            queryClient.invalidateQueries({ queryKey: ['chat-sessions'] });
+            // 延迟刷新服务器数据，确保 React 已处理状态更新
+            setTimeout(() => {
+              queryClient.invalidateQueries({ queryKey: ['chat-session', sessionId] });
+              queryClient.invalidateQueries({ queryKey: ['chat-sessions'] });
+            }, 300);
           } else {
             // 实时显示 AI 返回的内容
             const msgEvent = event as SSEMessageEvent;
