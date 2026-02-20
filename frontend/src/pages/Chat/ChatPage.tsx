@@ -396,8 +396,8 @@ const ChatPage: React.FC = () => {
             setIsStreaming(false);
             setStreamingContent('');
             fullResponseRef.current = '';
-            // 刷新服务器数据
-            queryClient.invalidateQueries({ queryKey: ['chat-session', selectedSessionId] });
+            // 刷新服务器数据（使用局部变量 sessionId，避免闭包捕获过期的 state）
+            queryClient.invalidateQueries({ queryKey: ['chat-session', sessionId] });
             queryClient.invalidateQueries({ queryKey: ['chat-sessions'] });
           } else {
             // 实时显示 AI 返回的内容

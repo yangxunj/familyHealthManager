@@ -546,17 +546,18 @@ ${adviceSection}
     let fullContent = '';
     let tokensUsed = 0;
 
-    // 调用 AI 流式 API
+    // 调用 AI 流式 API（实时转发内容 chunk，done 事件留到 DB 保存后再发）
     await this.aiService.chatStream(messages, (chunk) => {
       if (!chunk.done) {
         fullContent += chunk.content;
+        onChunk(chunk); // 实时转发内容给前端
       } else {
         tokensUsed = chunk.tokensUsed || 0;
+        // done 事件不立即转发，等 DB 保存完成后再发
       }
-      onChunk(chunk);
     });
 
-    // 保存 AI 响应
+    // 先保存 AI 响应到数据库
     if (fullContent) {
       await this.prisma.chatMessage.create({
         data: {
@@ -568,12 +569,8 @@ ${adviceSection}
       });
 
       // 更新会话标题（如果是第一条消息，用 AI 生成简短标题）
-      // 同步等待标题生成完成，确保前端刷新时能看到新标题
-      console.log(`[ChatService] historyMessages.length = ${historyMessages.length}, 是否生成标题: ${historyMessages.length <= 1}`);
       if (historyMessages.length <= 1) {
-        console.log(`[ChatService] 开始生成会话标题, sessionId=${sessionId}`);
         await this.generateSessionTitle(sessionId, dto.content, fullContent);
-        console.log(`[ChatService] 标题生成完成`);
       }
 
       // 更新会话时间
@@ -582,6 +579,9 @@ ${adviceSection}
         data: { updatedAt: new Date() },
       });
     }
+
+    // DB 保存和标题生成完成后，再发送 done 事件给前端
+    onChunk({ content: '', done: true, tokensUsed });
 
     return { tokensUsed };
   }
