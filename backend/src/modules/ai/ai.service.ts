@@ -4,6 +4,7 @@ import OpenAI from 'openai';
 import { ProxyAgent, fetch as undiciFetch } from 'undici';
 import * as fs from 'fs';
 import * as path from 'path';
+import sharp from 'sharp';
 import * as os from 'os';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
@@ -758,23 +759,41 @@ ${healthData.documentContent ? `## 健康文档详细内容\n${healthData.docume
       throw new Error(`图片文件不存在: ${fullPath}`);
     }
 
-    // 读取文件并转换为 base64
+    // 读取文件
     const fileBuffer = fs.readFileSync(fullPath);
-    const base64 = fileBuffer.toString('base64');
-
-    // 获取文件扩展名来确定 MIME 类型
     const ext = path.extname(fullPath).toLowerCase();
+
+    // 对图片（非 PDF）进行尺寸检查和压缩
+    const imageExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+    if (imageExts.includes(ext)) {
+      const MAX_DIMENSION = 1920; // 长边不超过 1920px
+      const metadata = await sharp(fileBuffer).metadata();
+      const { width = 0, height = 0 } = metadata;
+
+      let outputBuffer: Buffer;
+      if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+        // 超出 2K，按比例缩小
+        outputBuffer = await sharp(fileBuffer)
+          .resize({ width: MAX_DIMENSION, height: MAX_DIMENSION, fit: 'inside' })
+          .jpeg({ quality: 85 })
+          .toBuffer();
+        this.logger.log(
+          `图片压缩: ${width}x${height} → ${Math.min(width, MAX_DIMENSION)}x${Math.min(height, MAX_DIMENSION)}, ` +
+          `${(fileBuffer.length / 1024).toFixed(0)}KB → ${(outputBuffer.length / 1024).toFixed(0)}KB`,
+        );
+        return `data:image/jpeg;base64,${outputBuffer.toString('base64')}`;
+      }
+      // 尺寸在范围内，直接使用原文件
+      const mimeType = ext === '.png' ? 'image/png' : ext === '.webp' ? 'image/webp' : 'image/jpeg';
+      return `data:${mimeType};base64,${fileBuffer.toString('base64')}`;
+    }
+
+    // PDF 等非图片文件
     const mimeTypes: Record<string, string> = {
-      '.jpg': 'image/jpeg',
-      '.jpeg': 'image/jpeg',
-      '.png': 'image/png',
-      '.gif': 'image/gif',
-      '.webp': 'image/webp',
       '.pdf': 'application/pdf',
     };
-    const mimeType = mimeTypes[ext] || 'image/jpeg';
-
-    return `data:${mimeType};base64,${base64}`;
+    const mimeType = mimeTypes[ext] || 'application/octet-stream';
+    return `data:${mimeType};base64,${fileBuffer.toString('base64')}`;
   }
 
   // 检查文件是否为 PDF
