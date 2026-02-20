@@ -934,7 +934,7 @@ const ChatPage: React.FC = () => {
         </div>
 
         {/* 快捷问题 */}
-        {(!localMessages || localMessages.length === 0) && !isStreaming && !isTyping && (
+        {(!localMessages || localMessages.length === 0) && !isStreaming && !isTyping && pendingImages.length === 0 && (
           <div style={{ padding: isMobile ? '0 12px 12px' : '0 24px 16px' }}>
             <Text type="secondary" style={{ marginBottom: 8, display: 'block', fontSize: 13 }}>
               快捷问题：
