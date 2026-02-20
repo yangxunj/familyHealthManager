@@ -143,6 +143,10 @@ const ChatPage: React.FC = () => {
     queryKey: ['chat-session', selectedSessionId],
     queryFn: () => chatApi.getSession(selectedSessionId!),
     enabled: !!selectedSessionId,
+    // 标题仍为"新对话"时每 3 秒轮询，等后端异步生成标题完成后自动停止
+    refetchInterval: (query) => {
+      return query.state.data?.title === '新对话' ? 3000 : false;
+    },
   });
 
   // 同步远程消息到本地（智能合并，避免用旧数据覆盖新添加的本地消息）
@@ -163,6 +167,13 @@ const ChatPage: React.FC = () => {
       });
     }
   }, [currentSession?.messages, isStreaming]);
+
+  // 当会话标题从"新对话"变为实际标题时，同步刷新会话列表
+  useEffect(() => {
+    if (currentSession?.title && currentSession.title !== '新对话') {
+      queryClient.invalidateQueries({ queryKey: ['chat-sessions'] });
+    }
+  }, [currentSession?.title, queryClient]);
 
   // 创建会话
   const createSessionMutation = useMutation({
@@ -397,15 +408,11 @@ const ChatPage: React.FC = () => {
             setStreamingContent('');
             fullResponseRef.current = '';
             // 延迟刷新服务器数据，确保 React 已处理状态更新
+            // 标题由 refetchInterval 轮询自动捕获，这里只刷新消息和会话列表
             setTimeout(() => {
               queryClient.invalidateQueries({ queryKey: ['chat-session', sessionId] });
               queryClient.invalidateQueries({ queryKey: ['chat-sessions'] });
             }, 300);
-            // 二次刷新：捕获后端异步生成的会话标题
-            setTimeout(() => {
-              queryClient.invalidateQueries({ queryKey: ['chat-session', sessionId] });
-              queryClient.invalidateQueries({ queryKey: ['chat-sessions'] });
-            }, 5000);
           } else {
             // 实时显示 AI 返回的内容
             const msgEvent = event as SSEMessageEvent;
