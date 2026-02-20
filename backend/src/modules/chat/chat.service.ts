@@ -557,7 +557,7 @@ ${adviceSection}
       }
     });
 
-    // 先保存 AI 响应到数据库
+    // 保存 AI 响应到数据库
     if (fullContent) {
       await this.prisma.chatMessage.create({
         data: {
@@ -568,11 +568,6 @@ ${adviceSection}
         },
       });
 
-      // 更新会话标题（如果是第一条消息，用 AI 生成简短标题）
-      if (historyMessages.length <= 1) {
-        await this.generateSessionTitle(sessionId, dto.content, fullContent);
-      }
-
       // 更新会话时间
       await this.prisma.chatSession.update({
         where: { id: sessionId },
@@ -580,8 +575,14 @@ ${adviceSection}
       });
     }
 
-    // DB 保存和标题生成完成后，再发送 done 事件给前端
+    // AI 消息已保存，立即发送 done 事件（不等标题生成，避免阻塞用户）
     onChunk({ content: '', done: true, tokensUsed });
+
+    // 标题生成异步执行（不阻塞 SSE 响应）
+    if (fullContent && historyMessages.length <= 1) {
+      this.generateSessionTitle(sessionId, dto.content, fullContent)
+        .catch((err) => console.error('[ChatService] title generation error:', err));
+    }
 
     return { tokensUsed };
   }

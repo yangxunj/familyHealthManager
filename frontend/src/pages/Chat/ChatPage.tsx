@@ -401,6 +401,11 @@ const ChatPage: React.FC = () => {
               queryClient.invalidateQueries({ queryKey: ['chat-session', sessionId] });
               queryClient.invalidateQueries({ queryKey: ['chat-sessions'] });
             }, 300);
+            // 二次刷新：捕获后端异步生成的会话标题
+            setTimeout(() => {
+              queryClient.invalidateQueries({ queryKey: ['chat-session', sessionId] });
+              queryClient.invalidateQueries({ queryKey: ['chat-sessions'] });
+            }, 5000);
           } else {
             // 实时显示 AI 返回的内容
             const msgEvent = event as SSEMessageEvent;
