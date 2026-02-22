@@ -22,6 +22,7 @@ import {
   BulbOutlined,
   MedicineBoxOutlined,
   FontSizeOutlined,
+  CameraOutlined,
 } from '@ant-design/icons';
 import { useAuthStore, useThemeStore, useElderModeStore } from '../../store';
 import { getIsAuthEnabled } from '../../lib/supabase';
@@ -33,6 +34,7 @@ const { useBreakpoint } = Grid;
 // 老人模式底部 Tab 栏配置
 const elderTabs = [
   { key: '/chat', icon: <MessageOutlined />, label: '健康咨询' },
+  { key: '/food-query', icon: <CameraOutlined />, label: '拍照问食' },
   { key: '/advice', icon: <BulbOutlined />, label: '健康建议' },
   { key: '/records', icon: <LineChartOutlined />, label: '健康记录' },
 ];
@@ -115,6 +117,11 @@ const MainLayout: React.FC = () => {
           icon: <MessageOutlined />,
           label: '健康咨询',
         },
+        {
+          key: '/food-query',
+          icon: <CameraOutlined />,
+          label: '拍照问食',
+        },
       ],
     },
     // 家庭设置仅在公网模式下显示（LAN 模式只有一个本地用户，无需家庭管理）
@@ -170,6 +177,7 @@ const MainLayout: React.FC = () => {
     if (path.startsWith('/health-plan')) return ['/health-plan'];
     if (path.startsWith('/advice')) return ['/advice'];
     if (path.startsWith('/chat')) return ['/chat'];
+    if (path.startsWith('/food-query')) return ['/food-query'];
     if (path.startsWith('/family')) return ['/family'];
     if (path.startsWith('/settings')) return ['/settings'];
     return ['/dashboard'];
@@ -234,6 +242,7 @@ const MainLayout: React.FC = () => {
     const path = location.pathname;
     if (path.startsWith('/records')) return '/records';
     if (path.startsWith('/chat')) return '/chat';
+    if (path.startsWith('/food-query')) return '/food-query';
     if (path.startsWith('/advice')) return '/advice';
     return '';
   };

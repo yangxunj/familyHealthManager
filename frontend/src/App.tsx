@@ -11,6 +11,7 @@ import { DocumentList, DocumentDetail } from './pages/Documents';
 import { RecordList, RecordTrend } from './pages/Records';
 import { AdvicePage } from './pages/Advice';
 import { ChatPage } from './pages/Chat';
+import { FoodQueryPage } from './pages/FoodQuery';
 import FamilyPage from './pages/Family';
 import HealthPlanPage from './pages/HealthPlan';
 import VaccinationList from './pages/Vaccinations/VaccinationList';
@@ -148,6 +149,7 @@ function App() {
           </Route>
           <Route path="advice" element={<AdvicePage />} />
           <Route path="chat" element={<ChatPage />} />
+          <Route path="food-query" element={<FoodQueryPage />} />
           <Route path="health-plan" element={<HealthPlanPage />}>
             <Route index element={<Navigate to="/health-plan/vaccinations" replace />} />
             <Route path="vaccinations" element={<VaccinationList />} />
