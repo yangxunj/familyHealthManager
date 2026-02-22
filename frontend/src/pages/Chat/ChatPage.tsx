@@ -34,6 +34,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { chatApi, membersApi } from '../../api';
 import { useElderModeStore } from '../../store';
+import { resolveUploadUrl } from '../../lib/capacitor';
 import type {
   ChatSession,
   ChatMessage,
@@ -520,7 +521,7 @@ const ChatPage: React.FC = () => {
                     {msg.imageUrls.map((url, i) => (
                       <img
                         key={i}
-                        src={url}
+                        src={resolveUploadUrl(url)}
                         alt={`图片${i + 1}`}
                         style={{
                           maxWidth: isMobile ? 160 : 200,
@@ -529,7 +530,7 @@ const ChatPage: React.FC = () => {
                           cursor: 'pointer',
                           objectFit: 'cover',
                         }}
-                        onClick={() => window.open(url, '_blank')}
+                        onClick={() => window.open(resolveUploadUrl(url), '_blank')}
                       />
                     ))}
                   </div>

@@ -29,3 +29,23 @@ export function getApiBaseUrl(): string {
   }
   return import.meta.env.VITE_API_BASE_URL || 'http://localhost:5002/api/v1';
 }
+
+/**
+ * Resolve a relative upload path (e.g. `/uploads/documents/xxx/file.jpg`) to a full URL.
+ * - Web: returns as-is (Vite proxy or nginx handles `/uploads/`)
+ * - Capacitor: prepends the configured server URL
+ */
+export function resolveUploadUrl(urlPath: string): string {
+  if (!urlPath) return urlPath;
+  // Already a full URL or data URI
+  if (urlPath.startsWith('http://') || urlPath.startsWith('https://') || urlPath.startsWith('data:')) {
+    return urlPath;
+  }
+  if (isNativePlatform) {
+    const serverUrl = getServerUrl();
+    if (serverUrl) {
+      return serverUrl.replace(/\/+$/, '') + urlPath;
+    }
+  }
+  return urlPath;
+}
