@@ -9,6 +9,7 @@ import {
   Grid,
   Alert,
   Input,
+  Popconfirm,
 } from 'antd';
 import {
   CameraOutlined,
@@ -18,6 +19,7 @@ import {
   UserOutlined,
   PictureOutlined,
   CloseCircleFilled,
+  DeleteOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import Markdown from 'react-markdown';
@@ -147,6 +149,22 @@ const FoodQueryPage: React.FC = () => {
     mutationFn: chatApi.createSession,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['food-query-sessions'] });
+    },
+  });
+
+  // 删除会话
+  const deleteSessionMutation = useMutation({
+    mutationFn: chatApi.deleteSession,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['food-query-sessions'] });
+      if (activeSessionId) {
+        setActiveSessionId(null);
+        setLocalMessages(undefined);
+      }
+      message.success('已删除');
+    },
+    onError: () => {
+      message.error('删除失败');
     },
   });
 
@@ -586,6 +604,17 @@ const FoodQueryPage: React.FC = () => {
               {currentSession?.member?.name}
             </Text>
           </div>
+          <Popconfirm
+            title="确定删除这条记录吗？"
+            onConfirm={() => deleteSessionMutation.mutate(activeSessionId!)}
+          >
+            <Button
+              type="text"
+              icon={<DeleteOutlined />}
+              danger
+              style={{ flexShrink: 0 }}
+            />
+          </Popconfirm>
         </div>
 
         {/* 消息列表 */}
@@ -925,8 +954,27 @@ const FoodQueryPage: React.FC = () => {
                       >
                         {session.title === '新对话' ? '食物查询' : session.title}
                       </div>
-                      <div style={{ fontSize: 11, color: 'var(--color-text-secondary)', marginTop: 4 }}>
-                        {dayjs(session.createdAt).format('MM-DD HH:mm')}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+                        <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>
+                          {dayjs(session.createdAt).format('MM-DD HH:mm')}
+                        </span>
+                        <Popconfirm
+                          title="确定删除这条记录吗？"
+                          onConfirm={(e) => {
+                            e?.stopPropagation();
+                            deleteSessionMutation.mutate(session.id);
+                          }}
+                          onCancel={(e) => e?.stopPropagation()}
+                        >
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<DeleteOutlined />}
+                            onClick={(e) => e.stopPropagation()}
+                            danger
+                            style={{ padding: '0 4px', minWidth: 0, height: 20 }}
+                          />
+                        </Popconfirm>
                       </div>
                     </div>
                   </div>
