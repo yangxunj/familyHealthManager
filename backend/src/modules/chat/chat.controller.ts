@@ -50,9 +50,12 @@ export class ChatController {
 
   // 获取有会话记录的成员列表
   @Get('sessions/members')
-  getMembersWithSessions(@CurrentUser() user: CurrentUserData) {
+  getMembersWithSessions(
+    @CurrentUser() user: CurrentUserData,
+    @Query('type') type?: 'GENERAL' | 'FOOD_QUERY',
+  ) {
     const familyId = this.requireFamily(user);
-    return this.chatService.getMembersWithSessions(familyId);
+    return this.chatService.getMembersWithSessions(familyId, type);
   }
 
   // 获取会话详情及消息

@@ -85,6 +85,12 @@ enum MeasurementContext {
   OTHER             // 其他
 }
 
+/// 会话类型
+enum SessionType {
+  GENERAL       // 普通健康咨询
+  FOOD_QUERY    // 拍照问食
+}
+
 /// 对话角色
 enum ChatRole {
   USER
@@ -300,6 +306,7 @@ model ChatSession {
 
   // 会话信息
   title         String       @db.VarChar(200)  // 会话标题（可自动生成）
+  type          SessionType  @default(GENERAL)  // 会话类型
 
   // 来源追踪（从健康建议页面创建时记录）
   sourceAdviceId   String?   @map("source_advice_id")
@@ -318,6 +325,7 @@ model ChatSession {
   messages      ChatMessage[]
 
   @@index([familyId])
+  @@index([familyId, type])
   @@index([memberId])
   @@index([sourceAdviceId])
   @@map("chat_sessions")

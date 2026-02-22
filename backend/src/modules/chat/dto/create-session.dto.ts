@@ -9,6 +9,10 @@ export class CreateSessionDto {
   @MaxLength(200)
   title?: string;
 
+  @IsOptional()
+  @IsIn(['GENERAL', 'FOOD_QUERY'])
+  type?: 'GENERAL' | 'FOOD_QUERY';
+
   // 来源追踪字段（从健康建议页面创建时使用）
   @IsOptional()
   @IsUUID()

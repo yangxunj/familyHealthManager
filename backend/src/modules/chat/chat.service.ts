@@ -86,6 +86,7 @@ export class ChatService {
       select: {
         id: true,
         memberId: true,
+        type: true,
         sourceAdviceId: true,
         member: {
           select: {
@@ -262,7 +263,11 @@ export class ChatService {
   }
 
   // 构建系统提示词
-  private buildSystemPrompt(context: HealthContext): string {
+  private buildSystemPrompt(context: HealthContext, sessionType?: string): string {
+    // 食物查询专用提示词
+    if (sessionType === 'FOOD_QUERY') {
+      return this.buildFoodQueryPrompt(context);
+    }
     // 构建健康建议部分（如果有来源建议）
     let adviceSection = '';
     if (context.sourceAdvice) {
@@ -338,6 +343,42 @@ ${adviceSection}
 你的建议仅供参考，不能替代专业医疗诊断和治疗。如有健康问题，请及时咨询专业医生。`;
   }
 
+  // 构建食物查询专用提示词
+  private buildFoodQueryPrompt(context: HealthContext): string {
+    return `你是一位专业的营养健康顾问。用户会拍照上传食物图片，请你判断这个食物是否适合该成员食用。
+
+## 成员健康档案
+
+- 姓名：${context.memberInfo.name}
+- 年龄：${context.memberInfo.age}岁
+- 性别：${context.memberInfo.gender === 'MALE' ? '男' : '女'}
+${context.memberInfo.chronicDiseases?.length ? `- 慢性病史：${context.memberInfo.chronicDiseases.join('、')}` : ''}
+
+${
+  context.recentRecords.length > 0
+    ? `**近期健康指标**\n${context.recentRecords
+        .slice(0, 10)
+        .map(
+          (r) =>
+            `- ${r.date} ${r.type}：${r.value}${r.unit}${r.isAbnormal ? ' ⚠️异常' : ''}`,
+        )
+        .join('\n')}`
+    : ''
+}
+
+## 回答要求
+
+1. **先识别食物**：说明图片中是什么食物
+2. **给出结论**：开头用一句话给出明确结论（✅ 可以吃 / ⚠️ 建议少吃 / ❌ 不建议吃）
+3. **分析影响**：结合该成员的慢性病、近期健康指标，分析这个食物对健康的影响
+4. **食用建议**：给出具体的食用建议（推荐量、频率、注意事项）
+5. **语言简洁**：回答面向老人，用通俗易懂的语言，避免专业术语
+6. 如果图片中不是食物，友好提示用户重新拍照
+
+## 免责说明
+建议仅供参考，具体饮食方案请遵医嘱。`;
+  }
+
   // 创建会话
   async createSession(familyId: string, userId: string, dto: CreateSessionDto) {
     await this.validateMemberOwnership(dto.memberId, familyId);
@@ -361,6 +402,7 @@ ${adviceSection}
         createdBy: userId,
         memberId: dto.memberId,
         title: dto.title || '新对话',
+        type: dto.type || 'GENERAL',
         // 来源追踪
         sourceAdviceId: dto.sourceAdviceId,
         sourceItemType: dto.sourceItemType,
@@ -382,9 +424,12 @@ ${adviceSection}
 
   // 获取会话列表
   async findAllSessions(familyId: string, query: QuerySessionDto) {
-    const where: { familyId: string; memberId?: string } = { familyId };
+    const where: { familyId: string; memberId?: string; type?: 'GENERAL' | 'FOOD_QUERY' } = { familyId };
     if (query.memberId) {
       where.memberId = query.memberId;
+    }
+    if (query.type) {
+      where.type = query.type;
     }
 
     const sessions = await this.prisma.chatSession.findMany({
@@ -399,6 +444,12 @@ ${adviceSection}
         messages: {
           orderBy: { createdAt: 'desc' },
           take: 1,
+          select: {
+            id: true,
+            content: true,
+            imageUrls: true,
+            createdAt: true,
+          },
         },
       },
       orderBy: { updatedAt: 'desc' },
@@ -406,13 +457,41 @@ ${adviceSection}
       skip: query.offset,
     });
 
-    return sessions.map((s) => this.formatSession(s));
+    // 对 FOOD_QUERY 会话批量获取第一条带图片的用户消息
+    const foodQueryIds = sessions.filter((s) => s.type === 'FOOD_QUERY').map((s) => s.id);
+    const firstImageMap: Record<string, string> = {};
+    if (foodQueryIds.length > 0) {
+      const firstMsgs = await this.prisma.chatMessage.findMany({
+        where: {
+          sessionId: { in: foodQueryIds },
+          role: 'USER',
+        },
+        orderBy: { createdAt: 'asc' },
+        distinct: ['sessionId'],
+        select: { sessionId: true, imageUrls: true },
+      });
+      for (const msg of firstMsgs) {
+        const urls = msg.imageUrls as string[] | null;
+        if (urls?.length) {
+          firstImageMap[msg.sessionId] = urls[0];
+        }
+      }
+    }
+
+    return sessions.map((s) => ({
+      ...this.formatSession(s),
+      firstImageUrl: firstImageMap[s.id] || undefined,
+    }));
   }
 
   // 获取有会话记录的成员列表
-  async getMembersWithSessions(familyId: string) {
+  async getMembersWithSessions(familyId: string, type?: 'GENERAL' | 'FOOD_QUERY') {
+    const where: { familyId: string; type?: 'GENERAL' | 'FOOD_QUERY' } = { familyId };
+    if (type) {
+      where.type = type;
+    }
     const members = await this.prisma.chatSession.findMany({
-      where: { familyId },
+      where,
       select: {
         member: {
           select: {
@@ -514,7 +593,7 @@ ${adviceSection}
 
     // 构建消息数组（历史消息用纯文本，当前消息如果带图片则用多模态格式）
     const messages: { role: 'system' | 'user' | 'assistant'; content: any }[] = [
-      { role: 'system', content: this.buildSystemPrompt(healthContext) },
+      { role: 'system', content: this.buildSystemPrompt(healthContext, session.type) },
       ...historyMessages.map((m) => ({
         role: m.role.toLowerCase() as 'user' | 'assistant',
         content: m.content,
@@ -750,17 +829,31 @@ AI回答摘要：${aiResponse.substring(0, 500)}
       familyId: string;
       memberId: string;
       title: string;
+      type?: string;
       createdAt: Date;
       updatedAt: Date;
       member: { id: string; name: string };
-      messages?: { id: string; content: string; createdAt: Date }[];
+      messages?: { id: string; content: string; imageUrls?: unknown; createdAt: Date }[];
     },
   ) {
+    // 提取第一张图片 URL（用于食物查询的缩略图展示）
+    let firstImageUrl: string | undefined;
+    if (session.messages) {
+      for (const msg of session.messages) {
+        if (msg.imageUrls && Array.isArray(msg.imageUrls) && msg.imageUrls.length > 0) {
+          firstImageUrl = msg.imageUrls[0] as string;
+          break;
+        }
+      }
+    }
+
     return {
       id: session.id,
       memberId: session.memberId,
       member: session.member,
       title: session.title,
+      type: session.type,
+      firstImageUrl,
       lastMessage: session.messages?.[0]?.content?.substring(0, 50),
       createdAt: session.createdAt.toISOString(),
       updatedAt: session.updatedAt.toISOString(),

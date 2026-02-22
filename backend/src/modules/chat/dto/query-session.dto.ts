@@ -1,10 +1,14 @@
-import { IsOptional, IsUUID, IsInt, Min, Max } from 'class-validator';
+import { IsOptional, IsUUID, IsInt, Min, Max, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class QuerySessionDto {
   @IsOptional()
   @IsUUID()
   memberId?: string;
+
+  @IsOptional()
+  @IsIn(['GENERAL', 'FOOD_QUERY'])
+  type?: 'GENERAL' | 'FOOD_QUERY';
 
   @IsOptional()
   @Type(() => Number)
