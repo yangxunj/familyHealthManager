@@ -1,3 +1,6 @@
+// 会话类型
+export type SessionType = 'GENERAL' | 'FOOD_QUERY';
+
 // 消息角色
 export type ChatRole = 'user' | 'assistant';
 
@@ -19,6 +22,8 @@ export interface ChatSession {
     name: string;
   };
   title: string;
+  type?: SessionType;
+  firstImageUrl?: string;
   lastMessage?: string;
   createdAt: string;
   updatedAt: string;
@@ -33,6 +38,7 @@ export interface ChatSessionWithMessages extends ChatSession {
 export interface CreateSessionRequest {
   memberId: string;
   title?: string;
+  type?: SessionType;
   // 来源追踪（从健康建议页面创建时使用）
   sourceAdviceId?: string;
   sourceItemType?: 'concern' | 'suggestion' | 'action';
@@ -56,6 +62,7 @@ export interface SendMessageRequest {
 // 查询会话参数
 export interface QuerySessionParams {
   memberId?: string;
+  type?: SessionType;
   limit?: number;
   offset?: number;
 }

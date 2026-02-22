@@ -106,10 +106,10 @@ const ChatPage: React.FC = () => {
     queryFn: membersApi.getAll,
   });
 
-  // 获取有会话记录的成员列表（用于筛选下拉菜单）
+  // 获取有会话记录的成员列表（用于筛选下拉菜单，只看普通咨询）
   const { data: membersWithSessions } = useQuery({
-    queryKey: ['chat-members-with-sessions'],
-    queryFn: chatApi.getMembersWithSessions,
+    queryKey: ['chat-members-with-sessions', 'GENERAL'],
+    queryFn: () => chatApi.getMembersWithSessions('GENERAL'),
   });
 
   // 会话列表滚动容器引用
@@ -124,9 +124,9 @@ const ChatPage: React.FC = () => {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['chat-sessions', filterMemberId],
+    queryKey: ['chat-sessions', 'GENERAL', filterMemberId],
     queryFn: ({ pageParam = 0 }) =>
-      chatApi.getSessions({ limit: PAGE_SIZE, offset: pageParam, memberId: filterMemberId }),
+      chatApi.getSessions({ limit: PAGE_SIZE, offset: pageParam, memberId: filterMemberId, type: 'GENERAL' }),
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
       // 如果返回的数据少于 PAGE_SIZE，说明没有更多了

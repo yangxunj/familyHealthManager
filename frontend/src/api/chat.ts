@@ -25,8 +25,8 @@ export const chatApi = {
   },
 
   // 获取有会话记录的成员列表
-  getMembersWithSessions: async (): Promise<{ id: string; name: string }[]> => {
-    return apiClient.get('/chat/sessions/members');
+  getMembersWithSessions: async (type?: string): Promise<{ id: string; name: string }[]> => {
+    return apiClient.get('/chat/sessions/members', { params: type ? { type } : {} });
   },
 
   // 获取会话详情及消息
