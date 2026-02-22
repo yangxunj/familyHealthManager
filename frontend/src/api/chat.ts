@@ -54,11 +54,34 @@ export const chatApi = {
 
   // 上传聊天图片
   uploadChatImage: async (file: File): Promise<{ url: string }> => {
+    // 先读取文件数据到内存，确保 Capacitor 原生 HTTP 层能正确序列化
+    const buffer = await file.arrayBuffer();
+    const blob = new Blob([buffer], { type: file.type || 'image/jpeg' });
+
     const formData = new FormData();
-    formData.append('file', file);
-    return apiClient.post('/storage/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+    formData.append('file', blob, file.name || 'photo.jpg');
+
+    // 使用 fetch 直接发送，不设置 Content-Type（让浏览器自动添加 boundary）
+    const session = await supabase?.auth.getSession();
+    const token = session?.data?.session?.access_token;
+    const baseUrl = apiClient.defaults.baseURL || '';
+
+    const response = await fetch(`${baseUrl}/storage/upload`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
     });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || `Upload failed: ${response.status}`);
+    }
+
+    const result = await response.json();
+    // 后端 TransformInterceptor 包装为 { success, data, timestamp }
+    return result.data || result;
   },
 
   // 发送消息（SSE 流式响应）
