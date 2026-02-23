@@ -31,6 +31,28 @@ export interface UpdateFamilyDto {
   name?: string;
 }
 
+export interface VisibilityConfigUser {
+  id: string;
+  name: string;
+  email: string;
+  isOwner: boolean;
+  memberVisibilityConfigured: boolean;
+  linkedMemberId: string | null;
+  visibleMemberIds: string[];
+}
+
+export interface VisibilityConfigMember {
+  id: string;
+  name: string;
+  relationship: string;
+  userId: string | null;
+}
+
+export interface VisibilityConfig {
+  users: VisibilityConfigUser[];
+  members: VisibilityConfigMember[];
+}
+
 export interface FamilyOverview {
   familyId: string;
   familyName: string;
@@ -89,5 +111,18 @@ export const familyApi = {
   // 管理员：获取所有家庭概览
   getAdminOverview: async (): Promise<{ families: FamilyOverview[] }> => {
     return apiClient.get('/family/admin/overview');
+  },
+
+  // 管理员：获取成员可见性配置
+  getVisibility: async (): Promise<VisibilityConfig> => {
+    return apiClient.get('/family/visibility');
+  },
+
+  // 管理员：设置某用户的成员可见性
+  setVisibility: async (
+    userId: string,
+    data: { memberVisibilityConfigured: boolean; visibleMemberIds: string[] },
+  ): Promise<{ message: string }> => {
+    return apiClient.patch(`/family/visibility/${userId}`, data);
   },
 };

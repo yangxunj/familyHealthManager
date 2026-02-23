@@ -7,8 +7,9 @@ import type {
 } from '../types';
 
 export const membersApi = {
-  getAll: async (): Promise<FamilyMember[]> => {
-    return apiClient.get('/members');
+  getAll: async (params?: { scope?: 'all' }): Promise<FamilyMember[]> => {
+    const query = params?.scope ? `?scope=${params.scope}` : '';
+    return apiClient.get(`/members${query}`);
   },
 
   getById: async (id: string): Promise<FamilyMember> => {
