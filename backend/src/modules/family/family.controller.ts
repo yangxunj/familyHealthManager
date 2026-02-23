@@ -71,6 +71,22 @@ export class FamilyController {
     return this.familyService.leave(user.id);
   }
 
+  // 获取可见性配置（管理员用）
+  @Get('visibility')
+  getVisibilityConfig(@CurrentUser() user: CurrentUserData) {
+    return this.familyService.getVisibilityConfig(user.id);
+  }
+
+  // 设置某用户的可见性配置（管理员用）
+  @Patch('visibility/:id')
+  setVisibility(
+    @CurrentUser() user: CurrentUserData,
+    @Param('id', ParseUUIDPipe) targetUserId: string,
+    @Body() dto: { memberVisibilityConfigured: boolean; visibleMemberIds: string[] },
+  ) {
+    return this.familyService.setVisibility(user.id, targetUserId, dto);
+  }
+
   // 移除家庭成员
   @Delete('members/:id')
   removeMember(

@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   ParseUUIDPipe,
   ForbiddenException,
 } from '@nestjs/common';
@@ -26,9 +27,12 @@ export class MembersController {
   }
 
   @Get()
-  async findAll(@CurrentUser() user: CurrentUserData) {
+  async findAll(
+    @CurrentUser() user: CurrentUserData,
+    @Query('scope') scope?: string,
+  ) {
     const familyId = this.requireFamily(user);
-    return this.membersService.findAll(familyId);
+    return this.membersService.findAll(familyId, user.id, scope);
   }
 
   @Get('me')

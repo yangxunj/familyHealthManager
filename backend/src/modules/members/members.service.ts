@@ -12,11 +12,43 @@ import { CreateMemberDto, UpdateMemberDto } from './dto';
 export class MembersService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(familyId: string) {
+  async findAll(familyId: string, userId?: string, scope?: string) {
+    // scope=all 直接返回所有成员（管理页面用）
+    // 否则按用户可见性配置过滤
+    let memberIdFilter: string[] | null = null;
+
+    if (scope !== 'all' && userId) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { memberVisibilityConfigured: true },
+      });
+
+      if (user?.memberVisibilityConfigured) {
+        // 查询白名单
+        const visibleEntries = await this.prisma.memberVisibility.findMany({
+          where: { userId },
+          select: { memberId: true },
+        });
+        const visibleIds = visibleEntries.map((v) => v.memberId);
+
+        // 确保用户自己的 linkedMember 始终可见
+        const linkedMember = await this.prisma.familyMember.findUnique({
+          where: { userId },
+          select: { id: true },
+        });
+        if (linkedMember && !visibleIds.includes(linkedMember.id)) {
+          visibleIds.push(linkedMember.id);
+        }
+
+        memberIdFilter = visibleIds;
+      }
+    }
+
     const members = await this.prisma.familyMember.findMany({
       where: {
         familyId,
         deletedAt: null,
+        ...(memberIdFilter ? { id: { in: memberIdFilter } } : {}),
       },
       orderBy: [
         { relationship: 'asc' },

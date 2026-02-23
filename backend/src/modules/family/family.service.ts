@@ -297,12 +297,18 @@ export class FamilyService {
       data: { userId: null },
     });
 
+    // 清除该用户的可见性配置（作为被配置方和被引用方）
+    await this.prisma.memberVisibility.deleteMany({
+      where: { userId },
+    });
+
     // 离开家庭
     await this.prisma.user.update({
       where: { id: userId },
       data: {
         familyId: null,
         isOwner: false,
+        memberVisibilityConfigured: false,
       },
     });
 
@@ -375,6 +381,128 @@ export class FamilyService {
     return { families: result };
   }
 
+  // 获取可见性配置（管理员用）
+  async getVisibilityConfig(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { familyId: true, isOwner: true },
+    });
+
+    if (!user?.familyId) {
+      throw new ForbiddenException('您还没有加入任何家庭');
+    }
+    if (!user.isOwner) {
+      throw new ForbiddenException('只有家庭管理员可以查看可见性配置');
+    }
+
+    // 查询家庭所有用户及其可见性配置
+    const familyUsers = await this.prisma.user.findMany({
+      where: { familyId: user.familyId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        isOwner: true,
+        memberVisibilityConfigured: true,
+        linkedMember: { select: { id: true } },
+      },
+    });
+
+    // 查询所有可见性记录
+    const allVisibility = await this.prisma.memberVisibility.findMany({
+      where: { userId: { in: familyUsers.map((u) => u.id) } },
+    });
+
+    // 查询家庭所有成员
+    const members = await this.prisma.familyMember.findMany({
+      where: { familyId: user.familyId, deletedAt: null },
+      select: { id: true, name: true, relationship: true, userId: true },
+      orderBy: [{ relationship: 'asc' }, { createdAt: 'asc' }],
+    });
+
+    return {
+      users: familyUsers.map((u) => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        isOwner: u.isOwner,
+        memberVisibilityConfigured: u.memberVisibilityConfigured,
+        linkedMemberId: u.linkedMember?.id || null,
+        visibleMemberIds: allVisibility
+          .filter((v) => v.userId === u.id)
+          .map((v) => v.memberId),
+      })),
+      members: members.map((m) => ({
+        id: m.id,
+        name: m.name,
+        relationship: m.relationship,
+        userId: m.userId,
+      })),
+    };
+  }
+
+  // 设置某用户的可见性配置（管理员用）
+  async setVisibility(
+    adminUserId: string,
+    targetUserId: string,
+    dto: { memberVisibilityConfigured: boolean; visibleMemberIds: string[] },
+  ) {
+    const admin = await this.prisma.user.findUnique({
+      where: { id: adminUserId },
+      select: { familyId: true, isOwner: true },
+    });
+
+    if (!admin?.familyId) {
+      throw new ForbiddenException('您还没有加入任何家庭');
+    }
+    if (!admin.isOwner) {
+      throw new ForbiddenException('只有家庭管理员可以配置可见性');
+    }
+
+    const targetUser = await this.prisma.user.findUnique({
+      where: { id: targetUserId },
+      select: { familyId: true },
+    });
+
+    if (!targetUser || targetUser.familyId !== admin.familyId) {
+      throw new NotFoundException('该用户不在您的家庭中');
+    }
+
+    // 确保用户的 linkedMember 始终在可见列表中
+    const linkedMember = await this.prisma.familyMember.findUnique({
+      where: { userId: targetUserId },
+      select: { id: true },
+    });
+
+    let visibleIds = [...dto.visibleMemberIds];
+    if (linkedMember && !visibleIds.includes(linkedMember.id)) {
+      visibleIds.push(linkedMember.id);
+    }
+
+    // 事务：更新 flag + 删旧记录 + 创建新记录
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: targetUserId },
+        data: { memberVisibilityConfigured: dto.memberVisibilityConfigured },
+      });
+
+      await tx.memberVisibility.deleteMany({
+        where: { userId: targetUserId },
+      });
+
+      if (dto.memberVisibilityConfigured && visibleIds.length > 0) {
+        await tx.memberVisibility.createMany({
+          data: visibleIds.map((memberId) => ({
+            userId: targetUserId,
+            memberId,
+          })),
+        });
+      }
+    });
+
+    return { message: '可见性配置已更新' };
+  }
+
   // 移除家庭成员（只有创建者可以操作）
   async removeMember(userId: string, targetUserId: string) {
     if (userId === targetUserId) {
@@ -409,11 +537,17 @@ export class FamilyService {
       data: { userId: null },
     });
 
+    // 清除被移除用户的可见性配置
+    await this.prisma.memberVisibility.deleteMany({
+      where: { userId: targetUserId },
+    });
+
     await this.prisma.user.update({
       where: { id: targetUserId },
       data: {
         familyId: null,
         isOwner: false,
+        memberVisibilityConfigured: false,
       },
     });
 
