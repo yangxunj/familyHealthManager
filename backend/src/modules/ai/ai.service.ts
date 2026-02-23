@@ -1254,11 +1254,12 @@ ${ocrText}`;
 
       this.logger.log(`AI 规整: OCR 文本长度 = ${ocrText.length}`);
 
-      // AI 规整是格式整理任务，不需要深度推理，使用 minimal 思考深度避免超时
-      // Gemini 3 思考模型处理大文本时默认思考耗时过长，Google 服务端会在 ~60s 后关闭连接
+      // AI 规整是格式整理任务，使用 gemini-2.0-flash（非思考模型）
+      // Gemini 3 思考模型即使设 reasoning_effort=minimal，处理 10K+ 大文本时
+      // 仍可能触发思考导致 Google 服务端 60s 硬超时断连
       const result = await this.chat(
         [{ role: 'user', content: prompt }],
-        { maxTokens: 8000, reasoningEffort: 'minimal' },
+        { maxTokens: 8000, model: 'gemini-2.0-flash' },
       );
 
       this.logger.log(`AI 规整: 返回内容长度 = ${result.content.length}, tokens = ${result.tokensUsed}`);
