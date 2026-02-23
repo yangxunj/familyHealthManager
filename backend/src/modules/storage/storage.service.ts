@@ -15,7 +15,7 @@ export interface UploadedFile {
 @Injectable()
 export class StorageService {
   private readonly uploadDir: string;
-  private readonly maxFileSize = 10 * 1024 * 1024; // 10MB
+  private readonly maxFileSize = 20 * 1024 * 1024; // 20MB
   private readonly allowedMimeTypes = [
     'image/jpeg',
     'image/png',
@@ -48,7 +48,7 @@ export class StorageService {
     }
 
     if (file.size > this.maxFileSize) {
-      throw new BadRequestException('文件大小不能超过 10MB');
+      throw new BadRequestException('文件大小不能超过 20MB');
     }
 
     if (!this.allowedMimeTypes.includes(file.mimetype)) {

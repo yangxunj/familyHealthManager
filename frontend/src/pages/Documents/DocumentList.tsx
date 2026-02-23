@@ -182,8 +182,8 @@ const DocumentList: React.FC = () => {
         message.error('只支持 JPG、PNG、GIF 和 PDF 格式的文件');
         return Upload.LIST_IGNORE;
       }
-      if (file.size > 10 * 1024 * 1024) {
-        message.error('文件大小不能超过 10MB');
+      if (file.size > 20 * 1024 * 1024) {
+        message.error('文件大小不能超过 20MB');
         return Upload.LIST_IGNORE;
       }
       setUploading(true);
@@ -551,7 +551,7 @@ const DocumentList: React.FC = () => {
           <Form.Item
             label="上传文件"
             required
-            extra="支持 JPG、PNG、GIF、PDF 格式，单个文件不超过 10MB"
+            extra="支持 JPG、PNG、GIF、PDF 格式，单个文件不超过 20MB"
           >
             <Dragger {...uploadProps}>
               <p className="ant-upload-drag-icon">
