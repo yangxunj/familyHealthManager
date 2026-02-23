@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Card,
   Button,
@@ -16,6 +16,8 @@ import {
   Divider,
   Empty,
   Spin,
+  Switch,
+  Checkbox,
 } from 'antd';
 import {
   TeamOutlined,
@@ -26,9 +28,13 @@ import {
   LogoutOutlined,
   DeleteOutlined,
   CrownOutlined,
+  EyeOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '../../store/authStore';
 import { familyApi } from '../../api/family';
+import type { VisibilityConfig, VisibilityConfigUser, VisibilityConfigMember } from '../../api/family';
+import { RelationshipLabels } from '../../types';
+import type { Relationship } from '../../types';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -39,6 +45,15 @@ export default function FamilyPage() {
   const [joinModalVisible, setJoinModalVisible] = useState(false);
   const [createForm] = Form.useForm();
   const [joinForm] = Form.useForm();
+
+  // 可见性配置相关状态
+  const [visModalVisible, setVisModalVisible] = useState(false);
+  const [visLoading, setVisLoading] = useState(false);
+  const [visSaving, setVisSaving] = useState(false);
+  const [visConfig, setVisConfig] = useState<VisibilityConfig | null>(null);
+  const [visTargetUser, setVisTargetUser] = useState<VisibilityConfigUser | null>(null);
+  const [visEnabled, setVisEnabled] = useState(false);
+  const [visCheckedIds, setVisCheckedIds] = useState<string[]>([]);
 
   const handleCreateFamily = async (values: { name: string }) => {
     setLoading(true);
@@ -120,6 +135,56 @@ export default function FamilyPage() {
       message.error(errorMessage);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 打开可见性配置弹窗
+  const handleOpenVisModal = async (targetUser: { id: string; name: string; email: string }) => {
+    setVisModalVisible(true);
+    setVisLoading(true);
+    try {
+      const config = await familyApi.getVisibility();
+      setVisConfig(config);
+      const targetConfig = config.users.find((u) => u.id === targetUser.id);
+      if (targetConfig) {
+        setVisTargetUser(targetConfig);
+        setVisEnabled(targetConfig.memberVisibilityConfigured);
+        setVisCheckedIds(targetConfig.visibleMemberIds);
+      }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : '加载失败';
+      message.error(errorMessage);
+      setVisModalVisible(false);
+    } finally {
+      setVisLoading(false);
+    }
+  };
+
+  // 保存可见性配置
+  const handleSaveVisibility = async () => {
+    if (!visTargetUser) return;
+    setVisSaving(true);
+    try {
+      await familyApi.setVisibility(visTargetUser.id, {
+        memberVisibilityConfigured: visEnabled,
+        visibleMemberIds: visCheckedIds,
+      });
+      message.success('可见性配置已保存');
+      setVisModalVisible(false);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : '保存失败';
+      message.error(errorMessage);
+    } finally {
+      setVisSaving(false);
+    }
+  };
+
+  // 切换成员勾选
+  const handleToggleMember = (memberId: string, checked: boolean) => {
+    if (checked) {
+      setVisCheckedIds((prev) => [...prev, memberId]);
+    } else {
+      setVisCheckedIds((prev) => prev.filter((id) => id !== memberId));
     }
   };
 
@@ -309,9 +374,18 @@ export default function FamilyPage() {
             dataSource={family?.users || []}
             renderItem={(member) => (
               <List.Item
-                actions={
-                  family?.isOwner && member.id !== user?.id
+                actions={[
+                  ...(family?.isOwner && member.id !== user?.id
                     ? [
+                        <Tooltip key="visibility" title="配置可见性">
+                          <Button
+                            size="small"
+                            icon={<EyeOutlined />}
+                            onClick={() => handleOpenVisModal(member)}
+                          >
+                            可见性
+                          </Button>
+                        </Tooltip>,
                         <Popconfirm
                           key="remove"
                           title="确定要移除该成员吗？"
@@ -324,8 +398,8 @@ export default function FamilyPage() {
                           </Button>
                         </Popconfirm>,
                       ]
-                    : []
-                }
+                    : []),
+                ]}
               >
                 <List.Item.Meta
                   avatar={<Avatar>{member.name?.[0] || member.email[0]}</Avatar>}
@@ -347,6 +421,75 @@ export default function FamilyPage() {
           />
         </Card>
       </Spin>
+
+      {/* 可见性配置弹窗 */}
+      <Modal
+        title={`配置可见性 - ${visTargetUser?.name || visTargetUser?.email || ''}`}
+        open={visModalVisible}
+        onCancel={() => setVisModalVisible(false)}
+        onOk={handleSaveVisibility}
+        confirmLoading={visSaving}
+        okText="保存"
+        cancelText="取消"
+      >
+        <Spin spinning={visLoading}>
+          {visConfig && visTargetUser && (
+            <div>
+              <div style={{ marginBottom: 16 }}>
+                <Space>
+                  <Switch
+                    checked={visEnabled}
+                    onChange={setVisEnabled}
+                  />
+                  <Text>启用可见性限制</Text>
+                </Space>
+                <div style={{ marginTop: 4 }}>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {visEnabled
+                      ? '该用户登录后，只能在健康相关页面看到下方勾选的家庭成员'
+                      : '该用户登录后，可以看到所有家庭成员'}
+                  </Text>
+                </div>
+              </div>
+
+              {visEnabled && (
+                <>
+                  <Divider style={{ margin: '12px 0' }} />
+                  <Text type="secondary" style={{ fontSize: 12, marginBottom: 8, display: 'block' }}>
+                    勾选该用户可以看到的家庭成员：
+                  </Text>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {visConfig.members.map((member) => {
+                      const isLinkedMember = member.id === visTargetUser.linkedMemberId;
+                      const checked = visCheckedIds.includes(member.id) || isLinkedMember;
+                      return (
+                        <Checkbox
+                          key={member.id}
+                          checked={checked}
+                          disabled={isLinkedMember}
+                          onChange={(e) => handleToggleMember(member.id, e.target.checked)}
+                        >
+                          <Space>
+                            <span>{member.name}</span>
+                            <Tag style={{ fontSize: 11 }}>
+                              {RelationshipLabels[member.relationship as Relationship] || member.relationship}
+                            </Tag>
+                            {isLinkedMember && (
+                              <Text type="secondary" style={{ fontSize: 11 }}>
+                                (本人，始终可见)
+                              </Text>
+                            )}
+                          </Space>
+                        </Checkbox>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </Spin>
+      </Modal>
     </div>
   );
 }
