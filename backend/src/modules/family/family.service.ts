@@ -291,6 +291,12 @@ export class FamilyService {
       );
     }
 
+    // 清除用户与家庭成员的关联
+    await this.prisma.familyMember.updateMany({
+      where: { userId, familyId: user.familyId },
+      data: { userId: null },
+    });
+
     // 离开家庭
     await this.prisma.user.update({
       where: { id: userId },
@@ -396,6 +402,12 @@ export class FamilyService {
     if (!targetUser || targetUser.familyId !== user.familyId) {
       throw new NotFoundException('该用户不在您的家庭中');
     }
+
+    // 清除被移除用户与家庭成员的关联
+    await this.prisma.familyMember.updateMany({
+      where: { userId: targetUserId, familyId: user.familyId },
+      data: { userId: null },
+    });
 
     await this.prisma.user.update({
       where: { id: targetUserId },

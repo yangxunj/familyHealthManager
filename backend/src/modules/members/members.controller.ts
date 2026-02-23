@@ -31,6 +31,12 @@ export class MembersController {
     return this.membersService.findAll(familyId);
   }
 
+  @Get('me')
+  async getMyMember(@CurrentUser() user: CurrentUserData) {
+    const familyId = this.requireFamily(user);
+    return this.membersService.getMyMember(user.id, familyId);
+  }
+
   @Get('stats')
   async getStats(@CurrentUser() user: CurrentUserData) {
     const familyId = this.requireFamily(user);
@@ -52,7 +58,22 @@ export class MembersController {
     @Body() dto: CreateMemberDto,
   ) {
     const familyId = this.requireFamily(user);
-    return this.membersService.create(familyId, dto);
+    return this.membersService.create(familyId, dto, user.id);
+  }
+
+  @Post(':id/link')
+  async linkToUser(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: CurrentUserData,
+  ) {
+    const familyId = this.requireFamily(user);
+    return this.membersService.linkToUser(id, user.id, familyId);
+  }
+
+  @Delete('me/link')
+  async unlinkFromUser(@CurrentUser() user: CurrentUserData) {
+    const familyId = this.requireFamily(user);
+    return this.membersService.unlinkFromUser(user.id, familyId);
   }
 
   @Patch(':id')

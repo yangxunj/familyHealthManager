@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsArray,
   IsNumber,
+  IsBoolean,
   Min,
   Max,
   MinLength,
@@ -60,4 +61,8 @@ export class CreateMemberDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  linkToCurrentUser?: boolean;
 }

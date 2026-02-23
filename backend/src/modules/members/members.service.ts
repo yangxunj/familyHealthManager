@@ -32,6 +32,7 @@ export class MembersService {
         bloodType: true,
         height: true,
         weight: true,
+        userId: true,
         createdAt: true,
         _count: {
           select: {
@@ -69,6 +70,7 @@ export class MembersService {
         bloodType: true,
         height: true,
         weight: true,
+        userId: true,
         chronicDiseases: true,
         allergies: true,
         notes: true,
@@ -99,7 +101,7 @@ export class MembersService {
     };
   }
 
-  async create(familyId: string, dto: CreateMemberDto) {
+  async create(familyId: string, dto: CreateMemberDto, userId?: string) {
     // 如果关系是"本人"，检查是否已存在
     if (dto.relationship === 'SELF') {
       const existingSelf = await this.prisma.familyMember.findFirst({
@@ -112,6 +114,16 @@ export class MembersService {
 
       if (existingSelf) {
         throw new ConflictException('已存在"本人"档案，不能重复创建');
+      }
+    }
+
+    // 如果需要关联当前用户，检查该用户是否已关联其他成员
+    if (dto.linkToCurrentUser && userId) {
+      const existingLink = await this.prisma.familyMember.findUnique({
+        where: { userId },
+      });
+      if (existingLink) {
+        throw new ConflictException('您已关联到其他家庭成员，请先解除关联');
       }
     }
 
@@ -128,6 +140,9 @@ export class MembersService {
       chronicDiseases: dto.chronicDiseases || [],
       allergies: dto.allergies,
       notes: dto.notes,
+      ...(dto.linkToCurrentUser && userId
+        ? { user: { connect: { id: userId } } }
+        : {}),
     };
 
     const member = await this.prisma.familyMember.create({
@@ -142,6 +157,7 @@ export class MembersService {
         bloodType: true,
         height: true,
         weight: true,
+        userId: true,
         chronicDiseases: true,
         allergies: true,
         notes: true,
@@ -242,13 +258,97 @@ export class MembersService {
       throw new NotFoundException('家庭成员不存在');
     }
 
-    // 软删除
+    // 软删除，同时清除 userId 避免唯一约束冲突
     await this.prisma.familyMember.update({
       where: { id },
-      data: { deletedAt: new Date() },
+      data: { deletedAt: new Date(), userId: null },
     });
 
     return { message: '删除成功' };
+  }
+
+  async linkToUser(memberId: string, userId: string, familyId: string) {
+    // 验证成员属于当前家庭
+    const member = await this.prisma.familyMember.findFirst({
+      where: { id: memberId, familyId, deletedAt: null },
+    });
+    if (!member) {
+      throw new NotFoundException('家庭成员不存在');
+    }
+
+    // 检查该成员是否已关联其他用户
+    if (member.userId) {
+      throw new ConflictException('该成员已关联到其他用户');
+    }
+
+    // 检查当前用户是否已关联其他成员
+    const existingLink = await this.prisma.familyMember.findUnique({
+      where: { userId },
+    });
+    if (existingLink) {
+      throw new ConflictException('您已关联到其他家庭成员，请先解除关联');
+    }
+
+    await this.prisma.familyMember.update({
+      where: { id: memberId },
+      data: { userId },
+    });
+
+    return { message: '关联成功' };
+  }
+
+  async unlinkFromUser(userId: string, familyId: string) {
+    const member = await this.prisma.familyMember.findUnique({
+      where: { userId },
+    });
+
+    if (!member || member.familyId !== familyId) {
+      throw new NotFoundException('未找到关联的家庭成员');
+    }
+
+    await this.prisma.familyMember.update({
+      where: { id: member.id },
+      data: { userId: null },
+    });
+
+    return { message: '已解除关联' };
+  }
+
+  async getMyMember(userId: string, familyId: string) {
+    const member = await this.prisma.familyMember.findUnique({
+      where: { userId },
+      select: {
+        id: true,
+        name: true,
+        relationship: true,
+        gender: true,
+        birthDate: true,
+        avatar: true,
+        bloodType: true,
+        height: true,
+        weight: true,
+        userId: true,
+        createdAt: true,
+      },
+    });
+
+    if (!member || member.userId !== userId) {
+      return null;
+    }
+
+    // 验证成员属于当前家庭（通过 familyId 查询确认）
+    const verified = await this.prisma.familyMember.findFirst({
+      where: { id: member.id, familyId, deletedAt: null },
+    });
+    if (!verified) {
+      return null;
+    }
+
+    return {
+      ...member,
+      height: member.height ? Number(member.height) : null,
+      weight: member.weight ? Number(member.weight) : null,
+    };
   }
 
   async validateOwnership(memberId: string, familyId: string): Promise<boolean> {
