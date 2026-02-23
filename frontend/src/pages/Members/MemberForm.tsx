@@ -44,10 +44,10 @@ const MemberForm: React.FC<MemberFormProps> = ({ mode }) => {
     enabled: mode === 'edit' && !!id,
   });
 
-  // 查询当前用户是否已关联成员（仅新建时需要）
+  // 查询当前用户是否已关联成员（仅新建时需要，使用 scope=all 确保查到所有成员）
   const { data: members } = useQuery({
-    queryKey: ['members'],
-    queryFn: membersApi.getAll,
+    queryKey: ['members', 'all'],
+    queryFn: () => membersApi.getAll({ scope: 'all' }),
     enabled: mode === 'add',
   });
 

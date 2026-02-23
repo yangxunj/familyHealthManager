@@ -24,8 +24,8 @@ const MemberList: React.FC = () => {
   const user = useAuthStore((s) => s.user);
 
   const { data: members, isLoading } = useQuery({
-    queryKey: ['members'],
-    queryFn: membersApi.getAll,
+    queryKey: ['members', 'all'],
+    queryFn: () => membersApi.getAll({ scope: 'all' }),
   });
 
   // 当前用户是否已关联某个成员
