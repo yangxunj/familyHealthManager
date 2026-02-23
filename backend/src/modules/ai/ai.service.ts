@@ -160,6 +160,7 @@ export class AiService {
       maxTokens?: number;
       jsonMode?: boolean; // 启用 JSON mode，强制返回有效 JSON
       jsonSchema?: object; // 可选：指定 JSON Schema 约束输出结构
+      reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high'; // Gemini 3 思考深度控制
     },
   ): Promise<AiCompletionResult> {
     const googleKey = await this.settingsService.getEffectiveGoogleKey();
@@ -199,6 +200,7 @@ export class AiService {
       maxTokens?: number;
       jsonMode?: boolean;
       jsonSchema?: object;
+      reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high';
     },
   ): Promise<AiCompletionResult> {
     const model = options?.model || this.geminiModel;
@@ -210,6 +212,11 @@ export class AiService {
       temperature: options?.temperature ?? 0.7,
       max_tokens: options?.maxTokens ?? 2000,
     };
+
+    // Gemini 3 思考模型支持 reasoning_effort 控制思考深度
+    if (options?.reasoningEffort) {
+      requestBody.reasoning_effort = options.reasoningEffort;
+    }
 
     // 添加 JSON mode 或 JSON Schema 约束
     if (options?.jsonSchema) {
@@ -1247,12 +1254,11 @@ ${ocrText}`;
 
       this.logger.log(`AI 规整: OCR 文本长度 = ${ocrText.length}`);
 
-      // AI 规整是格式整理任务，不需要深度推理，使用非思考模型避免超时
-      // gemini-3-flash-preview 等思考模型处理大文本时内部推理耗时过长，
-      // Google 服务端会在 ~60s 后关闭连接导致 fetch failed
+      // AI 规整是格式整理任务，不需要深度推理，使用 minimal 思考深度避免超时
+      // Gemini 3 思考模型处理大文本时默认思考耗时过长，Google 服务端会在 ~60s 后关闭连接
       const result = await this.chat(
         [{ role: 'user', content: prompt }],
-        { maxTokens: 8000, model: 'gemini-2.0-flash' },
+        { maxTokens: 8000, reasoningEffort: 'minimal' },
       );
 
       this.logger.log(`AI 规整: 返回内容长度 = ${result.content.length}, tokens = ${result.tokensUsed}`);
