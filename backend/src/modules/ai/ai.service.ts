@@ -350,6 +350,8 @@ export class AiService {
       model?: string;
       temperature?: number;
       maxTokens?: number;
+      jsonMode?: boolean;
+      jsonSchema?: object;
     },
   ): Promise<void> {
     const googleKey = await this.settingsService.getEffectiveGoogleKey();
@@ -398,6 +400,16 @@ export class AiService {
             temperature: options?.temperature ?? 0.7,
             max_tokens: options?.maxTokens ?? 2000,
             stream: false,
+            ...(options?.jsonSchema
+              ? {
+                  response_format: {
+                    type: 'json_schema',
+                    json_schema: { name: 'response', strict: true, schema: options.jsonSchema },
+                  },
+                }
+              : options?.jsonMode
+                ? { response_format: { type: 'json_object' } }
+                : {}),
           }),
           signal: AbortSignal.timeout(180_000),
           ...(dispatcher ? { dispatcher } : {}),
@@ -442,6 +454,16 @@ export class AiService {
           temperature: options?.temperature ?? 0.7,
           max_tokens: options?.maxTokens ?? 2000,
           stream: true,
+          ...(options?.jsonSchema
+            ? {
+                response_format: {
+                  type: 'json_schema',
+                  json_schema: { name: 'response', strict: true, schema: options.jsonSchema },
+                },
+              }
+            : options?.jsonMode
+              ? { response_format: { type: 'json_object' } }
+              : {}),
         }),
         signal: AbortSignal.timeout(180_000),
         ...(dispatcher ? { dispatcher } : {}),
@@ -676,15 +698,41 @@ ${healthData.documentContent ? `## 健康文档详细内容\n${healthData.docume
       additionalProperties: false,
     };
 
-    return this.chat(
+    // 使用流式调用避免思考模型超时（与 formatOcrText 同理）
+    const chunks: string[] = [];
+    let tokensUsed = 0;
+
+    await this.chatStream(
       [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
+      (chunk) => {
+        if (chunk.content) chunks.push(chunk.content);
+        if (chunk.tokensUsed) tokensUsed = chunk.tokensUsed;
+      },
       {
         jsonSchema: healthAdviceSchema,
       },
     );
+
+    const content = chunks.join('');
+
+    // 获取当前使用的模型名称
+    const googleKey = await this.settingsService.getEffectiveGoogleKey();
+    const aiProvider = await this.settingsService.getAiProvider();
+    const useGoogle = aiProvider === 'google' && !!googleKey;
+    const model = useGoogle
+      ? await this.settingsService.getEffectiveGeminiModel()
+      : await this.settingsService.getEffectiveDashscopeModel();
+
+    this.logger.log(`generateHealthAdvice stream completed: contentLen=${content.length}, tokens=${tokensUsed}`);
+
+    return {
+      content,
+      tokensUsed,
+      model,
+    };
   }
 
   // 解析 AI 返回的 JSON
