@@ -1247,9 +1247,12 @@ ${ocrText}`;
 
       this.logger.log(`AI 规整: OCR 文本长度 = ${ocrText.length}`);
 
+      // AI 规整是格式整理任务，不需要深度推理，使用非思考模型避免超时
+      // gemini-3-flash-preview 等思考模型处理大文本时内部推理耗时过长，
+      // Google 服务端会在 ~60s 后关闭连接导致 fetch failed
       const result = await this.chat(
         [{ role: 'user', content: prompt }],
-        { maxTokens: 8000 },
+        { maxTokens: 8000, model: 'gemini-2.0-flash' },
       );
 
       this.logger.log(`AI 规整: 返回内容长度 = ${result.content.length}, tokens = ${result.tokensUsed}`);
