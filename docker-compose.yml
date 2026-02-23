@@ -37,13 +37,14 @@ services:
       context: ./frontend
       args:
         VITE_API_BASE_URL: /api/v1
-        VITE_SUPABASE_URL: ${SUPABASE_URL}
-        VITE_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+        # Supabase 使用占位符构建，由 entrypoint 脚本在运行时替换
     restart: unless-stopped
     ports:
       - "5180:80"
     depends_on:
       - backend
+    env_file:
+      - .env.docker
 
 volumes:
   pgdata:
