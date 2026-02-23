@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Card,
   Button,
@@ -32,7 +32,7 @@ import {
 } from '@ant-design/icons';
 import { useAuthStore } from '../../store/authStore';
 import { familyApi } from '../../api/family';
-import type { VisibilityConfig, VisibilityConfigUser, VisibilityConfigMember } from '../../api/family';
+import type { VisibilityConfig, VisibilityConfigUser } from '../../api/family';
 import { RelationshipLabels } from '../../types';
 import type { Relationship } from '../../types';
 
