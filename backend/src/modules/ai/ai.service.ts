@@ -1254,28 +1254,36 @@ ${ocrText}`;
 
       this.logger.log(`AI 规整: OCR 文本长度 = ${ocrText.length}`);
 
-      // AI 规整是格式整理任务，使用 gemini-2.0-flash（非思考模型）
-      // Gemini 3 思考模型即使设 reasoning_effort=minimal，处理 10K+ 大文本时
-      // 仍可能触发思考导致 Google 服务端 60s 硬超时断连
-      const result = await this.chat(
+      // 使用流式调用避免思考模型超时：Gemini 3 思考模型处理大文本时，
+      // 非流式请求会因内部思考耗时过长触发 Google 服务端 ~60s 断连。
+      // 流式模式下服务端立即建立 SSE 连接，数据持续流动不会被断开。
+      const chunks: string[] = [];
+      let tokensUsed = 0;
+
+      await this.chatStream(
         [{ role: 'user', content: prompt }],
-        { maxTokens: 8000, model: 'gemini-2.0-flash' },
+        (chunk) => {
+          if (chunk.content) chunks.push(chunk.content);
+          if (chunk.tokensUsed) tokensUsed = chunk.tokensUsed;
+        },
+        { maxTokens: 8000 },
       );
 
-      this.logger.log(`AI 规整: 返回内容长度 = ${result.content.length}, tokens = ${result.tokensUsed}`);
+      const content = chunks.join('');
+      this.logger.log(`AI 规整: 返回内容长度 = ${content.length}, tokens = ${tokensUsed}`);
 
-      if (!result.content || result.content.trim().length === 0) {
+      if (!content || content.trim().length === 0) {
         return {
           success: false,
           error: 'AI 返回内容为空',
-          tokensUsed: result.tokensUsed,
+          tokensUsed,
         };
       }
 
       return {
         success: true,
-        markdown: result.content.trim(),
-        tokensUsed: result.tokensUsed,
+        markdown: content.trim(),
+        tokensUsed,
       };
     } catch (error) {
       this.logger.error(`AI 规整 OCR 文本失败: ${(error as Error).message}`);
