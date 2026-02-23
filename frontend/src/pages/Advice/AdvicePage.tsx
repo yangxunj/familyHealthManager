@@ -76,7 +76,7 @@ const AdvicePage: React.FC = () => {
   // 数据查询
   const { data: members } = useQuery({
     queryKey: ['members'],
-    queryFn: membersApi.getAll,
+    queryFn: () => membersApi.getAll(),
   });
 
   // 生成咨询问题

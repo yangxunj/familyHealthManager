@@ -36,7 +36,7 @@ const DocumentUpload: React.FC = () => {
 
   const { data: members } = useQuery({
     queryKey: ['members'],
-    queryFn: membersApi.getAll,
+    queryFn: () => membersApi.getAll(),
   });
 
   const createMutation = useMutation({

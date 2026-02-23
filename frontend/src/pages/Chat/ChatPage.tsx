@@ -105,7 +105,7 @@ const ChatPage: React.FC = () => {
   // 获取家庭成员（用于新建会话）
   const { data: members } = useQuery({
     queryKey: ['members'],
-    queryFn: membersApi.getAll,
+    queryFn: () => membersApi.getAll(),
   });
 
   // 新建会话弹窗中，默认选中"自己"的成员

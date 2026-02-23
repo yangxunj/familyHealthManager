@@ -80,7 +80,7 @@ const FoodQueryPage: React.FC = () => {
   // 获取家庭成员
   const { data: members } = useQuery({
     queryKey: ['members'],
-    queryFn: membersApi.getAll,
+    queryFn: () => membersApi.getAll(),
   });
 
   // 默认选中"自己"的成员，找不到则选第一个

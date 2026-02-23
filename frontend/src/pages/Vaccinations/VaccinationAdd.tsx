@@ -36,7 +36,7 @@ export default function VaccinationAdd() {
   // 获取家庭成员列表
   const { data: members = [] } = useQuery({
     queryKey: ['members'],
-    queryFn: membersApi.getAll,
+    queryFn: () => membersApi.getAll(),
   });
 
   // 创建接种记录

@@ -82,7 +82,7 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
   // Blood pressure values
   const [bpValues, setBpValues] = useState({ systolic: null as number | null, diastolic: null as number | null, heartRate: null as number | null });
 
-  const { data: members } = useQuery({ queryKey: ['members'], queryFn: membersApi.getAll });
+  const { data: members } = useQuery({ queryKey: ['members'], queryFn: () => membersApi.getAll() });
 
   const createMutation = useMutation({
     mutationFn: recordsApi.create,

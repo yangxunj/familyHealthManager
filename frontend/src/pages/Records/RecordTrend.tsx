@@ -28,7 +28,7 @@ const RecordTrend: React.FC = () => {
 
   const { data: members } = useQuery({
     queryKey: ['members'],
-    queryFn: membersApi.getAll,
+    queryFn: () => membersApi.getAll(),
   });
 
   // 老人模式：查询所选成员有数据的指标类型

@@ -594,7 +594,7 @@ export default function CheckupList() {
   // 获取家庭成员
   const { data: members = [], isLoading: loadingMembers } = useQuery({
     queryKey: ['members'],
-    queryFn: membersApi.getAll,
+    queryFn: () => membersApi.getAll(),
   });
 
   // 获取模板

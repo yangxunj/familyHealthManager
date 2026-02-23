@@ -34,7 +34,7 @@ const Dashboard: React.FC = () => {
 
   const { data: members, isLoading: isLoadingMembers } = useQuery({
     queryKey: ['members'],
-    queryFn: membersApi.getAll,
+    queryFn: () => membersApi.getAll(),
   });
 
   const isLoading = isLoadingStats || isLoadingMembers;
