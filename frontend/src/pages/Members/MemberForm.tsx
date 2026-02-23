@@ -10,12 +10,14 @@ import {
   Row,
   Col,
   Spin,
+  Checkbox,
   message,
   Grid,
 } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { membersApi } from '../../api';
+import { useAuthStore } from '../../store/authStore';
 import type { CreateMemberRequest, Relationship, Gender, BloodType } from '../../types';
 import { RelationshipLabels, GenderLabels, BloodTypeLabels } from '../../types';
 import dayjs from 'dayjs';
@@ -34,12 +36,22 @@ const MemberForm: React.FC<MemberFormProps> = ({ mode }) => {
   const [form] = Form.useForm();
   const screens = useBreakpoint();
   const isMobile = !screens.md;
+  const user = useAuthStore((s) => s.user);
 
   const { data: member, isLoading: isLoadingMember } = useQuery({
     queryKey: ['member', id],
     queryFn: () => membersApi.getById(id!),
     enabled: mode === 'edit' && !!id,
   });
+
+  // 查询当前用户是否已关联成员（仅新建时需要）
+  const { data: members } = useQuery({
+    queryKey: ['members'],
+    queryFn: membersApi.getAll,
+    enabled: mode === 'add',
+  });
+
+  const currentUserLinked = members?.some((m) => m.userId === user?.id);
 
   useEffect(() => {
     if (member && mode === 'edit') {
@@ -49,6 +61,14 @@ const MemberForm: React.FC<MemberFormProps> = ({ mode }) => {
       });
     }
   }, [member, mode, form]);
+
+  // 当选择 SELF 关系时自动勾选"关联到我"
+  const relationship = Form.useWatch('relationship', form);
+  useEffect(() => {
+    if (mode === 'add' && relationship === 'SELF' && !currentUserLinked) {
+      form.setFieldValue('linkToCurrentUser', true);
+    }
+  }, [relationship, mode, currentUserLinked, form]);
 
   const createMutation = useMutation({
     mutationFn: membersApi.create,
@@ -89,6 +109,7 @@ const MemberForm: React.FC<MemberFormProps> = ({ mode }) => {
       chronicDiseases: values.chronicDiseases as string[] | undefined,
       allergies: values.allergies as string | undefined,
       notes: values.notes as string | undefined,
+      linkToCurrentUser: values.linkToCurrentUser as boolean | undefined,
     };
 
     if (mode === 'add') {
@@ -233,6 +254,12 @@ const MemberForm: React.FC<MemberFormProps> = ({ mode }) => {
           <Form.Item name="notes" label="备注">
             <TextArea rows={3} placeholder="请输入备注信息" />
           </Form.Item>
+
+          {mode === 'add' && !currentUserLinked && (
+            <Form.Item name="linkToCurrentUser" valuePropName="checked">
+              <Checkbox>这个成员是我本人（关联到当前账号）</Checkbox>
+            </Form.Item>
+          )}
 
           <Form.Item>
             <div style={{ display: 'flex', gap: 16 }}>
