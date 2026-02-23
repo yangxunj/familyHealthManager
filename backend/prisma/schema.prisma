@@ -138,6 +138,9 @@ model User {
   updatedAt     DateTime  @updatedAt @map("updated_at")
   lastLoginAt   DateTime? @map("last_login_at")
 
+  // 成员可见性（管理员为此用户配置后置 true）
+  memberVisibilityConfigured Boolean @default(false) @map("member_visibility_configured")
+
   // 关系
   family        Family?   @relation(fields: [familyId], references: [id])
   linkedMember  FamilyMember?
@@ -527,4 +530,16 @@ model PeriodicCheckRecord {
 
   @@index([itemId])
   @@map("periodic_check_records")
+}
+
+/// 成员可见性配置表（白名单：某用户能看到哪些家庭成员）
+model MemberVisibility {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  memberId  String   @map("member_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, memberId])
+  @@index([userId])
+  @@map("member_visibility")
 }
