@@ -26,6 +26,7 @@ import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { chatApi, membersApi } from '../../api';
+import { useDefaultMemberId } from '../../hooks/useDefaultMemberId';
 import { useElderModeStore } from '../../store';
 import { resolveUploadUrl } from '../../lib/capacitor';
 import type {
@@ -82,12 +83,8 @@ const FoodQueryPage: React.FC = () => {
     queryFn: membersApi.getAll,
   });
 
-  // 自动选中唯一成员
-  useEffect(() => {
-    if (members?.length === 1 && !selectedMemberId) {
-      setSelectedMemberId(members[0].id);
-    }
-  }, [members, selectedMemberId]);
+  // 默认选中"自己"的成员，找不到则选第一个
+  useDefaultMemberId(members, selectedMemberId, setSelectedMemberId);
 
   // 获取历史会话列表
   const PAGE_SIZE = 20;

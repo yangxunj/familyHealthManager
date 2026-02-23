@@ -34,6 +34,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { checkupsApi, membersApi } from '../../api';
+import { useDefaultMemberId } from '../../hooks/useDefaultMemberId';
 import type { CheckItemWithStatus, CheckTemplate } from '../../types/checkup';
 import styles from './Checkups.module.css';
 
@@ -674,10 +675,8 @@ export default function CheckupList() {
     queryClient.invalidateQueries({ queryKey: ['checkup-summary'] });
   };
 
-  // 默认选中第一个成员
-  if (!selectedMemberId && members.length > 0) {
-    setSelectedMemberId(members[0].id);
-  }
+  // 默认选中"自己"的成员，找不到则选第一个
+  useDefaultMemberId(members, selectedMemberId || undefined, setSelectedMemberId);
 
   const selectedMember = members.find((m) => m.id === selectedMemberId);
 

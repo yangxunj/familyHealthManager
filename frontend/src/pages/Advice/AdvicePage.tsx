@@ -33,6 +33,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { adviceApi, membersApi, chatApi } from '../../api';
+import { useDefaultMemberId } from '../../hooks/useDefaultMemberId';
 import type { HealthAdvice, Concern, Suggestion, ActionItem } from '../../types';
 import {
   ConcernLevelConfig,
@@ -146,12 +147,8 @@ const AdvicePage: React.FC = () => {
     enabled: !!selectedMemberId,
   });
 
-  // 默认选中第一个成员
-  useEffect(() => {
-    if (members && members.length > 0 && !selectedMemberId) {
-      setSelectedMemberId(members[0].id);
-    }
-  }, [members, selectedMemberId]);
+  // 默认选中"自己"的成员，找不到则选第一个
+  useDefaultMemberId(members, selectedMemberId, setSelectedMemberId);
 
   // 当建议列表加载完成且当前没有选中建议时，自动展示最新的一条
   useEffect(() => {

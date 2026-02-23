@@ -33,6 +33,7 @@ import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { chatApi, membersApi } from '../../api';
+import { useDefaultMemberId } from '../../hooks/useDefaultMemberId';
 import { useElderModeStore } from '../../store';
 import { resolveUploadUrl } from '../../lib/capacitor';
 import type {
@@ -106,6 +107,9 @@ const ChatPage: React.FC = () => {
     queryKey: ['members'],
     queryFn: membersApi.getAll,
   });
+
+  // 新建会话弹窗中，默认选中"自己"的成员
+  useDefaultMemberId(members, selectedMemberId, setSelectedMemberId);
 
   // 获取有会话记录的成员列表（用于筛选下拉菜单，只看普通咨询）
   const { data: membersWithSessions } = useQuery({

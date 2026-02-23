@@ -34,6 +34,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { vaccinationsApi, membersApi } from '../../api';
+import { useDefaultMemberId } from '../../hooks/useDefaultMemberId';
 import type { RecommendedVaccine } from '../../types/vaccination';
 import styles from './Vaccinations.module.css';
 
@@ -616,10 +617,8 @@ export default function VaccinationList() {
     queryClient.invalidateQueries({ queryKey: ['vaccination-summary'] });
   };
 
-  // 默认选中第一个成员
-  if (!selectedMemberId && members.length > 0) {
-    setSelectedMemberId(members[0].id);
-  }
+  // 默认选中"自己"的成员，找不到则选第一个
+  useDefaultMemberId(members, selectedMemberId || undefined, setSelectedMemberId);
 
   const isLoading = loadingMembers || loadingSummary;
   const selectedMember = members.find((m) => m.id === selectedMemberId);
