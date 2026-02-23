@@ -59,6 +59,35 @@ export class ChatService {
     private aiService: AiService,
   ) {}
 
+  // 获取用户可见的成员 ID 列表（null 表示不限制）
+  private async getVisibleMemberIds(userId: string): Promise<string[] | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { memberVisibilityConfigured: true },
+    });
+
+    if (!user?.memberVisibilityConfigured) {
+      return null; // 不限制
+    }
+
+    const visibleEntries = await this.prisma.memberVisibility.findMany({
+      where: { userId },
+      select: { memberId: true },
+    });
+    const visibleIds = visibleEntries.map((v) => v.memberId);
+
+    // 确保用户自己的 linkedMember 始终可见
+    const linkedMember = await this.prisma.familyMember.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+    if (linkedMember && !visibleIds.includes(linkedMember.id)) {
+      visibleIds.push(linkedMember.id);
+    }
+
+    return visibleIds;
+  }
+
   // 验证成员归属
   private async validateMemberOwnership(memberId: string, familyId: string) {
     const member = await this.prisma.familyMember.findFirst({
@@ -423,13 +452,21 @@ ${
   }
 
   // 获取会话列表
-  async findAllSessions(familyId: string, query: QuerySessionDto) {
-    const where: { familyId: string; memberId?: string; type?: 'GENERAL' | 'FOOD_QUERY' } = { familyId };
+  async findAllSessions(familyId: string, query: QuerySessionDto, userId?: string) {
+    const where: { familyId: string; memberId?: string | { in: string[] }; type?: 'GENERAL' | 'FOOD_QUERY' } = { familyId };
     if (query.memberId) {
       where.memberId = query.memberId;
     }
     if (query.type) {
       where.type = query.type;
+    }
+
+    // 可见性过滤
+    if (userId && !query.memberId) {
+      const visibleIds = await this.getVisibleMemberIds(userId);
+      if (visibleIds) {
+        where.memberId = { in: visibleIds };
+      }
     }
 
     const sessions = await this.prisma.chatSession.findMany({
@@ -485,10 +522,18 @@ ${
   }
 
   // 获取有会话记录的成员列表
-  async getMembersWithSessions(familyId: string, type?: 'GENERAL' | 'FOOD_QUERY') {
-    const where: { familyId: string; type?: 'GENERAL' | 'FOOD_QUERY' } = { familyId };
+  async getMembersWithSessions(familyId: string, type?: 'GENERAL' | 'FOOD_QUERY', userId?: string) {
+    const where: { familyId: string; type?: 'GENERAL' | 'FOOD_QUERY'; memberId?: { in: string[] } } = { familyId };
     if (type) {
       where.type = type;
+    }
+
+    // 可见性过滤
+    if (userId) {
+      const visibleIds = await this.getVisibleMemberIds(userId);
+      if (visibleIds) {
+        where.memberId = { in: visibleIds };
+      }
     }
     const members = await this.prisma.chatSession.findMany({
       where,

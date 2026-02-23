@@ -45,7 +45,7 @@ export class ChatController {
     @Query() query: QuerySessionDto,
   ) {
     const familyId = this.requireFamily(user);
-    return this.chatService.findAllSessions(familyId, query);
+    return this.chatService.findAllSessions(familyId, query, user.id);
   }
 
   // 获取有会话记录的成员列表
@@ -55,7 +55,7 @@ export class ChatController {
     @Query('type') type?: 'GENERAL' | 'FOOD_QUERY',
   ) {
     const familyId = this.requireFamily(user);
-    return this.chatService.getMembersWithSessions(familyId, type);
+    return this.chatService.getMembersWithSessions(familyId, type, user.id);
   }
 
   // 获取会话详情及消息
