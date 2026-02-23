@@ -23,6 +23,7 @@ export interface FamilyMember {
   bloodType: BloodType;
   height?: number | null;
   weight?: number | null;
+  userId?: string | null;
   chronicDiseases?: string[];
   allergies?: string | null;
   notes?: string | null;
@@ -45,6 +46,7 @@ export interface CreateMemberRequest {
   chronicDiseases?: string[];
   allergies?: string;
   notes?: string;
+  linkToCurrentUser?: boolean;
 }
 
 export interface UpdateMemberRequest {

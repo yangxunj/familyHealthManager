@@ -30,4 +30,16 @@ export const membersApi = {
   delete: async (id: string): Promise<{ message: string }> => {
     return apiClient.delete(`/members/${id}`);
   },
+
+  getMyMember: async (): Promise<FamilyMember | null> => {
+    return apiClient.get('/members/me');
+  },
+
+  linkToUser: async (memberId: string): Promise<{ message: string }> => {
+    return apiClient.post(`/members/${memberId}/link`);
+  },
+
+  unlinkFromUser: async (): Promise<{ message: string }> => {
+    return apiClient.delete('/members/me/link');
+  },
 };
