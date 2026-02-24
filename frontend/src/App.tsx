@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { Spin, message } from 'antd';
+import { Spin } from 'antd';
 import MainLayout from './components/Layout/MainLayout';
 import Login from './pages/Auth/Login';
 import { AuthCallback } from './components/auth/AuthCallback';
@@ -95,61 +95,6 @@ function DeepLinkHandler() {
   return null;
 }
 
-/**
- * Handle Android hardware back button in Capacitor.
- * - On main tab routes: double-tap to minimize the app
- * - On sub-routes: navigate back in history
- */
-function BackButtonHandler() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const pathnameRef = useRef(location.pathname);
-  const lastBackTimeRef = useRef(0);
-
-  useEffect(() => {
-    pathnameRef.current = location.pathname;
-  }, [location.pathname]);
-
-  useEffect(() => {
-    if (!isNativePlatform) return;
-
-    let cleanup: (() => void) | undefined;
-
-    const setup = async () => {
-      const { App: CapApp } = await import('@capacitor/app');
-
-      const listener = await CapApp.addListener('backButton', () => {
-        const pathname = pathnameRef.current;
-        const mainRoutes = [
-          '/dashboard', '/members', '/documents', '/records',
-          '/advice', '/chat', '/food-query', '/health-plan',
-          '/family', '/settings', '/login',
-        ];
-        const isMainRoute = mainRoutes.includes(pathname) || pathname === '/';
-
-        if (isMainRoute) {
-          const now = Date.now();
-          if (now - lastBackTimeRef.current < 2000) {
-            CapApp.minimizeApp();
-          } else {
-            lastBackTimeRef.current = now;
-            message.info('再按一次返回键退出应用');
-          }
-        } else {
-          navigate(-1);
-        }
-      });
-
-      cleanup = () => listener.remove();
-    };
-
-    setup();
-    return () => cleanup?.();
-  }, [navigate]);
-
-  return null;
-}
-
 // Handle ?reset_server=1 parameter (sent from remote frontend when changing server)
 if (isNativePlatform && !isRemoteLoaded()) {
   const params = new URLSearchParams(window.location.search);
@@ -212,7 +157,6 @@ function App() {
   return (
     <BrowserRouter>
       <DeepLinkHandler />
-      <BackButtonHandler />
       <Routes>
         {/* Public routes */}
         <Route path="/login" element={<Login />} />
