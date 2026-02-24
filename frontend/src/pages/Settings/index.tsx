@@ -43,7 +43,7 @@ import {
 } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { getIsAuthEnabled } from '../../lib/supabase';
-import { isNativePlatform } from '../../lib/capacitor';
+import { isNativePlatform, isRemoteLoaded } from '../../lib/capacitor';
 import { getServerUrl, getServerAuthRequired, clearServerConfig } from '../../lib/serverConfig';
 import { whitelistApi, type AllowedEmail } from '../../api/whitelist';
 import { settingsApi, type ApiConfig } from '../../api/settings';
@@ -789,13 +789,21 @@ function DisplaySection() {
 // 服务器配置区块（仅 Capacitor 环境）
 // ============================================================
 function ServerConfigSection() {
-  const serverUrl = getServerUrl();
-  const authRequired = getServerAuthRequired();
+  const remote = isRemoteLoaded();
+  // When loaded remotely, localStorage is on the remote origin (no saved config).
+  // Derive the server URL from the current origin instead.
+  const serverUrl = remote ? window.location.origin : getServerUrl();
+  const authRequired = remote ? getIsAuthEnabled() : getServerAuthRequired();
 
   const handleChangeServer = () => {
-    clearServerConfig();
-    // Reload the app to go back to ServerSetup
-    window.location.reload();
+    if (remote) {
+      // Navigate back to the bundled app with a reset flag.
+      // The bundled app will clear localStorage and show ServerSetup.
+      window.location.href = 'https://localhost?reset_server=1';
+    } else {
+      clearServerConfig();
+      window.location.reload();
+    }
   };
 
   return (
@@ -824,6 +832,15 @@ function ServerConfigSection() {
             </Tag>
           </div>
         </div>
+
+        {remote && (
+          <div style={{ marginBottom: 16 }}>
+            <Text type="secondary">加载模式</Text>
+            <div style={{ marginTop: 4 }}>
+              <Tag color="cyan">远程加载（自动获取最新版本）</Tag>
+            </div>
+          </div>
+        )}
       </div>
 
       <Popconfirm

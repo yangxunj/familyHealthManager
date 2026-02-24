@@ -6,6 +6,8 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     androidScheme: 'https',
+    // Allow WebView to navigate to remote server URLs (for remote frontend loading)
+    allowNavigation: ['*'],
   },
   android: {
     webContentsDebuggingEnabled: true,

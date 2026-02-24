@@ -19,9 +19,9 @@ import CheckupList from './pages/Checkups/CheckupList';
 import SettingsPage from './pages/Settings';
 import ServerSetup from './pages/ServerSetup';
 import { useAuthStore } from './store';
-import { isNativePlatform, APP_SCHEME } from './lib/capacitor';
+import { isNativePlatform, isRemoteLoaded, APP_SCHEME } from './lib/capacitor';
 import { supabase } from './lib/supabase';
-import { isServerConfigured } from './lib/serverConfig';
+import { isServerConfigured, getServerUrl, clearServerConfig } from './lib/serverConfig';
 
 function RequireFamily({ children }: { children: React.ReactNode }) {
   const { hasFamily, isInitialized, isFamilyLoaded } = useAuthStore();
@@ -95,14 +95,42 @@ function DeepLinkHandler() {
   return null;
 }
 
+// Handle ?reset_server=1 parameter (sent from remote frontend when changing server)
+if (isNativePlatform && !isRemoteLoaded()) {
+  const params = new URLSearchParams(window.location.search);
+  if (params.has('reset_server')) {
+    clearServerConfig();
+    window.history.replaceState({}, '', '/');
+  }
+}
+
 function App() {
   const { initialize, isInitialized } = useAuthStore();
   const [serverReady, setServerReady] = useState(
-    !isNativePlatform || isServerConfigured()
+    !isNativePlatform || isServerConfigured() || isRemoteLoaded()
   );
+  const [redirecting, setRedirecting] = useState(false);
+
+  // Capacitor (bundled): if server is configured, redirect to remote frontend
+  useEffect(() => {
+    if (isNativePlatform && !isRemoteLoaded() && isServerConfigured()) {
+      const serverUrl = getServerUrl();
+      if (serverUrl) {
+        setRedirecting(true);
+        window.location.href = serverUrl;
+      }
+    }
+  }, []);
 
   const handleServerConfigured = useCallback(() => {
-    setServerReady(true);
+    // After server setup, redirect to the remote server instead of loading bundled app
+    const serverUrl = getServerUrl();
+    if (serverUrl) {
+      setRedirecting(true);
+      window.location.href = serverUrl;
+    } else {
+      setServerReady(true);
+    }
   }, []);
 
   // Initialize authentication (only after server is configured)
@@ -111,6 +139,15 @@ function App() {
       initialize();
     }
   }, [initialize, isInitialized, serverReady]);
+
+  // Show loading while redirecting to remote server
+  if (redirecting) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh' }}>
+        <Spin size="large" tip="正在连接服务器..." />
+      </div>
+    );
+  }
 
   // Capacitor: show server setup if not configured
   if (isNativePlatform && !serverReady) {
