@@ -2,7 +2,7 @@
  * Supabase client initialization
  */
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { isNativePlatform } from './capacitor';
+import { isNativePlatform, isRemoteLoaded } from './capacitor';
 import { isServerConfigured, getServerAuthRequired } from './serverConfig';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -30,6 +30,11 @@ export const isAuthEnabled = !!supabase;
  */
 export function getIsAuthEnabled(): boolean {
   if (isNativePlatform) {
+    // Remote-loaded: use web logic (Supabase env vars are baked into the remote frontend)
+    if (isRemoteLoaded()) {
+      return !!supabase;
+    }
+    // Bundled: use server config from localStorage (saved on https://localhost origin)
     return isServerConfigured() ? getServerAuthRequired() : false;
   }
   return !!supabase;
