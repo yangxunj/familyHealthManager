@@ -712,6 +712,7 @@ ${healthData.documentContent ? `## 健康文档详细内容\n${healthData.docume
         if (chunk.tokensUsed) tokensUsed = chunk.tokensUsed;
       },
       {
+        maxTokens: 8000, // 思考模型的思考 token 也占用输出额度，需要足够空间
         jsonSchema: healthAdviceSchema,
       },
     );
