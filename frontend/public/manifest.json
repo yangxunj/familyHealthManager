@@ -1,0 +1,21 @@
+{
+  "name": "家庭健康管理平台",
+  "short_name": "家庭健康",
+  "description": "家庭健康管理平台 - 健康记录、AI咨询、体检管理",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#136dec",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
