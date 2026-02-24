@@ -33,7 +33,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { adviceApi, membersApi, chatApi } from '../../api';
-import { useDefaultMemberId } from '../../hooks/useDefaultMemberId';
+import { useAuthStore } from '../../store/authStore';
 import type { HealthAdvice, Concern, Suggestion, ActionItem } from '../../types';
 import {
   ConcernLevelConfig,
@@ -77,6 +77,12 @@ const AdvicePage: React.FC = () => {
   const { data: members } = useQuery({
     queryKey: ['members'],
     queryFn: () => membersApi.getAll(),
+  });
+
+  // 查询所有成员的最新建议（用于默认选中拥有最新建议的成员）
+  const { data: latestAdviceAll } = useQuery({
+    queryKey: ['advice-all-latest'],
+    queryFn: () => adviceApi.getAll(),
   });
 
   // 生成咨询问题
@@ -147,8 +153,22 @@ const AdvicePage: React.FC = () => {
     enabled: !!selectedMemberId,
   });
 
-  // 默认选中"自己"的成员，找不到则选第一个
-  useDefaultMemberId(members, selectedMemberId, setSelectedMemberId);
+  // 默认选中拥有最新健康建议的成员，没有建议时 fallback 到"自己"或第一个
+  useEffect(() => {
+    if (!members?.length || selectedMemberId) return;
+    // 找到拥有最新建议的成员
+    if (latestAdviceAll?.length) {
+      const latestMemberId = latestAdviceAll[0].memberId;
+      if (members.some((m) => m.id === latestMemberId)) {
+        setSelectedMemberId(latestMemberId);
+        return;
+      }
+    }
+    // fallback: 选自己或第一个
+    const user = useAuthStore.getState().user;
+    const myMember = user ? members.find((m) => m.userId === user.id) : null;
+    setSelectedMemberId(myMember?.id || members[0].id);
+  }, [members, latestAdviceAll, selectedMemberId, setSelectedMemberId]);
 
   // 当建议列表加载完成且当前没有选中建议时，自动展示最新的一条
   useEffect(() => {
