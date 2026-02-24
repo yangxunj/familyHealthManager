@@ -84,6 +84,9 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
 
   const { data: members } = useQuery({ queryKey: ['members'], queryFn: () => membersApi.getAll() });
 
+  // 单成员时跳过成员选择步骤
+  const isSingleMember = members?.length === 1;
+
   const createMutation = useMutation({
     mutationFn: recordsApi.create,
     onSuccess: () => {
@@ -125,7 +128,8 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
     } else if (step === 1) {
       setStep(0);
     } else if (step === 2) {
-      setStep(1);
+      // 单成员时跳过 step 1，直接回到 step 0
+      setStep(isSingleMember ? 0 : 1);
       setSubType(null);
       setSingleValue(null);
       setBpValues({ systolic: null, diastolic: null, heartRate: null });
@@ -226,7 +230,17 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
       {CATEGORIES.map((cat) => (
         <div
           key={cat.key}
-          onClick={() => { setCategory(cat.key); setStep(1); }}
+          onClick={() => {
+            setCategory(cat.key);
+            if (isSingleMember && members?.[0]) {
+              // 单成员跳过选人步骤，直接到输入
+              setMemberId(members[0].id);
+              setMemberName(members[0].name);
+              setStep(2);
+            } else {
+              setStep(1);
+            }
+          }}
           style={{
             background: cat.bg,
             borderRadius: 16,
@@ -353,7 +367,12 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
 
   /* ================================================================ */
 
-  const STEP_TITLES = ['选择记录类型', '选择家庭成员', '输入数据'];
+  const STEP_TITLES_FULL = ['选择记录类型', '选择家庭成员', '输入数据'];
+  const STEP_TITLES_SHORT = ['选择记录类型', '输入数据'];
+  const stepTitles = isSingleMember ? STEP_TITLES_SHORT : STEP_TITLES_FULL;
+  // 映射当前 step 到显示的步骤索引（单成员时 step 0→0, step 2→1）
+  const displayStepIndex = isSingleMember ? (step === 0 ? 0 : 1) : step;
+  const totalSteps = isSingleMember ? 2 : 3;
 
   return (
     <Drawer
@@ -377,21 +396,21 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
       >
         <Button type="text" icon={<ArrowLeftOutlined />} onClick={handleBack} style={{ fontSize: 18 }} />
         <span style={{ flex: 1, textAlign: 'center', fontSize: 18, fontWeight: 600 }}>
-          {STEP_TITLES[step]}
+          {stepTitles[displayStepIndex]}
         </span>
         <div style={{ width: 40 }} />
       </div>
 
       {/* Step indicator */}
       <div style={{ display: 'flex', justifyContent: 'center', gap: 8, padding: '12px 0', flexShrink: 0 }}>
-        {[0, 1, 2].map((s) => (
+        {Array.from({ length: totalSteps }, (_, i) => (
           <div
-            key={s}
+            key={i}
             style={{
-              width: s === step ? 24 : 8,
+              width: i === displayStepIndex ? 24 : 8,
               height: 8,
               borderRadius: 4,
-              background: s <= step ? '#136dec' : '#e0e0e0',
+              background: i <= displayStepIndex ? '#136dec' : '#e0e0e0',
               transition: 'all 0.3s',
             }}
           />

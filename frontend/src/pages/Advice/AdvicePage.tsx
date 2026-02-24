@@ -153,6 +153,9 @@ const AdvicePage: React.FC = () => {
     enabled: !!selectedMemberId,
   });
 
+  // 只有一个可见成员时，隐藏成员选择 UI
+  const isSingleMember = members?.length === 1;
+
   // 默认选中拥有最新健康建议的成员，没有建议时 fallback 到"自己"或第一个
   useEffect(() => {
     if (!members?.length || selectedMemberId) return;
@@ -513,28 +516,30 @@ const AdvicePage: React.FC = () => {
       <Card style={{ marginBottom: 24 }}>
         {isElderMode ? (
           <>
-            {/* 成员气泡独立一行 */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-              {members?.map((member) => (
-                <Button
-                  key={member.id}
-                  type={selectedMemberId === member.id ? 'primary' : 'default'}
-                  style={{
-                    borderRadius: 20,
-                    minWidth: 80,
-                    ...(selectedMemberId === member.id ? {} : { borderColor: 'var(--color-border)' }),
-                  }}
-                  onClick={() => {
-                    if (selectedMemberId !== member.id) {
-                      setSelectedMemberId(member.id);
-                      setSelectedAdvice(null);
-                    }
-                  }}
-                >
-                  {member.name}
-                </Button>
-              ))}
-            </div>
+            {/* 成员气泡独立一行（单成员时隐藏） */}
+            {!isSingleMember && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+                {members?.map((member) => (
+                  <Button
+                    key={member.id}
+                    type={selectedMemberId === member.id ? 'primary' : 'default'}
+                    style={{
+                      borderRadius: 20,
+                      minWidth: 80,
+                      ...(selectedMemberId === member.id ? {} : { borderColor: 'var(--color-border)' }),
+                    }}
+                    onClick={() => {
+                      if (selectedMemberId !== member.id) {
+                        setSelectedMemberId(member.id);
+                        setSelectedAdvice(null);
+                      }
+                    }}
+                  >
+                    {member.name}
+                  </Button>
+                ))}
+              </div>
+            )}
             {/* 操作按钮独立一行 */}
             {selectedMemberId && (
               <div style={{ display: 'flex', gap: 8 }}>
@@ -560,28 +565,32 @@ const AdvicePage: React.FC = () => {
           </>
         ) : (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
-            <span>家庭成员：</span>
-            {members?.map((member) => (
-              <Button
-                key={member.id}
-                type={selectedMemberId === member.id ? 'primary' : 'default'}
-                style={{
-                  borderRadius: 20,
-                  minWidth: 80,
-                  ...(selectedMemberId === member.id ? {} : {
-                    borderColor: 'var(--color-border)',
-                  }),
-                }}
-                onClick={() => {
-                  if (selectedMemberId !== member.id) {
-                    setSelectedMemberId(member.id);
-                    setSelectedAdvice(null);
-                  }
-                }}
-              >
-                {member.name}
-              </Button>
-            ))}
+            {!isSingleMember && (
+              <>
+                <span>家庭成员：</span>
+                {members?.map((member) => (
+                  <Button
+                    key={member.id}
+                    type={selectedMemberId === member.id ? 'primary' : 'default'}
+                    style={{
+                      borderRadius: 20,
+                      minWidth: 80,
+                      ...(selectedMemberId === member.id ? {} : {
+                        borderColor: 'var(--color-border)',
+                      }),
+                    }}
+                    onClick={() => {
+                      if (selectedMemberId !== member.id) {
+                        setSelectedMemberId(member.id);
+                        setSelectedAdvice(null);
+                      }
+                    }}
+                  >
+                    {member.name}
+                  </Button>
+                ))}
+              </>
+            )}
             <div style={{ flex: 1 }} />
             {selectedMemberId && newDataCheck?.hasNewData && (
               <Button

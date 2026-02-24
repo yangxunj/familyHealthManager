@@ -678,6 +678,7 @@ export default function CheckupList() {
   // 默认选中"自己"的成员，找不到则选第一个
   useDefaultMemberId(members, selectedMemberId || undefined, setSelectedMemberId);
 
+  const isSingleMember = members.length === 1;
   const selectedMember = members.find((m) => m.id === selectedMemberId);
 
   // 分组
@@ -729,25 +730,27 @@ export default function CheckupList() {
         </div>
       ) : (
         <>
-          {/* 成员选择按钮 */}
-          <div className={styles.memberButtons}>
-            {members.map((member) => {
-              const memberSummary = summary?.members.find((m) => m.memberId === member.id);
-              const pendingCount = memberSummary?.pendingCount || 0;
+          {/* 成员选择按钮（单成员时隐藏） */}
+          {!isSingleMember && (
+            <div className={styles.memberButtons}>
+              {members.map((member) => {
+                const memberSummary = summary?.members.find((m) => m.memberId === member.id);
+                const pendingCount = memberSummary?.pendingCount || 0;
 
-              return (
-                <Badge key={member.id} count={pendingCount} size="small" offset={[-5, 5]}>
-                  <Button
-                    type={selectedMemberId === member.id ? 'primary' : 'default'}
-                    className={styles.memberButton}
-                    onClick={() => setSelectedMemberId(member.id)}
-                  >
-                    {member.name}
-                  </Button>
-                </Badge>
-              );
-            })}
-          </div>
+                return (
+                  <Badge key={member.id} count={pendingCount} size="small" offset={[-5, 5]}>
+                    <Button
+                      type={selectedMemberId === member.id ? 'primary' : 'default'}
+                      className={styles.memberButton}
+                      onClick={() => setSelectedMemberId(member.id)}
+                    >
+                      {member.name}
+                    </Button>
+                  </Badge>
+                );
+              })}
+            </div>
+          )}
 
           {/* 检查项目列表 */}
           {loadingItems ? (

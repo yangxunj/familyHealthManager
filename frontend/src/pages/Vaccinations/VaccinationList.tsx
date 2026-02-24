@@ -620,6 +620,7 @@ export default function VaccinationList() {
   // 默认选中"自己"的成员，找不到则选第一个
   useDefaultMemberId(members, selectedMemberId || undefined, setSelectedMemberId);
 
+  const isSingleMember = members.length === 1;
   const isLoading = loadingMembers || loadingSummary;
   const selectedMember = members.find((m) => m.id === selectedMemberId);
 
@@ -642,27 +643,29 @@ export default function VaccinationList() {
         </div>
       ) : (
         <>
-          {/* 成员选择按钮 */}
-          <div className={styles.memberButtons}>
-            {members.map((member) => {
-              // 计算该成员的待完成任务数
-              const pendingCount = summary?.pendingList.filter(
-                (p) => p.memberId === member.id
-              ).length || 0;
+          {/* 成员选择按钮（单成员时隐藏） */}
+          {!isSingleMember && (
+            <div className={styles.memberButtons}>
+              {members.map((member) => {
+                // 计算该成员的待完成任务数
+                const pendingCount = summary?.pendingList.filter(
+                  (p) => p.memberId === member.id
+                ).length || 0;
 
-              return (
-                <Badge key={member.id} count={pendingCount} size="small" offset={[-5, 5]}>
-                  <Button
-                    type={selectedMemberId === member.id ? 'primary' : 'default'}
-                    className={styles.memberButton}
-                    onClick={() => setSelectedMemberId(member.id)}
-                  >
-                    {member.name}
-                  </Button>
-                </Badge>
-              );
-            })}
-          </div>
+                return (
+                  <Badge key={member.id} count={pendingCount} size="small" offset={[-5, 5]}>
+                    <Button
+                      type={selectedMemberId === member.id ? 'primary' : 'default'}
+                      className={styles.memberButton}
+                      onClick={() => setSelectedMemberId(member.id)}
+                    >
+                      {member.name}
+                    </Button>
+                  </Badge>
+                );
+              })}
+            </div>
+          )}
 
           {/* 接种计划 */}
           {loadingSchedule ? (

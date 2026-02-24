@@ -127,6 +127,8 @@ const RecordList: React.FC = () => {
     queryFn: () => membersApi.getAll(),
   });
 
+  const isSingleMember = members?.length === 1;
+
   const deleteMutation = useMutation({
     mutationFn: recordsApi.delete,
     onSuccess: () => {
@@ -342,25 +344,27 @@ const RecordList: React.FC = () => {
       )}
 
       {isElderMode ? (
-        <div style={{ marginBottom: 16, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          <Button
-            type={!filters.memberId ? 'primary' : 'default'}
-            style={{ borderRadius: 20, ...(filters.memberId ? { borderColor: 'var(--color-border)' } : {}) }}
-            onClick={() => setFilters({ ...filters, memberId: undefined })}
-          >
-            全部成员
-          </Button>
-          {availableMembers.map((member) => (
+        !isSingleMember && availableMembers.length > 0 ? (
+          <div style={{ marginBottom: 16, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             <Button
-              key={member.id}
-              type={filters.memberId === member.id ? 'primary' : 'default'}
-              style={{ borderRadius: 20, ...(filters.memberId !== member.id ? { borderColor: 'var(--color-border)' } : {}) }}
-              onClick={() => setFilters({ ...filters, memberId: member.id })}
+              type={!filters.memberId ? 'primary' : 'default'}
+              style={{ borderRadius: 20, ...(filters.memberId ? { borderColor: 'var(--color-border)' } : {}) }}
+              onClick={() => setFilters({ ...filters, memberId: undefined })}
             >
-              {member.name}
+              全部成员
             </Button>
-          ))}
-        </div>
+            {availableMembers.map((member) => (
+              <Button
+                key={member.id}
+                type={filters.memberId === member.id ? 'primary' : 'default'}
+                style={{ borderRadius: 20, ...(filters.memberId !== member.id ? { borderColor: 'var(--color-border)' } : {}) }}
+                onClick={() => setFilters({ ...filters, memberId: member.id })}
+              >
+                {member.name}
+              </Button>
+            ))}
+          </div>
+        ) : null
       ) : (
         <Card style={{ marginBottom: 16 }}>
           <Row gutter={[16, 12]}>
