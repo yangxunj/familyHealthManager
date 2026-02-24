@@ -111,6 +111,9 @@ const ChatPage: React.FC = () => {
   // 新建会话弹窗中，默认选中"自己"的成员
   useDefaultMemberId(members, selectedMemberId, setSelectedMemberId);
 
+  // 只有一个可见成员时，简化 UI：隐藏成员筛选、跳过新建弹窗
+  const isSingleMember = members?.length === 1;
+
   // 获取有会话记录的成员列表（用于筛选下拉菜单，只看普通咨询）
   const { data: membersWithSessions } = useQuery({
     queryKey: ['chat-members-with-sessions', 'GENERAL'],
@@ -462,6 +465,18 @@ const ChatPage: React.FC = () => {
     setShowNewSessionModal(false);
   };
 
+  // 新建对话入口：单成员时跳过弹窗直接进入草稿模式
+  const handleNewSession = () => {
+    if (isSingleMember && members?.[0]) {
+      const member = members[0];
+      setDraftMember({ id: member.id, name: member.name });
+      setSelectedSessionId(null);
+      setLocalMessages([]);
+    } else {
+      handleNewSession();
+    }
+  };
+
   // 消息气泡尺寸（老人模式放大）
   const msgFontSize = isElderMode ? 17 : (isMobile ? 14 : undefined);
   const msgLineHeight = isElderMode ? 1.8 : 1.6;
@@ -619,8 +634,8 @@ const ChatPage: React.FC = () => {
   // 会话列表内容（桌面端和移动端共用）
   const renderSessionList = () => (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      {/* 成员筛选 */}
-      {membersWithSessions && membersWithSessions.length > 0 && (
+      {/* 成员筛选（只有一个可见成员时隐藏） */}
+      {!isSingleMember && membersWithSessions && membersWithSessions.length > 0 && (
         isElderMode ? (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12, flexShrink: 0 }}>
             <Button
@@ -663,7 +678,7 @@ const ChatPage: React.FC = () => {
       <Button
         type={isElderMode ? undefined : 'primary'}
         icon={<PlusOutlined />}
-        onClick={() => setShowNewSessionModal(true)}
+        onClick={() => handleNewSession()}
         style={{
           marginBottom: 16,
           flexShrink: 0,
@@ -777,7 +792,7 @@ const ChatPage: React.FC = () => {
             <Button
               type="primary"
               icon={<PlusOutlined />}
-              onClick={() => setShowNewSessionModal(true)}
+              onClick={() => handleNewSession()}
             >
               新建对话
             </Button>
