@@ -604,13 +604,15 @@ const AdvicePage: React.FC = () => {
                     {newDataCheck.lastAdviceDate ? '重新生成建议' : '生成健康建议'}
                   </Button>
                 )}
-                <Button
-                  icon={<HistoryOutlined />}
-                  onClick={() => setShowHistory(true)}
-                  style={{ flex: newDataCheck?.hasNewData ? undefined : 1, borderColor: 'var(--color-border)' }}
-                >
-                  历史建议
-                </Button>
+                {adviceList && adviceList.length >= 2 && (
+                  <Button
+                    icon={<HistoryOutlined />}
+                    onClick={() => setShowHistory(true)}
+                    style={{ flex: newDataCheck?.hasNewData ? undefined : 1, borderColor: 'var(--color-border)' }}
+                  >
+                    历史建议
+                  </Button>
+                )}
               </div>
             )}
           </>
@@ -653,7 +655,7 @@ const AdvicePage: React.FC = () => {
                 {newDataCheck.lastAdviceDate ? '重新生成建议' : '生成健康建议'}
               </Button>
             )}
-            {selectedMemberId && (
+            {selectedMemberId && adviceList && adviceList.length >= 2 && (
               <Button
                 icon={<HistoryOutlined />}
                 onClick={() => setShowHistory(true)}
