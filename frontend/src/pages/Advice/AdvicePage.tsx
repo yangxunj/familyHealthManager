@@ -57,6 +57,10 @@ const AdvicePage: React.FC = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [selectedAdvice, setSelectedAdvice] = useState<HealthAdvice | null>(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [disclaimerDismissed, setDisclaimerDismissed] = useState(
+    () => localStorage.getItem('advice_disclaimer_dismissed') === 'true'
+  );
+  const [disclaimerExpanded, setDisclaimerExpanded] = useState(false);
 
   // 监听窗口大小变化
   useEffect(() => {
@@ -505,13 +509,60 @@ const AdvicePage: React.FC = () => {
         AI 健康建议
       </h2>
 
-      <Alert
-        message="免责声明"
-        description="AI 健康建议仅供参考，不能替代专业医疗诊断和治疗。如有健康问题，请及时咨询专业医生。"
-        type="warning"
-        showIcon
-        style={{ marginBottom: 24 }}
-      />
+      {!disclaimerDismissed && (isElderMode || isMobile) && (
+        <div
+          style={{
+            marginBottom: 24,
+            border: '1px solid #faad14',
+            borderRadius: 8,
+            background: '#fffbe6',
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '8px 12px',
+              cursor: 'pointer',
+            }}
+            onClick={() => setDisclaimerExpanded(!disclaimerExpanded)}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#ad6800', fontWeight: 500, fontSize: isElderMode ? 16 : 14 }}>
+              <WarningOutlined />
+              免责声明
+            </span>
+            <span style={{ color: '#ad6800', fontSize: 12 }}>{disclaimerExpanded ? '收起' : '展开'}</span>
+          </div>
+          {disclaimerExpanded && (
+            <div style={{ padding: '0 12px 10px' }}>
+              <div style={{ color: '#ad6800', fontSize: isElderMode ? 15 : 13, lineHeight: 1.6, marginBottom: 8 }}>
+                AI 健康建议仅供参考，不能替代专业医疗诊断和治疗。如有健康问题，请及时咨询专业医生。
+              </div>
+              <Button
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  localStorage.setItem('advice_disclaimer_dismissed', 'true');
+                  setDisclaimerDismissed(true);
+                }}
+              >
+                我已明白，不再显示
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+      {!disclaimerDismissed && !isElderMode && !isMobile && (
+        <Alert
+          message="免责声明"
+          description="AI 健康建议仅供参考，不能替代专业医疗诊断和治疗。如有健康问题，请及时咨询专业医生。"
+          type="warning"
+          showIcon
+          style={{ marginBottom: 24 }}
+        />
+      )}
 
       <Card style={{ marginBottom: 24 }}>
         {isElderMode ? (
