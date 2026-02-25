@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Drawer, Button, InputNumber, message, Avatar, Empty } from 'antd';
+import ScrollNumberPicker from '../../components/ScrollNumberPicker';
 import {
   HeartOutlined,
   ExperimentOutlined,
@@ -79,8 +80,8 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
   const [subType, setSubType] = useState<RecordType | null>(null);
   // Single value (basic, blood sugar)
   const [singleValue, setSingleValue] = useState<number | null>(null);
-  // Blood pressure values
-  const [bpValues, setBpValues] = useState({ systolic: null as number | null, diastolic: null as number | null, heartRate: null as number | null });
+  // Blood pressure values (defaults to common normal values for scroll picker)
+  const [bpValues, setBpValues] = useState({ systolic: 120, diastolic: 80, heartRate: 72 });
 
   const { data: members } = useQuery({ queryKey: ['members'], queryFn: () => membersApi.getAll() });
 
@@ -114,7 +115,7 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
     setMemberName('');
     setSubType(null);
     setSingleValue(null);
-    setBpValues({ systolic: null, diastolic: null, heartRate: null });
+    setBpValues({ systolic: 120, diastolic: 80, heartRate: 72 });
   };
 
   const handleClose = () => {
@@ -132,7 +133,7 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
       setStep(isSingleMember ? 0 : 1);
       setSubType(null);
       setSingleValue(null);
-      setBpValues({ systolic: null, diastolic: null, heartRate: null });
+      setBpValues({ systolic: 120, diastolic: 80, heartRate: 72 });
     }
   };
 
@@ -141,11 +142,11 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
     const recordDate = dayjs().toISOString();
 
     if (category === 'bloodPressure') {
-      const records: RecordItem[] = [];
-      if (bpValues.systolic != null) records.push({ recordType: 'SYSTOLIC_BP', value: bpValues.systolic, unit: 'mmHg' });
-      if (bpValues.diastolic != null) records.push({ recordType: 'DIASTOLIC_BP', value: bpValues.diastolic, unit: 'mmHg' });
-      if (bpValues.heartRate != null) records.push({ recordType: 'HEART_RATE', value: bpValues.heartRate, unit: '次/分' });
-      if (records.length === 0) { message.warning('请至少填写一项数据'); return; }
+      const records: RecordItem[] = [
+        { recordType: 'SYSTOLIC_BP', value: bpValues.systolic, unit: 'mmHg' },
+        { recordType: 'DIASTOLIC_BP', value: bpValues.diastolic, unit: 'mmHg' },
+        { recordType: 'HEART_RATE', value: bpValues.heartRate, unit: '次/分' },
+      ];
       createBatchMutation.mutate({ memberId, recordDate, records });
     } else if (category === 'bloodSugar') {
       if (!subType || singleValue == null) { message.warning('请填写完整数据'); return; }
@@ -324,14 +325,30 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
         </div>
 
         {category === 'bloodPressure' && (
-          <>
-            {renderInputRow('收缩压（高压）', '90 ~ 139 mmHg', bpValues.systolic,
-              (v) => setBpValues({ ...bpValues, systolic: v }), { max: 300, precision: 0, addonAfter: 'mmHg' })}
-            {renderInputRow('舒张压（低压）', '60 ~ 89 mmHg', bpValues.diastolic,
-              (v) => setBpValues({ ...bpValues, diastolic: v }), { max: 200, precision: 0, addonAfter: 'mmHg' })}
-            {renderInputRow('心率', '60 ~ 100 次/分', bpValues.heartRate,
-              (v) => setBpValues({ ...bpValues, heartRate: v }), { max: 300, precision: 0, addonAfter: '次/分' })}
-          </>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {[
+              { label: '收缩压（高压）', hint: '90 ~ 139 mmHg', min: 60, max: 250, value: bpValues.systolic, suffix: 'mmHg',
+                onChange: (v: number) => setBpValues({ ...bpValues, systolic: v }) },
+              { label: '舒张压（低压）', hint: '60 ~ 89 mmHg', min: 30, max: 160, value: bpValues.diastolic, suffix: 'mmHg',
+                onChange: (v: number) => setBpValues({ ...bpValues, diastolic: v }) },
+              { label: '心率', hint: '60 ~ 100 次/分', min: 30, max: 200, value: bpValues.heartRate, suffix: '次/分',
+                onChange: (v: number) => setBpValues({ ...bpValues, heartRate: v }) },
+            ].map((item) => (
+              <div key={item.label}>
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 2 }}>
+                  <span style={{ fontSize: 15, fontWeight: 600 }}>{item.label}</span>
+                  <span style={{ fontSize: 12, color: 'var(--color-text-quaternary)' }}>参考：{item.hint}</span>
+                </div>
+                <ScrollNumberPicker
+                  min={item.min}
+                  max={item.max}
+                  value={item.value}
+                  onChange={item.onChange}
+                  suffix={item.suffix}
+                />
+              </div>
+            ))}
+          </div>
         )}
 
         {category === 'bloodSugar' && (
