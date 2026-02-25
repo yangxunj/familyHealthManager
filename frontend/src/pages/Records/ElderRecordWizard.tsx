@@ -325,29 +325,29 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
         </div>
 
         {category === 'bloodPressure' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {[
-              { label: '收缩压（高压）', hint: '90 ~ 139 mmHg', min: 60, max: 250, value: bpValues.systolic, suffix: 'mmHg',
-                onChange: (v: number) => setBpValues({ ...bpValues, systolic: v }) },
-              { label: '舒张压（低压）', hint: '60 ~ 89 mmHg', min: 30, max: 160, value: bpValues.diastolic, suffix: 'mmHg',
-                onChange: (v: number) => setBpValues({ ...bpValues, diastolic: v }) },
-              { label: '心率', hint: '60 ~ 100 次/分', min: 30, max: 200, value: bpValues.heartRate, suffix: '次/分',
-                onChange: (v: number) => setBpValues({ ...bpValues, heartRate: v }) },
-            ].map((item) => (
-              <div key={item.label}>
-                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 2 }}>
-                  <span style={{ fontSize: 15, fontWeight: 600 }}>{item.label}</span>
-                  <span style={{ fontSize: 12, color: 'var(--color-text-quaternary)' }}>参考：{item.hint}</span>
-                </div>
-                <ScrollNumberPicker
-                  min={item.min}
-                  max={item.max}
-                  value={item.value}
-                  onChange={item.onChange}
-                  suffix={item.suffix}
-                />
+          <div>
+            {/* 收缩压 + 舒张压 并排 */}
+            <div style={{ display: 'flex', gap: 12 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ textAlign: 'center', fontSize: 14, fontWeight: 600, marginBottom: 2 }}>收缩压（高压）</div>
+                <ScrollNumberPicker min={60} max={250} value={bpValues.systolic}
+                  onChange={(v) => setBpValues({ ...bpValues, systolic: v })} suffix="mmHg" visibleCount={5} />
+                <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--color-text-quaternary)', marginTop: 2 }}>参考：90~139</div>
               </div>
-            ))}
+              <div style={{ flex: 1 }}>
+                <div style={{ textAlign: 'center', fontSize: 14, fontWeight: 600, marginBottom: 2 }}>舒张压（低压）</div>
+                <ScrollNumberPicker min={30} max={160} value={bpValues.diastolic}
+                  onChange={(v) => setBpValues({ ...bpValues, diastolic: v })} suffix="mmHg" visibleCount={5} />
+                <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--color-text-quaternary)', marginTop: 2 }}>参考：60~89</div>
+              </div>
+            </div>
+            {/* 心率 单独一行，居中窄一些 */}
+            <div style={{ maxWidth: '60%', margin: '8px auto 0' }}>
+              <div style={{ textAlign: 'center', fontSize: 14, fontWeight: 600, marginBottom: 2 }}>心率</div>
+              <ScrollNumberPicker min={30} max={200} value={bpValues.heartRate}
+                onChange={(v) => setBpValues({ ...bpValues, heartRate: v })} suffix="次/分" visibleCount={3} />
+              <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--color-text-quaternary)', marginTop: 2 }}>参考：60~100</div>
+            </div>
           </div>
         )}
 

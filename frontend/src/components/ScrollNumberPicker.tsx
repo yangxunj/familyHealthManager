@@ -7,11 +7,11 @@ interface ScrollNumberPickerProps {
   onChange: (value: number) => void;
   step?: number;
   suffix?: string;
+  /** Number of visible rows (must be odd). Default 5. */
+  visibleCount?: number;
 }
 
-const ITEM_HEIGHT = 44;
-const VISIBLE_COUNT = 5;
-const PICKER_HEIGHT = ITEM_HEIGHT * VISIBLE_COUNT;
+const ITEM_HEIGHT = 40;
 
 export default function ScrollNumberPicker({
   min,
@@ -20,7 +20,9 @@ export default function ScrollNumberPicker({
   onChange,
   step = 1,
   suffix,
+  visibleCount = 5,
 }: ScrollNumberPickerProps) {
+  const pickerHeight = ITEM_HEIGHT * visibleCount;
   const containerRef = useRef<HTMLDivElement>(null);
   const isScrollingRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -31,8 +33,7 @@ export default function ScrollNumberPicker({
     numbers.push(i);
   }
 
-  // Padding items so the first/last value can be centered
-  const padCount = Math.floor(VISIBLE_COUNT / 2);
+  const padCount = Math.floor(visibleCount / 2);
 
   const scrollToIndex = useCallback(
     (index: number, smooth = false) => {
@@ -50,10 +51,8 @@ export default function ScrollNumberPicker({
   useEffect(() => {
     const idx = numbers.indexOf(value);
     if (idx >= 0) {
-      // Use requestAnimationFrame to ensure DOM is ready
       requestAnimationFrame(() => scrollToIndex(idx, false));
     }
-    // Only run on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -78,7 +77,6 @@ export default function ScrollNumberPicker({
       const idx = Math.round(scrollTop / ITEM_HEIGHT);
       const clamped = Math.max(0, Math.min(idx, numbers.length - 1));
 
-      // Snap to nearest
       scrollToIndex(clamped, true);
 
       const newValue = numbers[clamped];
@@ -94,7 +92,7 @@ export default function ScrollNumberPicker({
     <div
       style={{
         position: 'relative',
-        height: PICKER_HEIGHT,
+        height: pickerHeight,
         overflow: 'hidden',
         userSelect: 'none',
         display: 'flex',
@@ -107,21 +105,18 @@ export default function ScrollNumberPicker({
         onScroll={handleScroll}
         style={{
           flex: 1,
-          height: PICKER_HEIGHT,
+          height: pickerHeight,
           overflowY: 'auto',
           scrollSnapType: 'y mandatory',
           WebkitOverflowScrolling: 'touch',
-          // Hide scrollbar
           scrollbarWidth: 'none',
           msOverflowStyle: 'none',
         }}
       >
-        {/* Top padding */}
         {Array.from({ length: padCount }).map((_, i) => (
           <div key={`pad-top-${i}`} style={{ height: ITEM_HEIGHT, scrollSnapAlign: 'center' }} />
         ))}
 
-        {/* Number items */}
         {numbers.map((num) => {
           const isActive = num === value;
           return (
@@ -133,7 +128,7 @@ export default function ScrollNumberPicker({
                 alignItems: 'center',
                 justifyContent: 'center',
                 scrollSnapAlign: 'center',
-                fontSize: isActive ? 28 : 18,
+                fontSize: isActive ? 26 : 16,
                 fontWeight: isActive ? 700 : 400,
                 color: isActive ? '#136dec' : 'rgba(0,0,0,0.25)',
                 transition: 'font-size 0.15s, color 0.15s, font-weight 0.15s',
@@ -144,21 +139,20 @@ export default function ScrollNumberPicker({
           );
         })}
 
-        {/* Bottom padding */}
         {Array.from({ length: padCount }).map((_, i) => (
           <div key={`pad-bot-${i}`} style={{ height: ITEM_HEIGHT, scrollSnapAlign: 'center' }} />
         ))}
       </div>
 
-      {/* Suffix label on the right */}
+      {/* Suffix label */}
       {suffix && (
         <div
           style={{
             position: 'absolute',
-            right: 12,
+            right: 8,
             top: '50%',
             transform: 'translateY(-50%)',
-            fontSize: 14,
+            fontSize: 12,
             color: 'rgba(0,0,0,0.45)',
             pointerEvents: 'none',
           }}
@@ -183,7 +177,7 @@ export default function ScrollNumberPicker({
         }}
       />
 
-      {/* Top/bottom fade masks */}
+      {/* Fade masks */}
       <div
         style={{
           position: 'absolute',
@@ -207,7 +201,6 @@ export default function ScrollNumberPicker({
         }}
       />
 
-      {/* Hide scrollbar via style tag */}
       <style>{`
         div[style*="overflowY: auto"]::-webkit-scrollbar {
           display: none;
