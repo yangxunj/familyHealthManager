@@ -204,7 +204,8 @@ export class AdviceService {
     ]);
 
     return {
-      hasNewData: newDocCount > 0 || newRecordCount > 0,
+      // 新文档（体检报告）→ 立即提示；日常记录 → 累积 ≥ 50 条才提示
+      hasNewData: newDocCount > 0 || newRecordCount >= 50,
       newDocuments: newDocCount,
       newRecords: newRecordCount,
       lastAdviceDate: lastAdviceDate.toISOString(),
