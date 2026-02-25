@@ -11,7 +11,7 @@ interface ScrollNumberPickerProps {
   visibleCount?: number;
 }
 
-const ITEM_HEIGHT = 40;
+const ITEM_HEIGHT = 44;
 
 export default function ScrollNumberPicker({
   min,
@@ -128,7 +128,7 @@ export default function ScrollNumberPicker({
                 alignItems: 'center',
                 justifyContent: 'center',
                 scrollSnapAlign: 'center',
-                fontSize: isActive ? 26 : 16,
+                fontSize: isActive ? 30 : 18,
                 fontWeight: isActive ? 700 : 400,
                 color: isActive ? '#136dec' : 'rgba(0,0,0,0.25)',
                 transition: 'font-size 0.15s, color 0.15s, font-weight 0.15s',
@@ -152,7 +152,7 @@ export default function ScrollNumberPicker({
             right: 8,
             top: '50%',
             transform: 'translateY(-50%)',
-            fontSize: 12,
+            fontSize: 14,
             color: 'rgba(0,0,0,0.45)',
             pointerEvents: 'none',
           }}
