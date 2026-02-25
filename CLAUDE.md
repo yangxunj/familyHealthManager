@@ -96,6 +96,21 @@ taskkill //F //PID 12345     # 杀掉进程
 - 如果后端启动后 API 无法访问，检查 5002 端口是否被其他进程占用
 - **每次启动服务前，先确认目标端口是空闲的**
 
+### Docker 部署（重要！）
+
+项目已通过 Docker Compose 正式部署使用。**每次代码改动提交后，必须立即重新构建并部署 Docker 镜像**，无需额外确认：
+
+```bash
+# 仅前端改动
+docker compose build --no-cache frontend && docker compose up -d frontend
+
+# 仅后端改动
+docker compose build --no-cache backend && docker compose up -d backend
+
+# 前后端都有改动
+docker compose build --no-cache && docker compose up -d
+```
+
 ---
 
 ## 项目结构

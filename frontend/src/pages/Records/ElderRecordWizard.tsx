@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Drawer, Button, InputNumber, message, Avatar, Empty } from 'antd';
 import ScrollNumberPicker from '../../components/ScrollNumberPicker';
 import {
@@ -87,6 +87,34 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
 
   // 单成员时跳过成员选择步骤
   const isSingleMember = members?.length === 1;
+
+  // 获取最近的血压历史记录，用于预填充滚轮默认值
+  const { data: latestBp } = useQuery({
+    queryKey: ['records', 'latestBp', memberId],
+    queryFn: async () => {
+      const records = await recordsApi.getAll({ memberId: memberId! });
+      const systolic = records.find(r => r.recordType === 'SYSTOLIC_BP');
+      const diastolic = records.find(r => r.recordType === 'DIASTOLIC_BP');
+      const heartRate = records.find(r => r.recordType === 'HEART_RATE');
+      return {
+        systolic: systolic ? Math.round(systolic.value) : null,
+        diastolic: diastolic ? Math.round(diastolic.value) : null,
+        heartRate: heartRate ? Math.round(heartRate.value) : null,
+      };
+    },
+    enabled: !!memberId && category === 'bloodPressure',
+  });
+
+  // 用历史数据预填充血压滚轮
+  useEffect(() => {
+    if (latestBp && category === 'bloodPressure' && step === 2) {
+      setBpValues({
+        systolic: latestBp.systolic ?? 120,
+        diastolic: latestBp.diastolic ?? 80,
+        heartRate: latestBp.heartRate ?? 72,
+      });
+    }
+  }, [latestBp, category, step]);
 
   const createMutation = useMutation({
     mutationFn: recordsApi.create,
