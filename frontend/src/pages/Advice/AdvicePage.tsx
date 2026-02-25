@@ -685,7 +685,7 @@ const AdvicePage: React.FC = () => {
                 }
                 icon={newDataCheck.lastAdviceDate ? <DatabaseOutlined /> : <FileTextOutlined />}
               />
-            ) : newDataCheck.lastAdviceDate ? (
+            ) : newDataCheck.lastAdviceDate && !isElderMode ? (
               <Alert
                 type="success"
                 showIcon
