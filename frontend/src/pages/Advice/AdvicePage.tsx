@@ -564,6 +564,8 @@ const AdvicePage: React.FC = () => {
         />
       )}
 
+      {/* 老年版：Card 内容全空时（单成员+无新数据+历史≤1）隐藏整个 Card */}
+      {!(isElderMode && isSingleMember && !newDataCheck?.hasNewData && (!adviceList || adviceList.length < 2)) && (
       <Card style={{ marginBottom: 24 }}>
         {isElderMode ? (
           <>
@@ -696,6 +698,7 @@ const AdvicePage: React.FC = () => {
           </div>
         )}
       </Card>
+      )}
 
       {generateMutation.isPending && (
         <Card>
