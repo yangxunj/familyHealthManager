@@ -23,7 +23,7 @@ export default function ScrollNumberPicker({
 }: ScrollNumberPickerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const isScrollingRef = useRef(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Generate number list
   const numbers: number[] = [];
