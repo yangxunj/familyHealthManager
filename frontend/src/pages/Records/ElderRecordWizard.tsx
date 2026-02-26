@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Drawer, Button, InputNumber, message, Avatar, Empty } from 'antd';
+import { Drawer, Button, InputNumber, message, Avatar, Empty, Spin } from 'antd';
 import ScrollNumberPicker from '../../components/ScrollNumberPicker';
 import {
   HeartOutlined,
@@ -102,7 +102,7 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
   const isSingleMember = members?.length === 1;
 
   // 获取最近的血压历史记录，用于预填充滚轮默认值
-  const { data: latestBp } = useQuery({
+  const { data: latestBp, isLoading: latestBpLoading } = useQuery({
     queryKey: ['records', 'latestBp', memberId],
     queryFn: async () => {
       const records = await recordsApi.getAll({ memberId: memberId! });
@@ -118,16 +118,21 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
     enabled: !!memberId && category === 'bloodPressure',
   });
 
-  // 用历史数据预填充血压滚轮
+  // 血压滚轮就绪标志：确保历史数据加载完毕后再渲染滚轮，避免初始化竞争
+  const [bpReady, setBpReady] = useState(false);
+
   useEffect(() => {
-    if (latestBp && category === 'bloodPressure' && step === 2) {
-      setBpValues({
-        systolic: latestBp.systolic ?? 120,
-        diastolic: latestBp.diastolic ?? 80,
-        heartRate: latestBp.heartRate ?? 72,
-      });
+    if (category === 'bloodPressure' && step === 2 && !latestBpLoading) {
+      if (latestBp) {
+        setBpValues({
+          systolic: latestBp.systolic ?? 120,
+          diastolic: latestBp.diastolic ?? 80,
+          heartRate: latestBp.heartRate ?? 72,
+        });
+      }
+      setBpReady(true);
     }
-  }, [latestBp, category, step]);
+  }, [category, step, latestBpLoading, latestBp]);
 
   const createMutation = useMutation({
     mutationFn: recordsApi.create,
@@ -157,6 +162,7 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
     setSubType(null);
     setSingleValue(null);
     setBpValues({ systolic: 120, diastolic: 80, heartRate: 72 });
+    setBpReady(false);
     setLipidValues({ tc: null, tg: null, hdl: null, ldl: null });
   };
 
@@ -176,6 +182,7 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
       setSubType(null);
       setSingleValue(null);
       setBpValues({ systolic: 120, diastolic: 80, heartRate: 72 });
+      setBpReady(false);
       setLipidValues({ tc: null, tg: null, hdl: null, ldl: null });
     }
   };
@@ -375,7 +382,9 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
           为 <strong>{memberName}</strong> 记录{getCategoryLabel()}
         </div>
 
-        {category === 'bloodPressure' && (
+        {category === 'bloodPressure' && (!bpReady ? (
+          <div style={{ textAlign: 'center', padding: 40 }}><Spin /></div>
+        ) : (
           <div>
             {/* 收缩压 + 舒张压 并排 */}
             <div style={{ display: 'flex', gap: 12 }}>
@@ -397,7 +406,7 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
                 onChange={(v) => setBpValues({ ...bpValues, heartRate: v })} suffix="次/分" visibleCount={3} />
             </div>
           </div>
-        )}
+        ))}
 
         {category === 'bloodLipid' && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
