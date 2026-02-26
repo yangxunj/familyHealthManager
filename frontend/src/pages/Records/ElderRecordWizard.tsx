@@ -383,13 +383,11 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
                 <div style={{ textAlign: 'center', fontSize: 16, fontWeight: 600, marginBottom: 2 }}>收缩压（高压）</div>
                 <ScrollNumberPicker min={60} max={250} value={bpValues.systolic}
                   onChange={(v) => setBpValues({ ...bpValues, systolic: v })} suffix="mmHg" visibleCount={5} />
-                <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--color-text-quaternary)', marginTop: 2 }}>参考：90~139</div>
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ textAlign: 'center', fontSize: 16, fontWeight: 600, marginBottom: 2 }}>舒张压（低压）</div>
                 <ScrollNumberPicker min={30} max={160} value={bpValues.diastolic}
                   onChange={(v) => setBpValues({ ...bpValues, diastolic: v })} suffix="mmHg" visibleCount={5} />
-                <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--color-text-quaternary)', marginTop: 2 }}>参考：60~89</div>
               </div>
             </div>
             {/* 心率 单独一行，居中窄一些 */}
@@ -397,7 +395,6 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
               <div style={{ textAlign: 'center', fontSize: 16, fontWeight: 600, marginBottom: 2 }}>心率</div>
               <ScrollNumberPicker min={30} max={200} value={bpValues.heartRate}
                 onChange={(v) => setBpValues({ ...bpValues, heartRate: v })} suffix="次/分" visibleCount={3} />
-              <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--color-text-quaternary)', marginTop: 2 }}>参考：60~100</div>
             </div>
           </div>
         )}
@@ -497,6 +494,7 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
       onClose={handleClose}
       placement="bottom"
       height="85%"
+      closable={false}
       styles={{ body: { padding: 0, display: 'flex', flexDirection: 'column' } }}
       destroyOnClose
     >
