@@ -473,7 +473,7 @@ const ChatPage: React.FC = () => {
       setSelectedSessionId(null);
       setLocalMessages([]);
     } else {
-      handleNewSession();
+      setShowNewSessionModal(true);
     }
   };
 
