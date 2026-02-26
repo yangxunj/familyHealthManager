@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { MembersService } from '../members/members.service';
 import { RecordType, Prisma, MeasurementContext } from '@prisma/client';
 import {
   CreateRecordDto,
@@ -61,7 +62,10 @@ type RecordWithMember = {
 
 @Injectable()
 export class RecordsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private membersService: MembersService,
+  ) {}
 
   // 获取指标参考范围
   getReferenceRanges(): Record<RecordType, ReferenceRange> {
@@ -185,13 +189,21 @@ export class RecordsService {
   }
 
   // 获取记录列表
-  async findAll(familyId: string, query: QueryRecordDto) {
+  async findAll(familyId: string, query: QueryRecordDto, userId?: string) {
     // 获取家庭的所有成员ID
     const members = await this.prisma.familyMember.findMany({
       where: { familyId, deletedAt: null },
       select: { id: true },
     });
-    const memberIds = members.map((m: { id: string }) => m.id);
+    let memberIds = members.map((m: { id: string }) => m.id);
+
+    // 按用户可见性过滤成员
+    if (userId) {
+      const visibleIds = await this.membersService.getVisibleMemberIds(userId);
+      if (visibleIds) {
+        memberIds = memberIds.filter((id) => visibleIds.includes(id));
+      }
+    }
 
     const where: Prisma.HealthRecordWhereInput = {
       memberId: query.memberId

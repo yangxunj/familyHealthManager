@@ -35,7 +35,7 @@ export class DocumentsController {
     @Query() query: QueryDocumentDto,
   ) {
     const familyId = this.requireFamily(user);
-    return this.documentsService.findAll(familyId, query);
+    return this.documentsService.findAll(familyId, query, user.id);
   }
 
   @Get(':id')

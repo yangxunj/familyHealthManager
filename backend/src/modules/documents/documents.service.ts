@@ -26,11 +26,18 @@ export class DocumentsService {
     private aiService: AiService,
   ) {}
 
-  async findAll(familyId: string, query: QueryDocumentDto) {
+  async findAll(familyId: string, query: QueryDocumentDto, userId?: string) {
+    // 按用户可见性过滤成员
+    let visibleIds: string[] | null = null;
+    if (userId) {
+      visibleIds = await this.membersService.getVisibleMemberIds(userId);
+    }
+
     const where: Prisma.DocumentWhereInput = {
       member: {
         familyId,
         deletedAt: null,
+        ...(visibleIds ? { id: { in: visibleIds } } : {}),
       },
       deletedAt: null,
     };

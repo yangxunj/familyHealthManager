@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { MembersService } from '../members/members.service';
 import { AiService } from '../ai/ai.service';
 import { GenerateAdviceDto, QueryAdviceDto } from './dto';
 
@@ -32,6 +33,7 @@ const RecordTypeLabels: Record<string, string> = {
 export class AdviceService {
   constructor(
     private prisma: PrismaService,
+    private membersService: MembersService,
     private aiService: AiService,
   ) {}
 
@@ -266,13 +268,21 @@ export class AdviceService {
   }
 
   // 获取建议列表
-  async findAll(familyId: string, query: QueryAdviceDto) {
+  async findAll(familyId: string, query: QueryAdviceDto, userId?: string) {
     // 获取家庭的所有成员 ID
     const members = await this.prisma.familyMember.findMany({
       where: { familyId, deletedAt: null },
       select: { id: true },
     });
-    const memberIds = members.map((m: { id: string }) => m.id);
+    let memberIds = members.map((m: { id: string }) => m.id);
+
+    // 按用户可见性过滤成员
+    if (userId) {
+      const visibleIds = await this.membersService.getVisibleMemberIds(userId);
+      if (visibleIds) {
+        memberIds = memberIds.filter((id) => visibleIds.includes(id));
+      }
+    }
 
     const where = {
       memberId: query.memberId

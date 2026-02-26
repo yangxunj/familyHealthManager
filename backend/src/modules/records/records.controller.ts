@@ -57,7 +57,7 @@ export class RecordsController {
   @Get()
   findAll(@CurrentUser() user: CurrentUserData, @Query() query: QueryRecordDto) {
     const familyId = this.requireFamily(user);
-    return this.recordsService.findAll(familyId, query);
+    return this.recordsService.findAll(familyId, query, user.id);
   }
 
   // 获取趋势数据

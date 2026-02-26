@@ -54,7 +54,7 @@ export class AdviceController {
     @Query() query: QueryAdviceDto,
   ) {
     const familyId = this.requireFamily(user);
-    return this.adviceService.findAll(familyId, query);
+    return this.adviceService.findAll(familyId, query, user.id);
   }
 
   // 获取单条建议详情
