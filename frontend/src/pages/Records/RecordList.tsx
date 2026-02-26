@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   Card,
   Table,
@@ -20,12 +20,17 @@ import {
   Drawer,
   Spin,
   Empty,
+  Calendar,
 } from 'antd';
 import {
   PlusOutlined,
   DeleteOutlined,
   LineChartOutlined,
   WarningOutlined,
+  CalendarOutlined,
+  UnorderedListOutlined,
+  LeftOutlined,
+  RightOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -186,6 +191,11 @@ const RecordList: React.FC = () => {
   } | null>(null);
   const [deleteMode, setDeleteMode] = useState(false);
 
+  // 老人模式：视图切换 + 日历状态
+  const [elderView, setElderView] = useState<'list' | 'calendar'>('list');
+  const [selectedDate, setSelectedDate] = useState(dayjs());
+  const [calendarValue, setCalendarValue] = useState(dayjs());
+
   // 点击趋势按钮：老人模式打开 Drawer，普通模式导航
   const handleTrendClick = (record: HealthRecord) => {
     if (isElderMode) {
@@ -293,6 +303,86 @@ const RecordList: React.FC = () => {
 
     return groups;
   }, [records]);
+
+  // 日历视图：有记录的日期集合
+  const recordDatesSet = useMemo(() => {
+    if (!records) return new Set<string>();
+    const set = new Set<string>();
+    records.forEach((r) => set.add(dayjs(r.recordDate).format('YYYY-MM-DD')));
+    return set;
+  }, [records]);
+
+  // 日历视图：选中日期的记录（按测量次分组）
+  const selectedDateSessions = useMemo(() => {
+    if (!records) return [];
+    const dateStr = selectedDate.format('YYYY-MM-DD');
+    const dayRecords = records.filter(
+      (r) => dayjs(r.recordDate).format('YYYY-MM-DD') === dateStr,
+    );
+    if (dayRecords.length === 0) return [];
+
+    // 按测量时间分组
+    const sessionMap = new Map<string, HealthRecord[]>();
+    dayRecords.forEach((r) => {
+      const key = `${r.memberId}_${r.recordDate}`;
+      const arr = sessionMap.get(key);
+      if (arr) arr.push(r);
+      else sessionMap.set(key, [r]);
+    });
+    return Array.from(sessionMap.values());
+  }, [records, selectedDate]);
+
+  // 日历 fullCellRender
+  const calendarCellRender = useCallback(
+    (date: dayjs.Dayjs, info: { type: string }) => {
+      if (info.type !== 'date') return null;
+      const dateStr = date.format('YYYY-MM-DD');
+      const hasData = recordDatesSet.has(dateStr);
+      const isSelected = dateStr === selectedDate.format('YYYY-MM-DD');
+      const isToday = dateStr === dayjs().format('YYYY-MM-DD');
+      const isCurrentMonth = date.month() === calendarValue.month();
+
+      return (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
+            opacity: isCurrentMonth ? 1 : 0.3,
+          }}
+        >
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 15,
+              fontWeight: isSelected ? 700 : isToday ? 600 : 400,
+              background: isSelected ? '#136dec' : 'transparent',
+              color: isSelected ? '#fff' : isToday ? '#136dec' : 'inherit',
+            }}
+          >
+            {date.date()}
+          </div>
+          <div
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              background: hasData ? '#136dec' : 'transparent',
+              marginTop: 2,
+            }}
+          />
+        </div>
+      );
+    },
+    [recordDatesSet, selectedDate, calendarValue],
+  );
 
   const { data: members } = useQuery({
     queryKey: ['members'],
@@ -507,6 +597,41 @@ const RecordList: React.FC = () => {
         </div>
       )}
 
+      {/* 老人模式：视图切换 */}
+      {isElderMode && (
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+          <div style={{
+            display: 'inline-flex',
+            background: '#f0f0f0',
+            borderRadius: 20,
+            padding: 3,
+          }}>
+            <Button
+              type={elderView === 'list' ? 'primary' : 'text'}
+              icon={<UnorderedListOutlined />}
+              style={{
+                borderRadius: 18,
+                ...(elderView !== 'list' ? { background: 'transparent', border: 'none' } : {}),
+              }}
+              onClick={() => setElderView('list')}
+            >
+              列表
+            </Button>
+            <Button
+              type={elderView === 'calendar' ? 'primary' : 'text'}
+              icon={<CalendarOutlined />}
+              style={{
+                borderRadius: 18,
+                ...(elderView !== 'calendar' ? { background: 'transparent', border: 'none' } : {}),
+              }}
+              onClick={() => setElderView('calendar')}
+            >
+              日历
+            </Button>
+          </div>
+        </div>
+      )}
+
       {isElderMode ? (
         !isSingleMember && availableMembers.length > 0 ? (
           <div style={{ marginBottom: 16, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -592,63 +717,185 @@ const RecordList: React.FC = () => {
       )}
 
       {isElderMode ? (
-        isLoading ? (
-          <div style={{ textAlign: 'center', padding: 40 }}>
-            <Spin size="large" />
-          </div>
-        ) : groupedRecords.length === 0 ? (
-          <Empty description="暂无健康记录" style={{ padding: 40 }} />
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {groupedRecords.map((group) => (
-              <Card
-                key={group.key}
-                style={{
-                  borderRadius: 12,
-                  borderLeft: `4px solid ${group.color}`,
-                  cursor: 'pointer',
-                }}
-                bodyStyle={{ padding: '14px 16px' }}
-                onClick={() => setHistoryGroup({
-                  key: group.key,
-                  label: group.label,
-                  records: group.records,
-                })}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <span style={{ fontSize: 17, fontWeight: 600 }}>
-                    {group.label}
-                  </span>
-                  {group.hasAbnormal && (
-                    <Tag color="red" icon={<WarningOutlined />}>异常</Tag>
-                  )}
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 16px', marginBottom: 8 }}>
-                  {group.latestByType.map((item) => (
-                    <span key={item.type} style={{ fontSize: 15 }}>
-                      <span style={{ color: 'var(--color-text-tertiary)' }}>{item.label}</span>
-                      {' '}
-                      <span style={{
-                        fontWeight: 600,
-                        color: item.isAbnormal ? '#ff4d4f' : '#136dec',
-                      }}>
-                        {item.value}
-                      </span>
-                      {' '}
-                      <span style={{ fontSize: 12, color: 'var(--color-text-quaternary)' }}>{item.unit}</span>
+        elderView === 'list' ? (
+          /* 列表视图：分类卡片 */
+          isLoading ? (
+            <div style={{ textAlign: 'center', padding: 40 }}>
+              <Spin size="large" />
+            </div>
+          ) : groupedRecords.length === 0 ? (
+            <Empty description="暂无健康记录" style={{ padding: 40 }} />
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {groupedRecords.map((group) => (
+                <Card
+                  key={group.key}
+                  style={{
+                    borderRadius: 12,
+                    borderLeft: `4px solid ${group.color}`,
+                    cursor: 'pointer',
+                  }}
+                  bodyStyle={{ padding: '14px 16px' }}
+                  onClick={() => setHistoryGroup({
+                    key: group.key,
+                    label: group.label,
+                    records: group.records,
+                  })}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <span style={{ fontSize: 17, fontWeight: 600 }}>
+                      {group.label}
                     </span>
-                  ))}
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 12, color: 'var(--color-text-quaternary)' }}>
-                    {group.latestDate ? dayjs(group.latestDate).format('YYYY-MM-DD HH:mm') : ''}
-                  </span>
-                  <span style={{ fontSize: 13, color: group.color }}>
-                    {group.records.length} 条记录 &gt;
-                  </span>
-                </div>
-              </Card>
-            ))}
+                    {group.hasAbnormal && (
+                      <Tag color="red" icon={<WarningOutlined />}>异常</Tag>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 16px', marginBottom: 8 }}>
+                    {group.latestByType.map((item) => (
+                      <span key={item.type} style={{ fontSize: 15 }}>
+                        <span style={{ color: 'var(--color-text-tertiary)' }}>{item.label}</span>
+                        {' '}
+                        <span style={{
+                          fontWeight: 600,
+                          color: item.isAbnormal ? '#ff4d4f' : '#136dec',
+                        }}>
+                          {item.value}
+                        </span>
+                        {' '}
+                        <span style={{ fontSize: 12, color: 'var(--color-text-quaternary)' }}>{item.unit}</span>
+                      </span>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 12, color: 'var(--color-text-quaternary)' }}>
+                      {group.latestDate ? dayjs(group.latestDate).format('YYYY-MM-DD HH:mm') : ''}
+                    </span>
+                    <span style={{ fontSize: 13, color: group.color }}>
+                      {group.records.length} 条记录 &gt;
+                    </span>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )
+        ) : (
+          /* 日历视图 */
+          <div>
+            {/* 自定义日历头部 + 日历 */}
+            <Card bodyStyle={{ padding: '8px 4px' }} style={{ borderRadius: 12, marginBottom: 12 }}>
+              <Calendar
+                fullscreen={false}
+                value={calendarValue}
+                fullCellRender={calendarCellRender}
+                headerRender={({ value: hdrValue, onChange: hdrOnChange }) => (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px' }}>
+                    <Button
+                      type="text"
+                      icon={<LeftOutlined />}
+                      onClick={() => {
+                        const prev = hdrValue.subtract(1, 'month');
+                        hdrOnChange(prev);
+                        setCalendarValue(prev);
+                      }}
+                    />
+                    <span style={{ fontSize: 17, fontWeight: 600 }}>
+                      {hdrValue.format('YYYY年M月')}
+                    </span>
+                    <Button
+                      type="text"
+                      icon={<RightOutlined />}
+                      onClick={() => {
+                        const next = hdrValue.add(1, 'month');
+                        hdrOnChange(next);
+                        setCalendarValue(next);
+                      }}
+                    />
+                  </div>
+                )}
+                onSelect={(date, info) => {
+                  if (info.source === 'date') {
+                    setSelectedDate(date);
+                    setCalendarValue(date);
+                  }
+                }}
+              />
+            </Card>
+
+            {/* 选中日期的记录 */}
+            <div style={{ marginBottom: 8 }}>
+              <span style={{ fontSize: 16, fontWeight: 600 }}>
+                {selectedDate.format('M月D日')} 的记录
+              </span>
+            </div>
+            {isLoading ? (
+              <div style={{ textAlign: 'center', padding: 30 }}>
+                <Spin />
+              </div>
+            ) : selectedDateSessions.length === 0 ? (
+              <Empty description="当天无记录" style={{ padding: 30 }} />
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {selectedDateSessions.map((session) => {
+                  const first = session[0];
+                  const hasAbnormal = session.some((r) => r.isAbnormal);
+                  return (
+                    <div
+                      key={`${first.memberId}_${first.recordDate}`}
+                      style={{
+                        border: '1px solid var(--color-border)',
+                        borderRadius: 10,
+                        padding: '12px 14px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <span style={{ fontSize: 15, color: 'var(--color-text-tertiary)' }}>
+                          {dayjs(first.recordDate).format('HH:mm')}
+                          {first.member?.name ? ` · ${first.member.name}` : ''}
+                        </span>
+                        {hasAbnormal && (
+                          <Tag color="red" icon={<WarningOutlined />} style={{ marginRight: 0 }}>异常</Tag>
+                        )}
+                      </div>
+                      {session.map((record) => (
+                        <div
+                          key={record.id}
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '5px 0',
+                          }}
+                        >
+                          <div>
+                            <span style={{ fontSize: 16, color: 'var(--color-text-tertiary)' }}>
+                              {record.recordTypeLabel}
+                            </span>
+                            {' '}
+                            <span style={{
+                              fontSize: 20,
+                              fontWeight: 600,
+                              color: record.isAbnormal ? '#ff4d4f' : '#136dec',
+                            }}>
+                              {record.value}
+                            </span>
+                            {' '}
+                            <span style={{ fontSize: 14, color: 'var(--color-text-quaternary)' }}>
+                              {record.unit}
+                            </span>
+                          </div>
+                          <Button
+                            type="text"
+                            icon={<LineChartOutlined />}
+                            style={{ color: '#136dec', fontSize: 18 }}
+                            onClick={() => handleTrendClick(record)}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )
       ) : (
