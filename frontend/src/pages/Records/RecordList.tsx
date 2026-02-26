@@ -17,7 +17,9 @@ import {
   DatePicker,
   Divider,
   Radio,
-  Tabs,
+  Drawer,
+  Spin,
+  Empty,
 } from 'antd';
 import {
   PlusOutlined,
@@ -27,6 +29,7 @@ import {
 } from '@ant-design/icons';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import ReactECharts from 'echarts-for-react';
 import { recordsApi, membersApi } from '../../api';
 import { useElderModeStore } from '../../store';
 import type { HealthRecord, RecordType, QueryRecordParams, MeasurementContext, RecordItem } from '../../types';
@@ -81,6 +84,113 @@ const RecordList: React.FC = () => {
   const [addOpen, setAddOpen] = useState(false);
   const [addForm] = Form.useForm();
   const [recordMode, setRecordMode] = useState<RecordMode>('single');
+
+  // 老人模式：趋势图 Drawer 状态
+  const [trendModal, setTrendModal] = useState<{
+    memberId: string;
+    recordType: RecordType;
+    memberName: string;
+    typeLabel: string;
+  } | null>(null);
+
+  const { data: trendData, isLoading: trendLoading } = useQuery({
+    queryKey: ['recordTrend', trendModal?.memberId, trendModal?.recordType, 'quarter'],
+    queryFn: () =>
+      recordsApi.getTrend({
+        memberId: trendModal!.memberId,
+        recordType: trendModal!.recordType,
+        period: 'quarter',
+      }),
+    enabled: !!trendModal,
+  });
+
+  const trendChartOption = useMemo(() => {
+    if (!trendData || trendData.data.length === 0) return {};
+
+    const normalData: (number | null)[] = [];
+    const abnormalData: (number | null)[] = [];
+    trendData.data.forEach((d) => {
+      if (d.isAbnormal) {
+        normalData.push(null);
+        abnormalData.push(d.value);
+      } else {
+        normalData.push(d.value);
+        abnormalData.push(null);
+      }
+    });
+
+    return {
+      tooltip: {
+        trigger: 'axis',
+        formatter: (params: unknown) => {
+          const paramsList = params as { axisValue: string; value: number | null; seriesName: string }[];
+          const validParam = paramsList.find((p) => p.value !== null);
+          if (!validParam) return '';
+          const isAbnormal = validParam.seriesName === '异常值';
+          return `${validParam.axisValue}<br/>${trendData.label}: ${validParam.value} ${trendData.unit}${isAbnormal ? ' <span style="color:red">(异常)</span>' : ''}`;
+        },
+      },
+      legend: { data: ['正常值', '异常值'], bottom: 0 },
+      xAxis: {
+        type: 'category',
+        data: trendData.data.map((d) => d.date),
+        axisLabel: { rotate: 45, fontSize: 11 },
+      },
+      yAxis: { type: 'value', name: trendData.unit },
+      series: [
+        {
+          name: '正常值',
+          type: 'line',
+          data: normalData,
+          smooth: true,
+          symbol: 'circle',
+          symbolSize: 8,
+          connectNulls: true,
+          itemStyle: { color: '#136dec' },
+          lineStyle: { color: '#136dec', width: 2 },
+          markLine: trendData.referenceRange ? {
+            silent: true,
+            lineStyle: { color: '#13ec5b', type: 'dashed' },
+            data: [
+              { yAxis: trendData.referenceRange.min, label: { formatter: `下限: ${trendData.referenceRange.min}`, position: 'start' } },
+              { yAxis: trendData.referenceRange.max, label: { formatter: `上限: ${trendData.referenceRange.max}`, position: 'start' } },
+            ],
+          } : undefined,
+          markArea: trendData.referenceRange ? {
+            silent: true,
+            itemStyle: { color: 'rgba(19, 236, 91, 0.1)' },
+            data: [[{ yAxis: trendData.referenceRange.min }, { yAxis: trendData.referenceRange.max }]],
+          } : undefined,
+        },
+        {
+          name: '异常值',
+          type: 'line',
+          data: abnormalData,
+          smooth: true,
+          symbol: 'circle',
+          symbolSize: 10,
+          connectNulls: false,
+          itemStyle: { color: '#ff4d4f' },
+          lineStyle: { width: 0 },
+        },
+      ],
+      grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
+    };
+  }, [trendData]);
+
+  // 点击趋势按钮：老人模式打开 Drawer，普通模式导航
+  const handleTrendClick = (record: HealthRecord) => {
+    if (isElderMode) {
+      setTrendModal({
+        memberId: record.memberId,
+        recordType: record.recordType,
+        memberName: record.member?.name || '',
+        typeLabel: record.recordTypeLabel,
+      });
+    } else {
+      navigate(`/records/trend?memberId=${record.memberId}&recordType=${record.recordType}`);
+    }
+  };
 
   const [filters, setFilters] = useState<QueryRecordParams>({
     memberId: searchParams.get('memberId') || undefined,
@@ -287,11 +397,7 @@ const RecordList: React.FC = () => {
           <Button
             type="link"
             icon={<LineChartOutlined />}
-            onClick={() =>
-              navigate(
-                `/records/trend?memberId=${record.memberId}&recordType=${record.recordType}`,
-              )
-            }
+            onClick={() => handleTrendClick(record)}
           >
             趋势
           </Button>
@@ -311,24 +417,14 @@ const RecordList: React.FC = () => {
   return (
     <div>
       {isElderMode ? (
-        <div style={{ marginBottom: 16 }}>
-          <Tabs
-            activeKey="list"
-            onChange={(key) => { if (key === 'trend') navigate('/records/trend'); }}
-            items={[
-              { key: 'list', label: '记录列表' },
-              { key: 'trend', label: '趋势图表' },
-            ]}
-            tabBarExtraContent={
-              <Button
-                icon={<PlusOutlined />}
-                onClick={() => setAddOpen(true)}
-                style={{ background: '#52c41a', borderColor: '#52c41a', color: '#fff' }}
-              >
-                添加记录
-              </Button>
-            }
-          />
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+          <Button
+            icon={<PlusOutlined />}
+            onClick={() => setAddOpen(true)}
+            style={{ background: '#52c41a', borderColor: '#52c41a', color: '#fff' }}
+          >
+            添加记录
+          </Button>
         </div>
       ) : (
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
@@ -481,11 +577,7 @@ const RecordList: React.FC = () => {
                       type="primary"
                       size="small"
                       icon={<LineChartOutlined />}
-                      onClick={() =>
-                        navigate(
-                          `/records/trend?memberId=${record.memberId}&recordType=${record.recordType}`,
-                        )
-                      }
+                      onClick={() => handleTrendClick(record)}
                     >
                       趋势
                     </Button>
@@ -529,6 +621,60 @@ const RecordList: React.FC = () => {
       >
         <p>确定要删除该记录吗？此操作不可恢复。</p>
       </Modal>
+
+      {/* 老人模式：趋势图 Drawer */}
+      {isElderMode && (
+        <Drawer
+          open={!!trendModal}
+          onClose={() => setTrendModal(null)}
+          placement="bottom"
+          height="85%"
+          title={trendModal ? `${trendModal.memberName} · ${trendModal.typeLabel}趋势` : ''}
+          destroyOnClose
+        >
+          {trendLoading ? (
+            <div style={{ textAlign: 'center', padding: 50 }}>
+              <Spin size="large" />
+            </div>
+          ) : trendData && trendData.data.length > 0 ? (
+            <>
+              <ReactECharts option={trendChartOption} style={{ height: 280 }} />
+              {(() => {
+                const values = trendData.data.map((d) => d.value);
+                const max = Math.max(...values);
+                const min = Math.min(...values);
+                const avg = values.reduce((a, b) => a + b, 0) / values.length;
+                const abnormalCount = trendData.data.filter((d) => d.isAbnormal).length;
+                return (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 16 }}>
+                    <div style={{ background: '#f6ffed', borderRadius: 8, padding: '10px 12px', textAlign: 'center' }}>
+                      <div style={{ fontSize: 13, color: 'var(--color-text-tertiary)' }}>最高值</div>
+                      <div style={{ fontSize: 20, fontWeight: 600 }}>{max.toFixed(1)} <span style={{ fontSize: 12 }}>{trendData.unit}</span></div>
+                    </div>
+                    <div style={{ background: '#f0f5ff', borderRadius: 8, padding: '10px 12px', textAlign: 'center' }}>
+                      <div style={{ fontSize: 13, color: 'var(--color-text-tertiary)' }}>最低值</div>
+                      <div style={{ fontSize: 20, fontWeight: 600 }}>{min.toFixed(1)} <span style={{ fontSize: 12 }}>{trendData.unit}</span></div>
+                    </div>
+                    <div style={{ background: '#fff7e6', borderRadius: 8, padding: '10px 12px', textAlign: 'center' }}>
+                      <div style={{ fontSize: 13, color: 'var(--color-text-tertiary)' }}>平均值</div>
+                      <div style={{ fontSize: 20, fontWeight: 600 }}>{avg.toFixed(1)} <span style={{ fontSize: 12 }}>{trendData.unit}</span></div>
+                    </div>
+                    <div style={{ background: abnormalCount > 0 ? '#fff1f0' : '#f6ffed', borderRadius: 8, padding: '10px 12px', textAlign: 'center' }}>
+                      <div style={{ fontSize: 13, color: 'var(--color-text-tertiary)' }}>异常次数</div>
+                      <div style={{ fontSize: 20, fontWeight: 600, color: abnormalCount > 0 ? '#ff4d4f' : 'inherit' }}>{abnormalCount} 次</div>
+                    </div>
+                  </div>
+                );
+              })()}
+              <div style={{ textAlign: 'center', marginTop: 12, fontSize: 12, color: 'var(--color-text-quaternary)' }}>
+                共 {trendData.data.length} 条记录（近 90 天）
+              </div>
+            </>
+          ) : (
+            <Empty description="暂无趋势数据" />
+          )}
+        </Drawer>
+      )}
 
       {/* 老人模式：引导式 Wizard；普通模式：原 Modal */}
       {isElderMode ? (
