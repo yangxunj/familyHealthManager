@@ -80,7 +80,7 @@ const RecordList: React.FC = () => {
   const isMobile = !screens.md;
   const isElderMode = useElderModeStore((s) => s.isElderMode);
   const queryClient = useQueryClient();
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteIds, setDeleteIds] = useState<string[]>([]);
   const [addOpen, setAddOpen] = useState(false);
   const [addForm] = Form.useForm();
   const [recordMode, setRecordMode] = useState<RecordMode>('single');
@@ -301,11 +301,15 @@ const RecordList: React.FC = () => {
   const isSingleMember = members?.length === 1;
 
   const deleteMutation = useMutation({
-    mutationFn: recordsApi.delete,
+    mutationFn: async (ids: string[]) => {
+      for (const id of ids) {
+        await recordsApi.delete(id);
+      }
+    },
     onSuccess: () => {
       message.success('删除成功');
       queryClient.invalidateQueries({ queryKey: ['records'] });
-      setDeleteId(null);
+      setDeleteIds([]);
     },
     onError: () => {
       message.error('删除失败');
@@ -392,8 +396,8 @@ const RecordList: React.FC = () => {
   };
 
   const handleDelete = () => {
-    if (deleteId) {
-      deleteMutation.mutate(deleteId);
+    if (deleteIds.length > 0) {
+      deleteMutation.mutate(deleteIds);
     }
   };
 
@@ -466,7 +470,7 @@ const RecordList: React.FC = () => {
             type="link"
             danger
             icon={<DeleteOutlined />}
-            onClick={() => setDeleteId(record.id)}
+            onClick={() => setDeleteIds([record.id])}
           >
             删除
           </Button>
@@ -709,7 +713,7 @@ const RecordList: React.FC = () => {
                         size="small"
                         danger
                         icon={<DeleteOutlined />}
-                        onClick={() => setDeleteId(record.id)}
+                        onClick={() => setDeleteIds([record.id])}
                       >
                         删除
                       </Button>
@@ -736,9 +740,9 @@ const RecordList: React.FC = () => {
 
       <Modal
         title="确认删除"
-        open={!!deleteId}
+        open={deleteIds.length > 0}
         onOk={handleDelete}
-        onCancel={() => setDeleteId(null)}
+        onCancel={() => setDeleteIds([])}
         confirmLoading={deleteMutation.isPending}
         okText="删除"
         cancelText="取消"
@@ -811,55 +815,94 @@ const RecordList: React.FC = () => {
           title={historyGroup?.label || ''}
           destroyOnClose
         >
-          {historyGroup && (
-            <List
-              dataSource={historyGroup.records}
-              renderItem={(record: HealthRecord) => (
-                <List.Item style={{ padding: '12px 0', borderBottom: '1px solid var(--color-border)' }}>
-                  <div style={{ width: '100%' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                      <Space>
-                        <span style={{ fontWeight: 500, fontSize: 15 }}>{record.recordTypeLabel}</span>
-                        {record.isAbnormal && (
+          {historyGroup && (() => {
+            // 按测量时间分组（同一次 createBatch 的记录 recordDate 相同）
+            const sessionMap = new Map<string, HealthRecord[]>();
+            historyGroup.records.forEach((r) => {
+              const key = `${r.memberId}_${r.recordDate}`;
+              const arr = sessionMap.get(key);
+              if (arr) arr.push(r);
+              else sessionMap.set(key, [r]);
+            });
+            const sessions = Array.from(sessionMap.values());
+
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {sessions.map((group) => {
+                  const first = group[0];
+                  const hasAbnormal = group.some((r) => r.isAbnormal);
+                  return (
+                    <div
+                      key={`${first.memberId}_${first.recordDate}`}
+                      style={{
+                        border: '1px solid var(--color-border)',
+                        borderRadius: 10,
+                        padding: '12px 14px',
+                      }}
+                    >
+                      {/* 时间 + 异常标签 */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <span style={{ fontSize: 13, color: 'var(--color-text-tertiary)' }}>
+                          {dayjs(first.recordDate).format('YYYY-MM-DD HH:mm')}
+                        </span>
+                        {hasAbnormal && (
                           <Tag color="red" icon={<WarningOutlined />} style={{ marginRight: 0 }}>异常</Tag>
                         )}
-                      </Space>
-                      <span style={{
-                        fontSize: 18,
-                        fontWeight: 600,
-                        color: record.isAbnormal ? '#ff4d4f' : '#136dec',
-                      }}>
-                        {record.value} {record.unit}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: 12, color: 'var(--color-text-tertiary)' }}>
-                        {dayjs(record.recordDate).format('YYYY-MM-DD HH:mm')}
-                      </span>
-                      <Space>
-                        <Button
-                          type="primary"
-                          size="small"
-                          icon={<LineChartOutlined />}
-                          onClick={() => handleTrendClick(record)}
+                      </div>
+                      {/* 每个指标一行 */}
+                      {group.map((record) => (
+                        <div
+                          key={record.id}
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '4px 0',
+                          }}
                         >
-                          趋势
-                        </Button>
+                          <div>
+                            <span style={{ fontSize: 14, color: 'var(--color-text-tertiary)' }}>
+                              {record.recordTypeLabel}
+                            </span>
+                            {' '}
+                            <span style={{
+                              fontSize: 17,
+                              fontWeight: 600,
+                              color: record.isAbnormal ? '#ff4d4f' : '#136dec',
+                            }}>
+                              {record.value}
+                            </span>
+                            {' '}
+                            <span style={{ fontSize: 12, color: 'var(--color-text-quaternary)' }}>
+                              {record.unit}
+                            </span>
+                          </div>
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<LineChartOutlined />}
+                            style={{ color: '#136dec' }}
+                            onClick={() => handleTrendClick(record)}
+                          />
+                        </div>
+                      ))}
+                      {/* 删除按钮：删除整次测量的所有记录 */}
+                      <div style={{ textAlign: 'right', marginTop: 6 }}>
                         <Button
                           size="small"
                           danger
                           icon={<DeleteOutlined />}
-                          onClick={() => setDeleteId(record.id)}
+                          onClick={() => setDeleteIds(group.map((r) => r.id))}
                         >
                           删除
                         </Button>
-                      </Space>
+                      </div>
                     </div>
-                  </div>
-                </List.Item>
-              )}
-            />
-          )}
+                  );
+                })}
+              </div>
+            );
+          })()}
         </Drawer>
       )}
 
