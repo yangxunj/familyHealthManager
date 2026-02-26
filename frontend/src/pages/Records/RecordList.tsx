@@ -417,11 +417,13 @@ const RecordList: React.FC = () => {
   return (
     <div>
       {isElderMode ? (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+        <div style={{ marginBottom: 16 }}>
           <Button
+            block
+            size="large"
             icon={<PlusOutlined />}
             onClick={() => setAddOpen(true)}
-            style={{ background: '#52c41a', borderColor: '#52c41a', color: '#fff' }}
+            style={{ height: 48, fontSize: 16, borderRadius: 12, background: '#52c41a', borderColor: '#52c41a', color: '#fff' }}
           >
             添加记录
           </Button>

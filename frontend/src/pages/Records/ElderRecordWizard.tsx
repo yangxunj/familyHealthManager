@@ -424,8 +424,7 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
       open={open}
       onClose={handleClose}
       placement="bottom"
-      height="100%"
-      closable={false}
+      height="85%"
       styles={{ body: { padding: 0, display: 'flex', flexDirection: 'column' } }}
       destroyOnClose
     >
