@@ -312,6 +312,7 @@ const MainLayout: React.FC = () => {
             background: colorBgContainer,
             overflowX: 'hidden',
             overflowY: 'auto',
+            scrollbarGutter: 'stable',
             display: 'flex',
             flexDirection: 'column',
             flex: 1,
