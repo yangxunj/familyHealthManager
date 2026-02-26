@@ -573,38 +573,14 @@ const RecordList: React.FC = () => {
   return (
     <div>
       {isElderMode ? (
-        <div style={{ marginBottom: 16 }}>
-          <Button
-            block
-            size="large"
-            icon={<PlusOutlined />}
-            onClick={() => setAddOpen(true)}
-            style={{ height: 48, fontSize: 16, borderRadius: 12, background: '#52c41a', borderColor: '#52c41a', color: '#fff' }}
-          >
-            添加记录
-          </Button>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
-          <h2 style={{ margin: 0 }}>健康记录</h2>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setAddOpen(true)}
-          >
-            添加记录
-          </Button>
-        </div>
-      )}
-
-      {/* 老人模式：视图切换 */}
-      {isElderMode && (
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+          {/* 视图切换器 */}
           <div style={{
             display: 'inline-flex',
             background: '#f0f0f0',
             borderRadius: 20,
             padding: 3,
+            flexShrink: 0,
           }}>
             <Button
               type={elderView === 'list' ? 'primary' : 'text'}
@@ -629,6 +605,26 @@ const RecordList: React.FC = () => {
               日历
             </Button>
           </div>
+          {/* 添加记录按钮 */}
+          <Button
+            size="large"
+            icon={<PlusOutlined />}
+            onClick={() => setAddOpen(true)}
+            style={{ flex: 1, height: 44, fontSize: 16, borderRadius: 12, background: '#52c41a', borderColor: '#52c41a', color: '#fff' }}
+          >
+            添加记录
+          </Button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
+          <h2 style={{ margin: 0 }}>健康记录</h2>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setAddOpen(true)}
+          >
+            添加记录
+          </Button>
         </div>
       )}
 
@@ -842,13 +838,14 @@ const RecordList: React.FC = () => {
                     <div
                       key={`${first.memberId}_${first.recordDate}`}
                       style={{
-                        border: '1px solid var(--color-border)',
-                        borderRadius: 10,
+                        border: '2px solid #d9d9d9',
+                        borderRadius: 12,
                         padding: '12px 14px',
+                        background: '#fff',
                       }}
                     >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                        <span style={{ fontSize: 15, color: 'var(--color-text-tertiary)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                        <span style={{ fontSize: 16, fontWeight: 600, color: '#333' }}>
                           {dayjs(first.recordDate).format('HH:mm')}
                           {first.member?.name ? ` · ${first.member.name}` : ''}
                         </span>
@@ -1097,9 +1094,10 @@ const RecordList: React.FC = () => {
                       key={`${first.memberId}_${first.recordDate}`}
                       style={{
                         position: 'relative',
-                        border: '1px solid var(--color-border)',
-                        borderRadius: 10,
+                        border: '2px solid #d9d9d9',
+                        borderRadius: 12,
                         padding: '12px 14px',
+                        background: '#fff',
                       }}
                     >
                       {/* 删除模式：红色 X 徽标 */}
@@ -1131,9 +1129,9 @@ const RecordList: React.FC = () => {
                           ✕
                         </div>
                       )}
-                      {/* 时间 + 异常标签 */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                        <span style={{ fontSize: 15, color: 'var(--color-text-tertiary)' }}>
+                      {/* 日期 + 异常标签 */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                        <span style={{ fontSize: 16, fontWeight: 600, color: '#333' }}>
                           {dayjs(first.recordDate).format('YYYY-MM-DD HH:mm')}
                         </span>
                         {hasAbnormal && (
