@@ -8,19 +8,27 @@ A full-stack family health management platform with AI-powered health insights, 
 
 ## Features / 功能特性
 
-- **Family Members / 家庭成员管理** — Create and manage family member profiles with avatar, age, gender, blood type, and chronic disease history. / 创建和管理家庭成员档案，包含头像、年龄、性别、血型、慢性病史等信息。
+- **Family Members / 家庭成员管理** — Create and manage family member profiles with avatar, age, gender, blood type, and chronic disease history. Link members to user accounts with "This is me" identification. / 创建和管理家庭成员档案，包含头像、年龄、性别、血型、慢性病史等信息。支持成员关联用户账号，标识"这是你"。
 
-- **Health Records / 健康记录** — Track blood pressure, blood sugar, body temperature, weight, and more with trend visualization. / 记录血压、血糖、体温、体重等指标，支持趋势图表可视化。
+- **Health Records / 健康记录** — Track 15 health metrics across 4 categories (blood pressure, blood sugar, blood lipid, basic vitals) with trend visualization and abnormal value alerts. Supports calendar view to see measurement history at a glance. / 记录 4 大分类共 15 项健康指标（血压、血糖、血脂、基础指标），支持趋势图表、异常值提醒，以及日历视图直观查看测量历史。
 
 - **Health Documents / 健康文档** — Upload medical reports (images & PDFs). OCR extracts text automatically; AI formats it into structured Markdown. / 上传体检报告（图片和 PDF），OCR 自动提取文字，AI 规整为结构化 Markdown。
 
+- **Health Plan / 健康计划** — Manage vaccination records with recommended schedules by age group, and set up periodic health checkup reminders. / 管理疫苗接种记录（含按年龄段推荐表），设置定期体检提醒计划。
+
 - **AI Health Advice / AI 健康建议** — Generate personalized health reports based on a member's records and documents, powered by LLM. / 基于成员的健康记录和文档，由大语言模型生成个性化健康建议报告。
 
-- **AI Health Chat / AI 健康咨询** — Real-time AI conversation with streaming responses (SSE) for health-related questions. / 实时 AI 对话，支持 SSE 流式响应，随时咨询健康问题。
+- **AI Health Chat / AI 健康咨询** — Real-time AI conversation with streaming responses (SSE). Supports sending images for multi-modal analysis. / 实时 AI 对话，支持 SSE 流式响应，支持发送图片进行多模态分析。
 
-- **Elder Mode / 老人模式** — One-tap switch to a senior-friendly UI with larger fonts, simplified bottom-tab navigation (Chat, Advice, Records), guided health-record wizard, and pill-button filters. / 一键切换老人友好界面：大字体、底部 Tab 简化导航（咨询、建议、记录）、分步引导式健康记录录入、气泡按钮筛选。
+- **Food Photo Query / 拍照问食** — Snap a photo of your meal, AI analyzes nutritional content, dietary suggestions, and potential concerns. Supports follow-up questions in conversation. / 拍摄食物照片，AI 分析营养成分、饮食建议和注意事项，支持对话式追问。
+
+- **Elder Mode / 老人模式** — One-tap switch to a senior-friendly UI: larger fonts (17px), simplified 4-tab bottom navigation (Records, Food Query, Advice, Chat), scroll-wheel input for blood pressure, grouped record cards, calendar view, and iOS-style interactions. / 一键切换老人友好界面：大字体（17px）、底部 4 个 Tab 简化导航（健康记录、拍照问食、健康建议、健康咨询）、滚轮选择器录入血压、分组记录卡片、日历视图、iOS 风格交互。
+
+- **Member Visibility / 成员可见性** — Control which family members each user can see across the app. Useful for managing privacy in large families. / 控制每个用户在各页面能看到哪些家庭成员，适合大家庭隐私管理。
 
 - **Multi-AI Provider / 多 AI 服务商** — Supports Alibaba Cloud DashScope (Qwen, DeepSeek, GLM, Kimi) and Google Gemini, configurable from the settings page. / 支持阿里云 DashScope（通义千问、DeepSeek、智谱、Kimi）和 Google Gemini，可在设置页面切换。
+
+- **PWA Support / PWA 支持** — Add to home screen on iPhone / Android browsers for an app-like experience without installing an APK. / iPhone / Android 浏览器可"添加到主屏幕"，获得类原生应用体验。
 
 - **Dual Deployment / 双模式部署** — Run in LAN mode (no login required) for home use, or in public mode with Supabase authentication (Google OAuth / email OTP). / 局域网模式（免登录）适合家庭内网使用；公网模式通过 Supabase 认证（Google OAuth / 邮箱验证码）。
 
@@ -33,7 +41,8 @@ A full-stack family health management platform with AI-powered health insights, 
 | Database | PostgreSQL |
 | AI | Alibaba Cloud DashScope (OCR + Chat), Google Gemini (Chat) |
 | Auth | Supabase (OAuth & OTP) — optional in LAN mode |
-| Deploy | Docker Compose |
+| Mobile | Capacitor (Android APK), PWA (iOS / Android) |
+| Deploy | Docker Compose, Nginx |
 
 ---
 
@@ -88,21 +97,29 @@ By default, the app runs in **LAN mode** (no login required). To enable authenti
 
 ---
 
-## Android App / 安卓客户端
+## Mobile Access / 移动端访问
 
-Download the APK from [GitHub Releases](https://github.com/yangxunj/familyHealthManager/releases) and install on your Android device.
+### Android APK
 
-从 [GitHub Releases](https://github.com/yangxunj/familyHealthManager/releases) 下载 APK 安装到安卓手机。
+Download the APK from [GitHub Releases](https://github.com/yangxunj/familyHealthManager/releases) and install on your Android device. The APK loads the frontend remotely from your server, so you always get the latest version without reinstalling.
+
+从 [GitHub Releases](https://github.com/yangxunj/familyHealthManager/releases) 下载 APK 安装到安卓手机。APK 从服务器远程加载前端，无需重新安装即可获取最新版本。
 
 **First launch / 首次使用：**
 
 1. Open the app → Enter your server address / 打开 App → 输入服务器地址
    - Public server / 公网：`https://health.example.com`
-   - LAN server / 局域网：`192.168.1.100:5002`
+   - LAN server / 局域网：`http://192.168.1.100:5180`
 2. The app auto-detects the mode (LAN or Public) / App 自动检测运行模式
 3. Configuration is saved locally — no need to re-enter next time / 配置保存在本地，下次无需重复输入
 
 To change server later: **Settings → Server Config** / 更换服务器：**系统设置 → 服务器配置**
+
+### iPhone / iPad (PWA)
+
+Open your server URL in Safari → Tap **Share** → **Add to Home Screen**. The app will run in standalone mode like a native app.
+
+在 Safari 中打开服务器地址 → 点击**分享** → **添加到主屏幕**。应用将以独立模式运行，体验接近原生 App。
 
 ---
 
@@ -164,24 +181,31 @@ docker compose up -d
 familyHealthManager/
 ├── backend/                # NestJS + Prisma
 │   ├── src/modules/
-│   │   ├── auth/           # Authentication / 认证
+│   │   ├── auth/           # Authentication (JWT) / 认证
 │   │   ├── users/          # User management / 用户管理
 │   │   ├── members/        # Family members / 家庭成员
+│   │   ├── family/         # Family & invitations / 家庭管理与邀请
 │   │   ├── documents/      # Health documents & OCR / 健康文档与 OCR
 │   │   ├── records/        # Health records / 健康记录
+│   │   ├── vaccination/    # Vaccination management / 疫苗接种
+│   │   ├── checkups/       # Periodic checkups / 定期检查
 │   │   ├── advice/         # AI health advice / AI 健康建议
 │   │   ├── chat/           # AI health chat (SSE) / AI 健康咨询
 │   │   ├── ai/             # AI service layer / AI 服务层
-│   │   ├── settings/       # System settings / 系统设置
+│   │   ├── config/         # System configuration / 系统配置
+│   │   ├── storage/        # File storage / 文件存储
+│   │   ├── settings/       # Admin settings / 管理员设置
 │   │   └── whitelist/      # Email whitelist / 邮箱白名单
 │   └── prisma/             # Schema & migrations / 数据库模型与迁移
 ├── frontend/               # React + Vite + Ant Design
-│   └── src/
-│       ├── pages/          # Page components / 页面组件
-│       ├── api/            # API client / API 调用
-│       ├── store/          # Zustand state / 状态管理
-│       └── components/     # Shared components / 公共组件
-├── deploy/                 # Deployment files / 部署文件
+│   ├── src/
+│   │   ├── pages/          # Page components / 页面组件
+│   │   ├── api/            # API client / API 调用
+│   │   ├── store/          # Zustand state / 状态管理
+│   │   ├── hooks/          # Custom hooks / 自定义 Hooks
+│   │   └── components/     # Shared components / 公共组件
+│   └── android/            # Capacitor Android project / 安卓原生层
+├── deploy/                 # Production deployment files / 生产部署文件
 ├── doc/                    # Documentation / 文档
 └── docker-compose.yml      # Dev Docker Compose / 开发用 Docker Compose
 ```
@@ -192,6 +216,7 @@ familyHealthManager/
 - **Input Validation** — Global `ValidationPipe` with whitelist mode. / 全局输入校验，白名单模式。
 - **Audit Logging** — Critical operations are logged to the `audit_logs` table. / 关键操作记录到审计日志表。
 - **Email Whitelist** — Only whitelisted emails can log in (public mode). / 仅白名单内的邮箱可登录（公网模式）。
+- **Data Encryption** — Health data is encrypted at rest; only family members can access their data. / 健康数据加密存储，仅家庭成员可访问。
 
 ## License / 许可证
 
