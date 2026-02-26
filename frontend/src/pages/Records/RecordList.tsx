@@ -662,7 +662,7 @@ const RecordList: React.FC = () => {
       </>
       )}
 
-      {!isElderMode ? (
+      {!isElderMode && (
         <Card style={{ marginBottom: 16 }}>
           <Row gutter={[16, 12]}>
             <Col xs={24} sm={8}>
