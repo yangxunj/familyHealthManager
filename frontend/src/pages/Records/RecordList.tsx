@@ -33,7 +33,7 @@ import ReactECharts from 'echarts-for-react';
 import { recordsApi, membersApi } from '../../api';
 import { useElderModeStore } from '../../store';
 import type { HealthRecord, RecordType, QueryRecordParams, MeasurementContext, RecordItem } from '../../types';
-import { RecordTypeLabels, RecordTypeUnits, MeasurementContextLabels } from '../../types';
+import { RecordTypeLabels, RecordTypeUnits, MeasurementContextLabels, RecordTypeGroups } from '../../types';
 import dayjs from 'dayjs';
 import ElderRecordWizard from './ElderRecordWizard';
 
@@ -178,6 +178,13 @@ const RecordList: React.FC = () => {
     };
   }, [trendData]);
 
+  // 老人模式：分类历史记录 Drawer 状态
+  const [historyGroup, setHistoryGroup] = useState<{
+    key: string;
+    label: string;
+    records: HealthRecord[];
+  } | null>(null);
+
   // 点击趋势按钮：老人模式打开 Drawer，普通模式导航
   const handleTrendClick = (record: HealthRecord) => {
     if (isElderMode) {
@@ -231,6 +238,60 @@ const RecordList: React.FC = () => {
     });
     return Array.from(typesSet);
   }, [allRecords]);
+
+  // 老人模式：按分类分组记录
+  const groupedRecords = useMemo(() => {
+    if (!records || records.length === 0) return [];
+
+    const groupColors: Record<string, string> = {
+      bloodPressure: '#ff4d4f',
+      bloodSugar: '#136dec',
+      bloodLipid: '#722ed1',
+      basic: '#faad14',
+    };
+
+    const groups: {
+      key: string;
+      label: string;
+      color: string;
+      latestByType: { type: RecordType; label: string; value: number; unit: string; isAbnormal: boolean }[];
+      latestDate: string | null;
+      records: HealthRecord[];
+      hasAbnormal: boolean;
+    }[] = [];
+
+    for (const [groupKey, groupDef] of Object.entries(RecordTypeGroups)) {
+      const groupRecords = records.filter((r) => groupDef.types.includes(r.recordType));
+      if (groupRecords.length === 0) continue;
+
+      // 获取每种指标的最新记录
+      const latestByType = groupDef.types
+        .map((type) => {
+          const record = groupRecords.find((r) => r.recordType === type);
+          if (!record) return null;
+          return {
+            type: record.recordType,
+            label: record.recordTypeLabel,
+            value: record.value,
+            unit: record.unit,
+            isAbnormal: record.isAbnormal,
+          };
+        })
+        .filter((r): r is NonNullable<typeof r> => r !== null);
+
+      groups.push({
+        key: groupKey,
+        label: groupDef.label,
+        color: groupColors[groupKey] || '#136dec',
+        latestByType,
+        latestDate: groupRecords[0]?.recordDate || null,
+        records: groupRecords,
+        hasAbnormal: latestByType.some((r) => r.isAbnormal),
+      });
+    }
+
+    return groups;
+  }, [records]);
 
   const { data: members } = useQuery({
     queryKey: ['members'],
@@ -525,91 +586,153 @@ const RecordList: React.FC = () => {
         </Card>
       )}
 
-      <Card bodyStyle={isMobile ? { padding: 0 } : undefined}>
-        {isMobile ? (
-          <List
-            dataSource={records}
-            loading={isLoading}
-            pagination={{
-              pageSize: 10,
-              showTotal: (total) => `共 ${total} 条`,
-            }}
-            renderItem={(record: HealthRecord) => (
-              <List.Item style={{ padding: '12px 16px', borderBottom: '1px solid var(--color-border)' }}>
-                <div style={{ width: '100%' }}>
-                  <div style={{ marginBottom: 6 }}>
-                    <Space wrap>
-                      <span style={{ fontWeight: 500 }}>{record.recordTypeLabel}</span>
-                      {record.isAbnormal && (
-                        <Tag color="red" icon={<WarningOutlined />}>
-                          异常
-                        </Tag>
-                      )}
-                    </Space>
-                  </div>
-                  <div style={{ marginBottom: 4 }}>
-                    <span
-                      style={{
-                        fontSize: 18,
-                        fontWeight: 600,
-                        color: record.isAbnormal ? '#ff4d4f' : '#136dec',
-                      }}
-                    >
-                      {record.value} {record.unit}
-                    </span>
-                    {record.referenceRange && (
-                      <span style={{ fontSize: 12, color: 'var(--color-text-quaternary)', marginLeft: 8 }}>
-                        参考: {record.referenceRange.min} - {record.referenceRange.max}
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ fontSize: 13, color: 'var(--color-text-tertiary)', marginBottom: 8 }}>
-                    <Space split={<span style={{ color: 'var(--color-border-secondary)' }}>|</span>} wrap>
-                      <span>{record.member?.name}</span>
-                      <span>{dayjs(record.recordDate).format('YYYY-MM-DD HH:mm')}</span>
-                      <span>
-                        {MeasurementContextLabels[
-                          record.context as keyof typeof MeasurementContextLabels
-                        ] || record.context}
-                      </span>
-                    </Space>
-                  </div>
-                  <Space>
-                    <Button
-                      type="primary"
-                      size="small"
-                      icon={<LineChartOutlined />}
-                      onClick={() => handleTrendClick(record)}
-                    >
-                      趋势
-                    </Button>
-                    <Button
-                      size="small"
-                      danger
-                      icon={<DeleteOutlined />}
-                      onClick={() => setDeleteId(record.id)}
-                    >
-                      删除
-                    </Button>
-                  </Space>
-                </div>
-              </List.Item>
-            )}
-          />
+      {isElderMode ? (
+        isLoading ? (
+          <div style={{ textAlign: 'center', padding: 40 }}>
+            <Spin size="large" />
+          </div>
+        ) : groupedRecords.length === 0 ? (
+          <Empty description="暂无健康记录" style={{ padding: 40 }} />
         ) : (
-          <Table
-            columns={columns}
-            dataSource={records}
-            rowKey="id"
-            loading={isLoading}
-            pagination={{
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (total) => `共 ${total} 条`,
-            }}
-          />
-        )}
-      </Card>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {groupedRecords.map((group) => (
+              <Card
+                key={group.key}
+                style={{
+                  borderRadius: 12,
+                  borderLeft: `4px solid ${group.color}`,
+                  cursor: 'pointer',
+                }}
+                bodyStyle={{ padding: '14px 16px' }}
+                onClick={() => setHistoryGroup({
+                  key: group.key,
+                  label: group.label,
+                  records: group.records,
+                })}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <span style={{ fontSize: 17, fontWeight: 600 }}>
+                    {group.label}
+                  </span>
+                  {group.hasAbnormal && (
+                    <Tag color="red" icon={<WarningOutlined />}>异常</Tag>
+                  )}
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 16px', marginBottom: 8 }}>
+                  {group.latestByType.map((item) => (
+                    <span key={item.type} style={{ fontSize: 15 }}>
+                      <span style={{ color: 'var(--color-text-tertiary)' }}>{item.label}</span>
+                      {' '}
+                      <span style={{
+                        fontWeight: 600,
+                        color: item.isAbnormal ? '#ff4d4f' : '#136dec',
+                      }}>
+                        {item.value}
+                      </span>
+                      {' '}
+                      <span style={{ fontSize: 12, color: 'var(--color-text-quaternary)' }}>{item.unit}</span>
+                    </span>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 12, color: 'var(--color-text-quaternary)' }}>
+                    {group.latestDate ? dayjs(group.latestDate).format('YYYY-MM-DD HH:mm') : ''}
+                  </span>
+                  <span style={{ fontSize: 13, color: group.color }}>
+                    {group.records.length} 条记录 &gt;
+                  </span>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )
+      ) : (
+        <Card bodyStyle={isMobile ? { padding: 0 } : undefined}>
+          {isMobile ? (
+            <List
+              dataSource={records}
+              loading={isLoading}
+              pagination={{
+                pageSize: 10,
+                showTotal: (total) => `共 ${total} 条`,
+              }}
+              renderItem={(record: HealthRecord) => (
+                <List.Item style={{ padding: '12px 16px', borderBottom: '1px solid var(--color-border)' }}>
+                  <div style={{ width: '100%' }}>
+                    <div style={{ marginBottom: 6 }}>
+                      <Space wrap>
+                        <span style={{ fontWeight: 500 }}>{record.recordTypeLabel}</span>
+                        {record.isAbnormal && (
+                          <Tag color="red" icon={<WarningOutlined />}>
+                            异常
+                          </Tag>
+                        )}
+                      </Space>
+                    </div>
+                    <div style={{ marginBottom: 4 }}>
+                      <span
+                        style={{
+                          fontSize: 18,
+                          fontWeight: 600,
+                          color: record.isAbnormal ? '#ff4d4f' : '#136dec',
+                        }}
+                      >
+                        {record.value} {record.unit}
+                      </span>
+                      {record.referenceRange && (
+                        <span style={{ fontSize: 12, color: 'var(--color-text-quaternary)', marginLeft: 8 }}>
+                          参考: {record.referenceRange.min} - {record.referenceRange.max}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 13, color: 'var(--color-text-tertiary)', marginBottom: 8 }}>
+                      <Space split={<span style={{ color: 'var(--color-border-secondary)' }}>|</span>} wrap>
+                        <span>{record.member?.name}</span>
+                        <span>{dayjs(record.recordDate).format('YYYY-MM-DD HH:mm')}</span>
+                        <span>
+                          {MeasurementContextLabels[
+                            record.context as keyof typeof MeasurementContextLabels
+                          ] || record.context}
+                        </span>
+                      </Space>
+                    </div>
+                    <Space>
+                      <Button
+                        type="primary"
+                        size="small"
+                        icon={<LineChartOutlined />}
+                        onClick={() => handleTrendClick(record)}
+                      >
+                        趋势
+                      </Button>
+                      <Button
+                        size="small"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => setDeleteId(record.id)}
+                      >
+                        删除
+                      </Button>
+                    </Space>
+                  </div>
+                </List.Item>
+              )}
+            />
+          ) : (
+            <Table
+              columns={columns}
+              dataSource={records}
+              rowKey="id"
+              loading={isLoading}
+              pagination={{
+                showSizeChanger: true,
+                showQuickJumper: true,
+                showTotal: (total) => `共 ${total} 条`,
+              }}
+            />
+          )}
+        </Card>
+      )}
 
       <Modal
         title="确认删除"
@@ -674,6 +797,68 @@ const RecordList: React.FC = () => {
             </>
           ) : (
             <Empty description="暂无趋势数据" />
+          )}
+        </Drawer>
+      )}
+
+      {/* 老人模式：分类历史记录 Drawer */}
+      {isElderMode && (
+        <Drawer
+          open={!!historyGroup}
+          onClose={() => setHistoryGroup(null)}
+          placement="bottom"
+          height="85%"
+          title={historyGroup?.label || ''}
+          destroyOnClose
+        >
+          {historyGroup && (
+            <List
+              dataSource={historyGroup.records}
+              renderItem={(record: HealthRecord) => (
+                <List.Item style={{ padding: '12px 0', borderBottom: '1px solid var(--color-border)' }}>
+                  <div style={{ width: '100%' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                      <Space>
+                        <span style={{ fontWeight: 500, fontSize: 15 }}>{record.recordTypeLabel}</span>
+                        {record.isAbnormal && (
+                          <Tag color="red" icon={<WarningOutlined />} style={{ marginRight: 0 }}>异常</Tag>
+                        )}
+                      </Space>
+                      <span style={{
+                        fontSize: 18,
+                        fontWeight: 600,
+                        color: record.isAbnormal ? '#ff4d4f' : '#136dec',
+                      }}>
+                        {record.value} {record.unit}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: 12, color: 'var(--color-text-tertiary)' }}>
+                        {dayjs(record.recordDate).format('YYYY-MM-DD HH:mm')}
+                      </span>
+                      <Space>
+                        <Button
+                          type="primary"
+                          size="small"
+                          icon={<LineChartOutlined />}
+                          onClick={() => handleTrendClick(record)}
+                        >
+                          趋势
+                        </Button>
+                        <Button
+                          size="small"
+                          danger
+                          icon={<DeleteOutlined />}
+                          onClick={() => setDeleteId(record.id)}
+                        >
+                          删除
+                        </Button>
+                      </Space>
+                    </div>
+                  </div>
+                </List.Item>
+              )}
+            />
           )}
         </Drawer>
       )}
