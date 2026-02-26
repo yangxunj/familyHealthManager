@@ -5,6 +5,7 @@ import {
   HeartOutlined,
   ExperimentOutlined,
   DashboardOutlined,
+  FundOutlined,
   ArrowLeftOutlined,
   UserOutlined,
 } from '@ant-design/icons';
@@ -14,7 +15,7 @@ import { RecordTypeUnits } from '../../types';
 import type { RecordType, RecordItem } from '../../types';
 import dayjs from 'dayjs';
 
-type WizardCategory = 'bloodPressure' | 'bloodSugar' | 'basic';
+type WizardCategory = 'bloodPressure' | 'bloodSugar' | 'bloodLipid' | 'basic';
 
 interface ElderRecordWizardProps {
   open: boolean;
@@ -44,6 +45,14 @@ const CATEGORIES: {
     color: '#136dec',
     bg: '#e6f4ff',
     desc: '空腹血糖、餐后血糖',
+  },
+  {
+    key: 'bloodLipid',
+    label: '血脂检测',
+    icon: <FundOutlined style={{ fontSize: 32 }} />,
+    color: '#722ed1',
+    bg: '#f9f0ff',
+    desc: '总胆固醇、甘油三酯、HDL、LDL',
   },
   {
     key: 'basic',
@@ -82,6 +91,10 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
   const [singleValue, setSingleValue] = useState<number | null>(null);
   // Blood pressure values (defaults to common normal values for scroll picker)
   const [bpValues, setBpValues] = useState({ systolic: 120, diastolic: 80, heartRate: 72 });
+  // Blood lipid values
+  const [lipidValues, setLipidValues] = useState<{
+    tc: number | null; tg: number | null; hdl: number | null; ldl: number | null;
+  }>({ tc: null, tg: null, hdl: null, ldl: null });
 
   const { data: members } = useQuery({ queryKey: ['members'], queryFn: () => membersApi.getAll() });
 
@@ -144,6 +157,7 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
     setSubType(null);
     setSingleValue(null);
     setBpValues({ systolic: 120, diastolic: 80, heartRate: 72 });
+    setLipidValues({ tc: null, tg: null, hdl: null, ldl: null });
   };
 
   const handleClose = () => {
@@ -162,6 +176,7 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
       setSubType(null);
       setSingleValue(null);
       setBpValues({ systolic: 120, diastolic: 80, heartRate: 72 });
+      setLipidValues({ tc: null, tg: null, hdl: null, ldl: null });
     }
   };
 
@@ -175,6 +190,14 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
         { recordType: 'DIASTOLIC_BP', value: bpValues.diastolic, unit: 'mmHg' },
         { recordType: 'HEART_RATE', value: bpValues.heartRate, unit: '次/分' },
       ];
+      createBatchMutation.mutate({ memberId, recordDate, records });
+    } else if (category === 'bloodLipid') {
+      const records: RecordItem[] = [];
+      if (lipidValues.tc != null) records.push({ recordType: 'TOTAL_CHOLESTEROL', value: lipidValues.tc, unit: 'mmol/L' });
+      if (lipidValues.tg != null) records.push({ recordType: 'TRIGLYCERIDES', value: lipidValues.tg, unit: 'mmol/L' });
+      if (lipidValues.hdl != null) records.push({ recordType: 'HDL', value: lipidValues.hdl, unit: 'mmol/L' });
+      if (lipidValues.ldl != null) records.push({ recordType: 'LDL', value: lipidValues.ldl, unit: 'mmol/L' });
+      if (records.length === 0) { message.warning('请至少填写一项血脂数据'); return; }
       createBatchMutation.mutate({ memberId, recordDate, records });
     } else if (category === 'bloodSugar') {
       if (!subType || singleValue == null) { message.warning('请填写完整数据'); return; }
@@ -375,6 +398,55 @@ const ElderRecordWizard: React.FC<ElderRecordWizardProps> = ({ open, onClose }) 
               <ScrollNumberPicker min={30} max={200} value={bpValues.heartRate}
                 onChange={(v) => setBpValues({ ...bpValues, heartRate: v })} suffix="次/分" visibleCount={3} />
               <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--color-text-quaternary)', marginTop: 2 }}>参考：60~100</div>
+            </div>
+          </div>
+        )}
+
+        {category === 'bloodLipid' && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>总胆固醇 (TC)</div>
+              <InputNumber
+                value={lipidValues.tc}
+                onChange={(v) => setLipidValues({ ...lipidValues, tc: v })}
+                min={0} max={20} precision={2}
+                style={{ width: '100%' }} size="large" placeholder="如 3.28"
+                addonAfter="mmol/L"
+              />
+              <div style={{ fontSize: 12, color: 'var(--color-text-quaternary)', marginTop: 4 }}>合适：&lt;5.18</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>甘油三酯 (TG)</div>
+              <InputNumber
+                value={lipidValues.tg}
+                onChange={(v) => setLipidValues({ ...lipidValues, tg: v })}
+                min={0} max={20} precision={2}
+                style={{ width: '100%' }} size="large" placeholder="如 1.18"
+                addonAfter="mmol/L"
+              />
+              <div style={{ fontSize: 12, color: 'var(--color-text-quaternary)', marginTop: 4 }}>合适：&lt;1.70</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>高密度脂蛋白 (HDL)</div>
+              <InputNumber
+                value={lipidValues.hdl}
+                onChange={(v) => setLipidValues({ ...lipidValues, hdl: v })}
+                min={0} max={10} precision={2}
+                style={{ width: '100%' }} size="large" placeholder="如 0.77"
+                addonAfter="mmol/L"
+              />
+              <div style={{ fontSize: 12, color: 'var(--color-text-quaternary)', marginTop: 4 }}>合适：≥1.04</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>低密度脂蛋白 (LDL)</div>
+              <InputNumber
+                value={lipidValues.ldl}
+                onChange={(v) => setLipidValues({ ...lipidValues, ldl: v })}
+                min={0} max={10} precision={2}
+                style={{ width: '100%' }} size="large" placeholder="如 1.97"
+                addonAfter="mmol/L"
+              />
+              <div style={{ fontSize: 12, color: 'var(--color-text-quaternary)', marginTop: 4 }}>合适：&lt;3.37</div>
             </div>
           </div>
         )}
