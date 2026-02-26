@@ -31,12 +31,12 @@ import { whitelistApi } from '../../api/whitelist';
 const { Header, Sider, Content } = Layout;
 const { useBreakpoint } = Grid;
 
-// 老人模式底部 Tab 栏配置
+// 老人模式底部 Tab 栏配置（按使用频率从高到低排列）
 const elderTabs = [
-  { key: '/chat', icon: <MessageOutlined />, label: '健康咨询' },
+  { key: '/records', icon: <LineChartOutlined />, label: '健康记录' },
   { key: '/food-query', icon: <CameraOutlined />, label: '拍照问食' },
   { key: '/advice', icon: <BulbOutlined />, label: '健康建议' },
-  { key: '/records', icon: <LineChartOutlined />, label: '健康记录' },
+  { key: '/chat', icon: <MessageOutlined />, label: '健康咨询' },
 ];
 
 const ELDER_TAB_HEIGHT = 64;

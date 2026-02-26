@@ -21,9 +21,9 @@ import dayjs from 'dayjs';
 const Dashboard: React.FC = () => {
   const isElderMode = useElderModeStore((s) => s.isElderMode);
 
-  // 老人模式下直接跳转到健康咨询
+  // 老人模式下直接跳转到健康记录
   if (isElderMode) {
-    return <Navigate to="/chat" replace />;
+    return <Navigate to="/records" replace />;
   }
   const navigate = useNavigate();
 
