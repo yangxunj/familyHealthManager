@@ -573,49 +573,82 @@ const RecordList: React.FC = () => {
   return (
     <div>
       {isElderMode ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-          {/* 视图切换器 */}
-          <div style={{
-            display: 'inline-flex',
-            background: '#f0f0f0',
-            borderRadius: 20,
-            padding: 3,
-            flexShrink: 0,
-          }}>
+        /* 老人模式：顶栏区域（sticky 固定） */
+        <div style={{
+          position: 'sticky',
+          top: -8,
+          zIndex: 10,
+          background: '#fff',
+          paddingTop: 8,
+          marginTop: -8,
+          paddingBottom: 4,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+            {/* 视图切换器 */}
+            <div style={{
+              display: 'inline-flex',
+              background: '#f0f0f0',
+              borderRadius: 20,
+              padding: 3,
+              flexShrink: 0,
+            }}>
+              <Button
+                type={elderView === 'list' ? 'primary' : 'text'}
+                icon={<UnorderedListOutlined />}
+                style={{
+                  borderRadius: 18,
+                  ...(elderView !== 'list' ? { background: 'transparent', border: 'none' } : {}),
+                }}
+                onClick={() => setElderView('list')}
+              >
+                列表
+              </Button>
+              <Button
+                type={elderView === 'calendar' ? 'primary' : 'text'}
+                icon={<CalendarOutlined />}
+                style={{
+                  borderRadius: 18,
+                  ...(elderView !== 'calendar' ? { background: 'transparent', border: 'none' } : {}),
+                }}
+                onClick={() => setElderView('calendar')}
+              >
+                日历
+              </Button>
+            </div>
+            {/* 添加记录按钮 */}
             <Button
-              type={elderView === 'list' ? 'primary' : 'text'}
-              icon={<UnorderedListOutlined />}
-              style={{
-                borderRadius: 18,
-                ...(elderView !== 'list' ? { background: 'transparent', border: 'none' } : {}),
-              }}
-              onClick={() => setElderView('list')}
+              size="large"
+              icon={<PlusOutlined />}
+              onClick={() => setAddOpen(true)}
+              style={{ flex: 1, height: 44, fontSize: 16, borderRadius: 12, background: '#52c41a', borderColor: '#52c41a', color: '#fff' }}
             >
-              列表
-            </Button>
-            <Button
-              type={elderView === 'calendar' ? 'primary' : 'text'}
-              icon={<CalendarOutlined />}
-              style={{
-                borderRadius: 18,
-                ...(elderView !== 'calendar' ? { background: 'transparent', border: 'none' } : {}),
-              }}
-              onClick={() => setElderView('calendar')}
-            >
-              日历
+              添加记录
             </Button>
           </div>
-          {/* 添加记录按钮 */}
-          <Button
-            size="large"
-            icon={<PlusOutlined />}
-            onClick={() => setAddOpen(true)}
-            style={{ flex: 1, height: 44, fontSize: 16, borderRadius: 12, background: '#52c41a', borderColor: '#52c41a', color: '#fff' }}
-          >
-            添加记录
-          </Button>
+          {!isSingleMember && availableMembers.length > 0 && (
+            <div style={{ marginBottom: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <Button
+                type={!filters.memberId ? 'primary' : 'default'}
+                style={{ borderRadius: 20, ...(filters.memberId ? { borderColor: 'var(--color-border)' } : {}) }}
+                onClick={() => setFilters({ ...filters, memberId: undefined })}
+              >
+                全部成员
+              </Button>
+              {availableMembers.map((member) => (
+                <Button
+                  key={member.id}
+                  type={filters.memberId === member.id ? 'primary' : 'default'}
+                  style={{ borderRadius: 20, ...(filters.memberId !== member.id ? { borderColor: 'var(--color-border)' } : {}) }}
+                  onClick={() => setFilters({ ...filters, memberId: member.id })}
+                >
+                  {member.name}
+                </Button>
+              ))}
+            </div>
+          )}
         </div>
       ) : (
+        <>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
           <h2 style={{ margin: 0 }}>健康记录</h2>
           <Button
@@ -626,31 +659,10 @@ const RecordList: React.FC = () => {
             添加记录
           </Button>
         </div>
+      </>
       )}
 
-      {isElderMode ? (
-        !isSingleMember && availableMembers.length > 0 ? (
-          <div style={{ marginBottom: 16, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            <Button
-              type={!filters.memberId ? 'primary' : 'default'}
-              style={{ borderRadius: 20, ...(filters.memberId ? { borderColor: 'var(--color-border)' } : {}) }}
-              onClick={() => setFilters({ ...filters, memberId: undefined })}
-            >
-              全部成员
-            </Button>
-            {availableMembers.map((member) => (
-              <Button
-                key={member.id}
-                type={filters.memberId === member.id ? 'primary' : 'default'}
-                style={{ borderRadius: 20, ...(filters.memberId !== member.id ? { borderColor: 'var(--color-border)' } : {}) }}
-                onClick={() => setFilters({ ...filters, memberId: member.id })}
-              >
-                {member.name}
-              </Button>
-            ))}
-          </div>
-        ) : null
-      ) : (
+      {!isElderMode ? (
         <Card style={{ marginBottom: 16 }}>
           <Row gutter={[16, 12]}>
             <Col xs={24} sm={8}>
