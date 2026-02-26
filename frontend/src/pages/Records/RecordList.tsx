@@ -184,6 +184,7 @@ const RecordList: React.FC = () => {
     label: string;
     records: HealthRecord[];
   } | null>(null);
+  const [deleteMode, setDeleteMode] = useState(false);
 
   // 点击趋势按钮：老人模式打开 Drawer，普通模式导航
   const handleTrendClick = (record: HealthRecord) => {
@@ -809,12 +810,25 @@ const RecordList: React.FC = () => {
       {isElderMode && (
         <Drawer
           open={!!historyGroup}
-          onClose={() => setHistoryGroup(null)}
+          onClose={() => { setHistoryGroup(null); setDeleteMode(false); }}
           placement="bottom"
           height="85%"
-          title={historyGroup?.label || ''}
+          title={
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>{historyGroup?.label || ''}</span>
+              <Button
+                type="text"
+                icon={<DeleteOutlined />}
+                style={{ color: deleteMode ? '#ff4d4f' : 'var(--color-text-tertiary)', fontSize: 18 }}
+                onClick={() => setDeleteMode(!deleteMode)}
+              />
+            </div>
+          }
           destroyOnClose
         >
+          {/* 点击空白区域退出删除模式 */}
+          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
+          <div onClick={() => { if (deleteMode) setDeleteMode(false); }}>
           {historyGroup && (() => {
             // 按测量时间分组（同一次 createBatch 的记录 recordDate 相同）
             const sessionMap = new Map<string, HealthRecord[]>();
@@ -835,11 +849,41 @@ const RecordList: React.FC = () => {
                     <div
                       key={`${first.memberId}_${first.recordDate}`}
                       style={{
+                        position: 'relative',
                         border: '1px solid var(--color-border)',
                         borderRadius: 10,
                         padding: '12px 14px',
                       }}
                     >
+                      {/* 删除模式：红色 X 徽标 */}
+                      {deleteMode && (
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteIds(group.map((r) => r.id));
+                          }}
+                          style={{
+                            position: 'absolute',
+                            top: -8,
+                            right: -8,
+                            width: 22,
+                            height: 22,
+                            borderRadius: '50%',
+                            background: '#ff4d4f',
+                            color: '#fff',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: 13,
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+                            zIndex: 1,
+                          }}
+                        >
+                          ✕
+                        </div>
+                      )}
                       {/* 时间 + 异常标签 */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                         <span style={{ fontSize: 13, color: 'var(--color-text-tertiary)' }}>
@@ -882,27 +926,17 @@ const RecordList: React.FC = () => {
                             size="small"
                             icon={<LineChartOutlined />}
                             style={{ color: '#136dec' }}
-                            onClick={() => handleTrendClick(record)}
+                            onClick={(e) => { e.stopPropagation(); handleTrendClick(record); }}
                           />
                         </div>
                       ))}
-                      {/* 删除按钮：删除整次测量的所有记录 */}
-                      <div style={{ textAlign: 'right', marginTop: 6 }}>
-                        <Button
-                          size="small"
-                          danger
-                          icon={<DeleteOutlined />}
-                          onClick={() => setDeleteIds(group.map((r) => r.id))}
-                        >
-                          删除
-                        </Button>
-                      </div>
                     </div>
                   );
                 })}
               </div>
             );
           })()}
+          </div>
         </Drawer>
       )}
 
