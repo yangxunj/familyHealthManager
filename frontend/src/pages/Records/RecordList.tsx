@@ -886,7 +886,7 @@ const RecordList: React.FC = () => {
                       )}
                       {/* 时间 + 异常标签 */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                        <span style={{ fontSize: 13, color: 'var(--color-text-tertiary)' }}>
+                        <span style={{ fontSize: 15, color: 'var(--color-text-tertiary)' }}>
                           {dayjs(first.recordDate).format('YYYY-MM-DD HH:mm')}
                         </span>
                         {hasAbnormal && (
@@ -901,31 +901,30 @@ const RecordList: React.FC = () => {
                             display: 'flex',
                             justifyContent: 'space-between',
                             alignItems: 'center',
-                            padding: '4px 0',
+                            padding: '5px 0',
                           }}
                         >
                           <div>
-                            <span style={{ fontSize: 14, color: 'var(--color-text-tertiary)' }}>
+                            <span style={{ fontSize: 16, color: 'var(--color-text-tertiary)' }}>
                               {record.recordTypeLabel}
                             </span>
                             {' '}
                             <span style={{
-                              fontSize: 17,
+                              fontSize: 20,
                               fontWeight: 600,
                               color: record.isAbnormal ? '#ff4d4f' : '#136dec',
                             }}>
                               {record.value}
                             </span>
                             {' '}
-                            <span style={{ fontSize: 12, color: 'var(--color-text-quaternary)' }}>
+                            <span style={{ fontSize: 14, color: 'var(--color-text-quaternary)' }}>
                               {record.unit}
                             </span>
                           </div>
                           <Button
                             type="text"
-                            size="small"
                             icon={<LineChartOutlined />}
-                            style={{ color: '#136dec' }}
+                            style={{ color: '#136dec', fontSize: 18 }}
                             onClick={(e) => { e.stopPropagation(); handleTrendClick(record); }}
                           />
                         </div>
