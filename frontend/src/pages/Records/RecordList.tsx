@@ -1004,6 +1004,7 @@ const RecordList: React.FC = () => {
         okText="删除"
         cancelText="取消"
         okButtonProps={{ danger: true }}
+        zIndex={2000}
       >
         <p>确定要删除该记录吗？此操作不可恢复。</p>
       </Modal>
