@@ -183,11 +183,10 @@ const RecordList: React.FC = () => {
     };
   }, [trendData]);
 
-  // 老人模式：分类历史记录 Drawer 状态
+  // 老人模式：分类历史记录 Drawer 状态（只存 key/label，记录从 groupedRecords 实时派生）
   const [historyGroup, setHistoryGroup] = useState<{
     key: string;
     label: string;
-    records: HealthRecord[];
   } | null>(null);
   const [deleteMode, setDeleteMode] = useState(false);
 
@@ -401,6 +400,7 @@ const RecordList: React.FC = () => {
       message.success('删除成功');
       queryClient.invalidateQueries({ queryKey: ['records'] });
       setDeleteIds([]);
+      setDeleteMode(false);
     },
     onError: () => {
       message.error('删除失败');
@@ -747,7 +747,6 @@ const RecordList: React.FC = () => {
                   onClick={() => setHistoryGroup({
                     key: group.key,
                     label: group.label,
-                    records: group.records,
                   })}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
@@ -1087,9 +1086,14 @@ const RecordList: React.FC = () => {
           {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
           <div onClick={() => { if (deleteMode) setDeleteMode(false); }}>
           {historyGroup && (() => {
+            // 从最新的 groupedRecords 实时获取记录（删除后自动刷新）
+            const currentGroup = groupedRecords.find((g) => g.key === historyGroup.key);
+            if (!currentGroup || currentGroup.records.length === 0) {
+              return <Empty description="暂无记录" />;
+            }
             // 按测量时间分组（同一次 createBatch 的记录 recordDate 相同）
             const sessionMap = new Map<string, HealthRecord[]>();
-            historyGroup.records.forEach((r) => {
+            currentGroup.records.forEach((r) => {
               const key = `${r.memberId}_${r.recordDate}`;
               const arr = sessionMap.get(key);
               if (arr) arr.push(r);
