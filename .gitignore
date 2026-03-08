@@ -50,3 +50,5 @@ temp/
 
 # Database backups
 backups/
+*.sql
+*.sql.gz
